@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import { ToastProvider } from "@/components/arena/wallet-toast";
 import { WalletProvider } from "@/components/arena/wallet-provider";
+import { TutorialModal } from "@/components/arena/tutorial-modal";
 import "./globals.css";
 
 const displayFont = Space_Grotesk({
@@ -33,7 +34,10 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[var(--bg)] text-[var(--text-primary)] antialiased">
         <WalletProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            {children}
+            <TutorialModal />
+          </ToastProvider>
         </WalletProvider>
       </body>
     </html>

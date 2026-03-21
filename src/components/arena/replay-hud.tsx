@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cx } from "@/components/arena/ui";
+import { TweakModal } from "./tweak-modal";
 
 export type ReplayHudAgent = {
   id: string;
@@ -130,6 +131,8 @@ export function ReplayHud({
   className,
   footer,
 }: ReplayHudProps) {
+  const [activeTweakAgent, setActiveTweakAgent] = useState<ReplayHudAgent | null>(null);
+
   return (
     <div
       className={cx(
@@ -238,9 +241,18 @@ export function ReplayHud({
                   </div>
                 </div>
 
-                <div className="rounded-[1.05rem] border border-white/10 bg-[rgba(255,255,255,0.03)] p-3">
-                  <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                    Action
+                <div className="rounded-[1.05rem] border border-white/10 bg-[rgba(255,255,255,0.03)] p-3 group relative transition-colors hover:bg-[rgba(255,255,255,0.05)]">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
+                      Action
+                    </div>
+                    <button 
+                      onClick={() => setActiveTweakAgent(agent)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-[9px] uppercase tracking-[0.25em] border border-white/10 bg-black/40 px-2 py-0.5 rounded-full hover:bg-white/10 hover:text-white"
+                      style={{ color: agent.color }}
+                    >
+                      Tweak Interface
+                    </button>
                   </div>
                   <div className="mt-2 min-h-[52px] text-sm leading-6 text-white">
                     {agent.action}
@@ -338,6 +350,16 @@ export function ReplayHud({
       ) : null}
 
       {footer ? <div className="absolute inset-x-0 bottom-16 px-4 sm:px-6">{footer}</div> : null}
+
+      {/* Pop-up Modals */}
+      <TweakModal 
+        isOpen={!!activeTweakAgent} 
+        onClose={() => setActiveTweakAgent(null)}
+        agentId={activeTweakAgent?.id || ""}
+        agentName={activeTweakAgent?.name || ""}
+        agentColor={activeTweakAgent?.color || "#fff"}
+        currentArchetype={activeTweakAgent?.archetype || "Momentum"}
+      />
     </div>
   );
 }
