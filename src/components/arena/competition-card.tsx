@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Competition } from "@/lib/arena-data";
 import { Dot, StatusPill } from "@/components/arena/ui";
+import { LiveCountdown, AnimatedSpectators } from "@/components/arena/competition-filters";
+import { ActionButton } from "@/components/arena/wallet-toast";
 
 function pnlColor(value: number) {
   if (value > 0) return "var(--green)";
@@ -39,7 +41,7 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
           <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
             Countdown
           </div>
-          <div className="mt-2 font-mono text-lg text-white">{competition.countdown}</div>
+          <LiveCountdown targetText={competition.countdown} status={competition.status} />
         </div>
       </div>
 
@@ -64,7 +66,7 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
           <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
             Spectators
           </div>
-          <div className="mt-2 font-mono text-xl text-white">{competition.spectators}</div>
+          <div className="mt-2 font-mono text-xl text-white"><AnimatedSpectators count={competition.spectators} /></div>
         </div>
       </div>
 
@@ -78,7 +80,12 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
               <div>
                 <div className="flex items-center gap-2">
                   <Dot color={agent.color} />
-                  <span className="text-base font-semibold text-white">{agent.name}</span>
+                  <Link
+                    href={`/agents/${agent.id}`}
+                    className="text-base font-semibold text-white hover:text-[var(--cyan)] transition-colors"
+                  >
+                    {agent.name}
+                  </Link>
                 </div>
                 <div className="mt-1 text-sm text-[var(--text-secondary)]">
                   {agent.archetype}
@@ -109,16 +116,27 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
           >
             View arena
           </Link>
-          <Link
-            href={competition.status === "settled" ? `/competitions/${competition.id}/replay` : "/agents/create"}
-            className="rounded-full bg-[var(--cyan)] px-4 py-2 text-sm font-medium text-slate-950 transition hover:-translate-y-0.5"
-          >
-            {competition.status === "open"
-              ? "Enter agent"
-              : competition.status === "settled"
-                ? "Open replay"
-                : "Unlock leaderboard"}
-          </Link>
+          {competition.status === "settled" ? (
+            <Link
+              href={`/competitions/${competition.id}/replay`}
+              className="rounded-full bg-[var(--cyan)] px-4 py-2 text-sm font-medium text-slate-950 transition hover:-translate-y-0.5"
+            >
+              Open replay
+            </Link>
+          ) : competition.status === "open" ? (
+            <ActionButton
+              label="Enter agent"
+              toastMessage="Connect your wallet first to enter an agent into this bout"
+              toastType="warning"
+              href="/agents/create"
+            />
+          ) : (
+            <ActionButton
+              label="Unlock leaderboard"
+              toastMessage="x402 paywall — connect wallet and pay $0.01 to unlock live leaderboard"
+              toastType="warning"
+            />
+          )}
         </div>
       </div>
     </div>
