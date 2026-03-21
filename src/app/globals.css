@@ -156,6 +156,76 @@ a {
   }
 }
 
+.arena-overlay-grid {
+  background-image:
+    linear-gradient(rgba(102, 227, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(102, 227, 255, 0.06) 1px, transparent 1px);
+  background-size: 80px 80px;
+  background-position: center;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 85%);
+}
+
+@keyframes arena-float-up {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.92);
+  }
+
+  16% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -76px, 0) scale(1.06);
+  }
+}
+
+@keyframes arena-crit-banner {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.86);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -88px) scale(1);
+  }
+}
+
+@keyframes arena-scanline {
+  0% {
+    transform: translateX(-135%);
+  }
+
+  100% {
+    transform: translateX(135%);
+  }
+}
+
+.arena-scanline {
+  position: relative;
+  overflow: hidden;
+}
+
+.arena-scanline::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.12) 30%,
+    transparent 60%
+  );
+  animation: arena-scanline 7s linear infinite;
+}
+
 .fade-up {
   animation: rise 0.7s ease both;
 }
