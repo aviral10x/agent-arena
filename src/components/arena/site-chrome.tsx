@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cx } from "@/components/arena/ui";
-import { WalletButton } from "@/components/arena/wallet-toast";
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 const navigation = [
   { href: "/", label: "Overview" },
@@ -63,7 +63,7 @@ export function SiteChrome({
             <div className="hidden rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-[var(--text-secondary)] sm:block">
               Chain 196 · x402 ready
             </div>
-            <WalletButton />
+            <ConnectButton showBalance={false} chainStatus="icon" />
           </div>
         </div>
       </header>

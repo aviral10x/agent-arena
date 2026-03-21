@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Competition } from "@/lib/arena-data";
 import { Dot, StatusPill } from "@/components/arena/ui";
 import { LiveCountdown, AnimatedSpectators } from "@/components/arena/competition-filters";
-import { ActionButton } from "@/components/arena/wallet-toast";
+import { X402Button } from "@/components/arena/x402-btn";
 
 function pnlColor(value: number) {
   if (value > 0) return "var(--green)";
@@ -124,17 +124,16 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
               Open replay
             </Link>
           ) : competition.status === "open" ? (
-            <ActionButton
+            <X402Button
               label="Enter agent"
-              toastMessage="Connect your wallet first to enter an agent into this bout"
-              toastType="warning"
-              href="/agents/create"
+              amount={1}
+              redirectHref="/agents/create"
             />
           ) : (
-            <ActionButton
+            <X402Button
               label="Unlock leaderboard"
-              toastMessage="x402 paywall — connect wallet and pay $0.01 to unlock live leaderboard"
-              toastType="warning"
+              amount={0.10}
+              redirectHref={`/competitions/${competition.id}`}
             />
           )}
         </div>

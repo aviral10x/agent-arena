@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteChrome } from "@/components/arena/site-chrome";
-import { LiveLeaderboard } from "@/components/arena/live-leaderboard";
-import { TradeTimeline } from "@/components/arena/trade-timeline";
+import { LiveMatchWrapper } from "@/components/arena/live-match-wrapper";
 import { Surface, StatusPill, ButtonLink } from "@/components/arena/ui";
 import { featureRail } from "@/lib/arena-data";
 import { LiveCountdown } from "@/components/arena/competition-filters";
-import { ActionButton } from "@/components/arena/wallet-toast";
+import { X402Button } from "@/components/arena/x402-btn";
 import { prisma } from "@/lib/db";
 import type { Competition } from "@/lib/arena-data";
 
@@ -113,18 +112,16 @@ export default async function CompetitionPage(props: PageProps) {
 
               <div className="mt-7 flex flex-wrap gap-3">
                 {competition.status === "open" ? (
-                  <ActionButton
+                  <X402Button
                     label="Enter a new agent"
-                    toastMessage="Connect your wallet first to enter an agent into this bout"
-                    toastType="warning"
-                    href="/agents/create"
+                    amount={1}
+                    redirectHref="/agents/create"
                   />
                 ) : null}
                 {competition.status === "live" ? (
-                  <ActionButton
+                  <X402Button
                     label="Unlock full replay data"
-                    toastMessage="x402 paywall — connect wallet and pay to unlock the historical trade log"
-                    toastType="warning"
+                    amount={5}
                   />
                 ) : competition.status === "settled" ? (
                   <Link
@@ -137,7 +134,10 @@ export default async function CompetitionPage(props: PageProps) {
               </div>
             </div>
 
-            <LiveLeaderboard agents={competition.agents} />
+            <LiveMatchWrapper
+              initialCompetition={competition}
+              initialTrades={tradeFeed}
+            />
           </div>
 
           <div className="space-y-6">
@@ -162,7 +162,7 @@ export default async function CompetitionPage(props: PageProps) {
               </div>
             </Surface>
 
-            <TradeTimeline trades={tradeFeed.slice(0, 4)} title="Live trade feed" />
+            {/* Live trade feed is now handled by LiveMatchWrapper */}
 
             <Surface>
               <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
