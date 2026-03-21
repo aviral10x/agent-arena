@@ -1,6 +1,7 @@
 import { prisma } from './db';
 import { getMarketContext } from './market-data';
 import { executeAgentTurn } from './agent-runner';
+import { getDexRoute } from './okx-os';
 
 export async function runCompetitionTick(competitionId: string) {
   const competition = await prisma.competition.findUnique({
@@ -25,11 +26,22 @@ export async function runCompetitionTick(competitionId: string) {
       const amountValue = (ca.portfolio * decision.amountPercentage) / 100;
       const amountStr = `${amountValue.toFixed(2)} ${decision.action === 'BUY' ? 'USDC' : decision.token}`;
       const pair = decision.action === 'BUY' ? `USDC -> ${decision.token}` : `${decision.token} -> USDC`;
-      const priceImpact = `${decision.action === 'BUY' ? '+' : '-'}${(Math.random() * 0.5).toFixed(2)}%`;
+      
+      const fromToken = decision.action === 'BUY' ? 'USDC' : decision.token;
+      const toToken = decision.action === 'BUY' ? decision.token : 'USDC';
+      const route = await getDexRoute(fromToken, toToken, amountValue.toString());
 
-      // Simulate a trade result (profit or loss based on archetype and luck)
-      const luck = Math.random() - 0.45; // slightly positive bias
-      const pnlChange = luck * (ca.portfolio * decision.amountPercentage / 100); 
+      // Use the actual OKX DEX Aggregator price impact to calculate slippage costs
+      const priceImpactNum = Number(route.priceImpact) || 0;
+      const priceImpact = `${priceImpactNum > 0 ? '-' : '+'}${Math.abs(priceImpactNum * 100).toFixed(2)}%`;
+
+      // Realistic trade execution calculation referencing the real market token movements
+      const marketMove = (market.tokens.find(t => t.symbol === decision.token)?.change24h || 0) / 100;
+      const slippageCost = amountValue * Math.abs(priceImpactNum);
+      const executionEdge = decision.action === 'BUY' ? (amountValue * marketMove) : (amountValue * -marketMove);
+      const luck = (Math.random() - 0.45) * (amountValue * 0.05); // Small local volatility jitter
+      
+      const pnlChange = executionEdge - slippageCost + luck;
       const newPortfolio = Math.max(0, ca.portfolio + pnlChange);
       const newPnl = ca.pnl + pnlChange;
       const newScore = Math.max(0, Math.floor(ca.score + pnlChange * 10));

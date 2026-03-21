@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { createAgenticWallet } from "@/lib/okx-os";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
         risk: body.risk,
         color: body.color || "#66e3ff",
         owner: body.owner || "Anonymous",
-        wallet: body.wallet || "0x000...0000",
+        wallet: createAgenticWallet().address,
         bio: body.description || "",
         traits: JSON.stringify(body.traits || []),
       },
