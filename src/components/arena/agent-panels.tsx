@@ -193,7 +193,7 @@ export function AgentBuilderPanel() {
         Agent builder
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1.2fr_1.5fr]">
         {/* Strategy Template */}
         <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
           <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
@@ -203,15 +203,15 @@ export function AgentBuilderPanel() {
             {STRATEGY_TEMPLATES.map((template) => (
               <label
                 key={template.id}
-                className={`flex cursor-pointer items-center justify-between rounded-2xl border px-4 py-3 text-sm transition-colors ${
+                className={`flex cursor-pointer flex-col gap-2 rounded-2xl border px-4 py-3 text-sm transition-colors sm:flex-row sm:items-center sm:justify-between ${
                   form.strategy === template.id
                     ? "border-[var(--cyan)] bg-[var(--cyan-soft)] text-white"
                     : "border-white/10 bg-white/5 text-[var(--text-secondary)] hover:bg-white/[0.08]"
                 }`}
                 onClick={() => updateField("strategy", template.id)}
               >
-                <span>{template.label}</span>
-                <span className="font-mono text-xs uppercase tracking-[0.18em]">
+                <span className="font-medium">{template.label}</span>
+                <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.18em] opacity-80">
                   {form.strategy === template.id ? "selected" : "template"}
                 </span>
               </label>
@@ -269,7 +269,7 @@ export function AgentBuilderPanel() {
               <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                 Risk tolerance
               </div>
-              <div className="mt-2 flex gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {RISK_OPTIONS.map((risk) => (
                   <button
                     key={risk}
@@ -296,7 +296,7 @@ export function AgentBuilderPanel() {
               <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                 Starting bankroll
               </div>
-              <div className="mt-2 flex gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {BANKROLL_OPTIONS.map((option) => (
                   <button
                     key={option.value}

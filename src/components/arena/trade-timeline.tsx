@@ -1,4 +1,4 @@
-import { getAgentName, type TradeEvent } from "@/lib/arena-data";
+import type { TradeEvent } from "@/lib/arena-data";
 
 export function TradeTimeline({
   trades,
@@ -13,16 +13,16 @@ export function TradeTimeline({
         {title}
       </div>
       <div className="mt-5 space-y-3">
-        {trades.map((trade) => (
+        {trades.map((trade, index) => (
           <div
-            key={trade.id}
+            key={`${trade.id}-${index}`}
             className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="text-sm font-semibold text-white">
-                    {getAgentName(trade.agentId)}
+                    {(trade as any).agentName || trade.agentId}
                   </span>
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
