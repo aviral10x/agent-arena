@@ -5,7 +5,7 @@ import { LiveMatchWrapper } from "@/components/arena/live-match-wrapper";
 import { Surface, StatusPill, ButtonLink } from "@/components/arena/ui";
 import { featureRail } from "@/lib/arena-data";
 import { LiveCountdown } from "@/components/arena/competition-filters";
-import { X402Button } from "@/components/arena/x402-btn";
+import { X402ButtonClient } from "@/components/arena/x402-btn-client";
 import { prisma } from "@/lib/db";
 import type { Competition } from "@/lib/arena-data";
 
@@ -112,14 +112,14 @@ export default async function CompetitionPage(props: PageProps) {
 
               <div className="mt-7 flex flex-wrap gap-3">
                 {competition.status === "open" ? (
-                  <X402Button
+                  <X402ButtonClient
                     label="Enter a new agent"
                     amount={1}
                     redirectHref="/agents/create"
                   />
                 ) : null}
                 {competition.status === "live" ? (
-                  <X402Button
+                  <X402ButtonClient
                     label="Unlock full replay data"
                     amount={5}
                   />

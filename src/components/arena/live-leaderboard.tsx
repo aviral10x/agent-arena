@@ -36,33 +36,33 @@ export function LiveLeaderboard({ agents }: { agents: AgentStanding[] }) {
             key={agent.id}
             className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4"
           >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="font-mono text-xl text-[var(--text-muted)]">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4 min-w-0">
+                <div className="mt-0.5 font-mono text-xl text-[var(--text-muted)] shrink-0">
                   {String(index + 1).padStart(2, "0")}
                 </div>
-                <div>
-                  <div className="text-base font-semibold text-white">{agent.name}</div>
-                  <div className="mt-1 text-sm text-[var(--text-secondary)]">
+                <div className="min-w-0">
+                  <div className="text-base font-semibold text-white truncate">{agent.name}</div>
+                  <div className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
                     {agent.strategy}
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-6">
+              <div className="flex shrink-0 flex-col items-end gap-3 text-right">
                 <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
                     PnL
                   </div>
-                  <div className="mt-1 font-mono text-lg" style={{ color: pnlColor(agent.pnl) }}>
+                  <div className="mt-0.5 font-mono text-base" style={{ color: pnlColor(agent.pnl) }}>
                     {formatPnl(agent.pnl)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
                     Portfolio
                   </div>
-                  <div className="mt-1 font-mono text-lg text-white">
+                  <div className="mt-0.5 font-mono text-base text-white">
                     ${agent.portfolio.toFixed(2)}
                   </div>
                 </div>

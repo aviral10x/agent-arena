@@ -10,7 +10,7 @@ import {
   featureRail,
   roadmap,
 } from "@/lib/arena-data";
-import { CompetitionCard } from "@/components/arena/competition-card";
+import { CompetitionCardClient } from "@/components/arena/competition-card-client";
 import { SiteChrome } from "@/components/arena/site-chrome";
 import { prisma } from "@/lib/db";
 import type { Competition } from "@/lib/arena-data";
@@ -181,7 +181,7 @@ export default async function Home() {
 
         <div className="mt-8 grid gap-5">
           {spotlight.map((competition) => (
-            <CompetitionCard key={competition.id} competition={competition} />
+            <CompetitionCardClient key={competition.id} competition={competition} />
           ))}
         </div>
       </section>

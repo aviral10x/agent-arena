@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import type { Competition } from "@/lib/arena-data";
 import { Dot, StatusPill } from "@/components/arena/ui";
@@ -17,8 +19,8 @@ function formatPnl(value: number) {
 export function CompetitionCard({ competition }: { competition: Competition }) {
   return (
     <div className="glass-panel signal-line rounded-[1.6rem] p-6 transition hover:-translate-y-1">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-wrap items-center gap-3">
             <StatusPill status={competition.status} />
             <span className="font-mono text-sm text-[var(--text-secondary)]">
@@ -37,7 +39,7 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
             </p>
           </div>
         </div>
-        <div className="rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3 text-right">
+        <div className="shrink-0 rounded-[1.25rem] border border-white/10 bg-white/5 px-4 py-3 text-right">
           <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
             Countdown
           </div>
@@ -77,7 +79,7 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
             className="rounded-[1.25rem] border border-white/10 bg-[rgba(255,255,255,0.03)] p-4"
           >
             <div className="flex items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <Dot color={agent.color} />
                   <Link
@@ -91,11 +93,11 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
                   {agent.archetype}
                 </div>
               </div>
-              <div className="font-mono text-lg" style={{ color: pnlColor(agent.pnl) }}>
+              <div className="shrink-0 font-mono text-lg" style={{ color: pnlColor(agent.pnl) }}>
                 {formatPnl(agent.pnl)}
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
               <span>{agent.trades} trades</span>
               <span>${agent.portfolio.toFixed(2)} NAV</span>
             </div>
@@ -103,7 +105,7 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
         ))}
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5">
         <div className="text-sm text-[var(--text-secondary)]">
           Track: <span className="text-white">{competition.track}</span>
           <span className="mx-2 text-white/20">/</span>
