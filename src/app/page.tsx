@@ -29,7 +29,7 @@ export default async function Home() {
     },
   });
 
-  const spotlight: Competition[] = compRecords.map((comp) => ({
+  const spotlight: Competition[] = compRecords.map((comp: any) => ({
     ...comp,
     mode: comp.mode as any,
     status: comp.status as any,

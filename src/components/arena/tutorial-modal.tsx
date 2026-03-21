@@ -4,18 +4,20 @@ import { useState, useEffect } from "react";
 import { cx } from "@/components/arena/ui";
 
 export function TutorialModal() {
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
 
   // Run on mount to check if tutorial was seen
   useEffect(() => {
+    setMounted(true);
     const hasSeen = localStorage.getItem("agent-arena-tutorial");
     if (!hasSeen) {
       setIsOpen(true);
     }
   }, []);
 
-  if (!isOpen) return null;
+  if (!mounted || !isOpen) return null;
 
   const handleClose = () => {
     localStorage.setItem("agent-arena-tutorial", "true");

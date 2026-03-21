@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { cx } from "@/components/arena/ui";
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -16,6 +18,8 @@ export function SiteChrome({
   children: ReactNode;
   activeHref?: string;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   return (
     <div className="arena-grid min-h-screen">
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[rgba(7,17,31,0.75)] backdrop-blur-xl">
@@ -63,7 +67,7 @@ export function SiteChrome({
             <div className="hidden rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-[var(--text-secondary)] sm:block">
               Chain 196 · x402 ready
             </div>
-            <ConnectButton showBalance={false} chainStatus="icon" />
+            {mounted && <ConnectButton showBalance={false} chainStatus="icon" />}
           </div>
         </div>
       </header>
