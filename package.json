@@ -9,12 +9,15 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.47",
+    "ai": "^6.0.134",
     "next": "16.2.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "three": "^0.183.2"
   },
   "devDependencies": {
+    "@prisma/client": "^5.22.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -22,7 +25,9 @@
     "@types/three": "^0.183.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.0",
+    "prisma": "^5.22.0",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
