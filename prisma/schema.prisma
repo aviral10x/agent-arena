@@ -1,0 +1,78 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Agent {
+  id          String   @id @default(cuid())
+  name        String
+  archetype   String
+  strategy    String
+  risk        String
+  winRate     String   @default("0%")
+  color       String   @default("#66e3ff")
+  owner       String   @default("Arena Labs")
+  wallet      String   @default("0x000...0000")
+  bio         String   @default("")
+  traits      String   @default("[]") // JSON string field for SQLite
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  competitions CompetitionAgent[]
+  trades       Trade[]
+}
+
+model Competition {
+  id         String   @id @default(cuid())
+  title      String
+  mode       String   // "1v1" | "royale"
+  status     String   // "live" | "open" | "settled"
+  duration   String
+  countdown  String
+  entryFee   String
+  prizePool  String
+  spectators Int      @default(0)
+  volume     String
+  track      String
+  premise    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  agents  CompetitionAgent[]
+  trades  Trade[]
+}
+
+model CompetitionAgent {
+  id            String      @id @default(cuid())
+  competitionId String
+  agentId       String
+  pnl           Float       @default(0)
+  portfolio     Float       @default(10)
+  trades        Int         @default(0)
+  score         Int         @default(0)
+
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  agent         Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([competitionId, agentId])
+}
+
+model Trade {
+  id            String      @id @default(cuid())
+  competitionId String
+  agentId       String
+  type          String      // "BUY" | "SELL" | "HOLD"
+  pair          String
+  amount        String
+  rationale     String
+  time          String
+  priceImpact   String
+  timestamp     DateTime    @default(now())
+
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  agent         Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}

@@ -4,19 +4,66 @@ import { SiteChrome } from "@/components/arena/site-chrome";
 import { LiveLeaderboard } from "@/components/arena/live-leaderboard";
 import { TradeTimeline } from "@/components/arena/trade-timeline";
 import { Surface, StatusPill, ButtonLink } from "@/components/arena/ui";
-import { competitions, featureRail, getCompetition, tradeFeed } from "@/lib/arena-data";
+import { featureRail } from "@/lib/arena-data";
+import { LiveCountdown } from "@/components/arena/competition-filters";
+import { ActionButton } from "@/components/arena/wallet-toast";
+import { prisma } from "@/lib/db";
+import type { Competition } from "@/lib/arena-data";
 
-export function generateStaticParams() {
-  return competitions.map((competition) => ({ id: competition.id }));
-}
+export const dynamic = "force-dynamic";
 
-export default async function CompetitionPage(props: PageProps<"/competitions/[id]">) {
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function CompetitionPage(props: PageProps) {
   const { id } = await props.params;
-  const competition = getCompetition(id);
 
-  if (!competition || competition.id !== id) {
+  const compRecord = await prisma.competition.findUnique({
+    where: { id },
+    include: {
+      agents: {
+        include: { agent: true },
+        orderBy: { score: "desc" },
+      },
+    },
+  });
+
+  if (!compRecord) {
     notFound();
   }
+
+  const dbTrades = await prisma.trade.findMany({
+    where: { competitionId: id },
+    orderBy: { timestamp: "desc" },
+    take: 50,
+  });
+
+  const competition: Competition = {
+    ...compRecord,
+    mode: compRecord.mode as any,
+    status: compRecord.status as any,
+    agents: compRecord.agents.map((ca: any) => ({
+      ...ca.agent,
+      traits: JSON.parse(ca.agent.traits),
+      risk: ca.agent.risk,
+      pnl: ca.pnl,
+      trades: ca.trades,
+      portfolio: ca.portfolio,
+      score: ca.score,
+    })),
+  };
+
+  const tradeFeed = dbTrades.map((t: any) => ({
+    id: t.id,
+    type: t.type,
+    agentId: t.agentId,
+    pair: t.pair,
+    amount: t.amount,
+    rationale: t.rationale,
+    time: t.time,
+    priceImpact: t.priceImpact,
+  }));
 
   return (
     <SiteChrome activeHref="/competitions">
@@ -53,19 +100,40 @@ export default async function CompetitionPage(props: PageProps<"/competitions/[i
                     <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
                       {label}
                     </div>
-                    <div className="mt-2 font-mono text-lg text-white">{value}</div>
+                    <div className="mt-2 font-mono text-lg text-white">
+                      {label === "Countdown" ? (
+                        <LiveCountdown targetText={value} status={competition.status} />
+                      ) : (
+                        value
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
 
               <div className="mt-7 flex flex-wrap gap-3">
-                <ButtonLink href="/agents/create">Enter a new agent</ButtonLink>
-                <Link
-                  href={`/competitions/${competition.id}/replay`}
-                  className="rounded-full border border-white/10 px-5 py-3 text-sm text-[var(--text-primary)] transition hover:bg-white/5"
-                >
-                  Open replay
-                </Link>
+                {competition.status === "open" ? (
+                  <ActionButton
+                    label="Enter a new agent"
+                    toastMessage="Connect your wallet first to enter an agent into this bout"
+                    toastType="warning"
+                    href="/agents/create"
+                  />
+                ) : null}
+                {competition.status === "live" ? (
+                  <ActionButton
+                    label="Unlock full replay data"
+                    toastMessage="x402 paywall — connect wallet and pay to unlock the historical trade log"
+                    toastType="warning"
+                  />
+                ) : competition.status === "settled" ? (
+                  <Link
+                    href={`/competitions/${competition.id}/replay`}
+                    className="rounded-full border border-white/10 px-5 py-3 text-sm text-[var(--text-primary)] transition hover:bg-white/5"
+                  >
+                    Open replay
+                  </Link>
+                ) : null}
               </div>
             </div>
 

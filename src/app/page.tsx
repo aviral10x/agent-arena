@@ -7,15 +7,42 @@ import {
 } from "@/components/arena/ui";
 import {
   chainStats,
-  competitions,
   featureRail,
   roadmap,
 } from "@/lib/arena-data";
 import { CompetitionCard } from "@/components/arena/competition-card";
 import { SiteChrome } from "@/components/arena/site-chrome";
+import { prisma } from "@/lib/db";
+import type { Competition } from "@/lib/arena-data";
 
-export default function Home() {
-  const spotlight = competitions.slice(0, 2);
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const compRecords = await prisma.competition.findMany({
+    take: 2,
+    orderBy: { createdAt: "desc" },
+    include: {
+      agents: {
+        include: { agent: true },
+        orderBy: { score: "desc" },
+      },
+    },
+  });
+
+  const spotlight: Competition[] = compRecords.map((comp) => ({
+    ...comp,
+    mode: comp.mode as any,
+    status: comp.status as any,
+    agents: comp.agents.map((ca: any) => ({
+      ...ca.agent,
+      traits: JSON.parse(ca.agent.traits),
+      risk: ca.agent.risk,
+      pnl: ca.pnl,
+      trades: ca.trades,
+      portfolio: ca.portfolio,
+      score: ca.score,
+    })),
+  }));
 
   return (
     <SiteChrome activeHref="/">

@@ -1,12 +1,40 @@
 import Link from "next/link";
-import { CompetitionCard } from "@/components/arena/competition-card";
 import { ButtonLink, SectionIntro, Surface } from "@/components/arena/ui";
-import { competitions } from "@/lib/arena-data";
 import { SiteChrome } from "@/components/arena/site-chrome";
+import { CompetitionFilters } from "@/components/arena/competition-filters";
+import { prisma } from "@/lib/db";
+import type { Competition } from "@/lib/arena-data";
 
-const filters = ["All matches", "Live", "Open seats", "Settled"];
 
-export default function CompetitionsPage() {
+
+export const dynamic = "force-dynamic";
+
+export default async function CompetitionsPage() {
+  const comps = await prisma.competition.findMany({
+    include: {
+      agents: {
+        include: { agent: true },
+        orderBy: { score: "desc" },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const competitions: Competition[] = comps.map((comp: any) => ({
+    ...comp,
+    mode: comp.mode as "1v1" | "royale",
+    status: comp.status as "live" | "open" | "settled",
+    agents: comp.agents.map((ca: any) => ({
+      ...ca.agent,
+      traits: JSON.parse(ca.agent.traits),
+      risk: ca.agent.risk as any,
+      pnl: ca.pnl,
+      trades: ca.trades,
+      portfolio: ca.portfolio,
+      score: ca.score,
+    })),
+  }));
+
   const liveCount = competitions.filter((competition) => competition.status === "live").length;
   const openCount = competitions.filter((competition) => competition.status === "open").length;
 
@@ -63,23 +91,7 @@ export default function CompetitionsPage() {
             </div>
 
             <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-[rgba(255,255,255,0.04)] p-4">
-              <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                Browse modes
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {filters.map((filter, index) => (
-                  <span
-                    key={filter}
-                    className={`rounded-full px-4 py-2 text-sm ${
-                      index === 1
-                        ? "bg-[var(--cyan-soft)] text-white"
-                        : "border border-white/10 bg-white/5 text-[var(--text-secondary)]"
-                    }`}
-                  >
-                    {filter}
-                  </span>
-                ))}
-              </div>
+              <CompetitionFilters competitions={competitions} />
             </div>
           </Surface>
         </div>
@@ -94,11 +106,7 @@ export default function CompetitionsPage() {
               description="Cards are arranged to make the motion obvious: status, countdown, capital, and agent performance sit together so the screen can be understood at a glance."
             />
 
-            <div className="space-y-5">
-              {competitions.map((competition) => (
-                <CompetitionCard key={competition.id} competition={competition} />
-              ))}
-            </div>
+            <CompetitionFilters competitions={competitions} />
           </div>
 
           <div className="space-y-5">
