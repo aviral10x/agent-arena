@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+
 export interface TokenData {
   symbol: string;
   price: number;
@@ -27,79 +29,107 @@ function formatVolume(vol: number): string {
   return `$${vol.toFixed(0)}`;
 }
 
-// Use Binance public API — no auth, no geo-block
+// OKX REST API auth headers (required even for market data with API key)
+function getOKXHeaders(path: string, method = 'GET', body = '') {
+  const apiKey = process.env.OKX_API_KEY!;
+  const secretKey = process.env.OKX_SECRET_KEY!;
+  const passphrase = process.env.OKX_PASSPHRASE!;
+  const timestamp = new Date().toISOString();
+  const prehash = timestamp + method + path + body;
+  const sign = crypto.createHmac('sha256', secretKey).update(prehash).digest('base64');
+  return {
+    'OK-ACCESS-KEY': apiKey,
+    'OK-ACCESS-SIGN': sign,
+    'OK-ACCESS-TIMESTAMP': timestamp,
+    'OK-ACCESS-PASSPHRASE': passphrase,
+    'Content-Type': 'application/json',
+  };
+}
+
+// Symbols to track in the Arena
+const ARENA_SYMBOLS = ['BTC-USDT', 'ETH-USDT', 'SOL-USDT', 'OKB-USDT'];
+
 export async function getMarketContext(): Promise<MarketContext> {
   try {
-    // OKB not on Binance — use BNB as the "platform token" proxy, or fetch OKB from CoinGecko separately
-    const binanceSymbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"];
-    
-    const responses = await Promise.all(
-      binanceSymbols.map(sym =>
-        fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`, {
-          next: { revalidate: 15 },
-        }).then(r => r.json())
-      )
-    );
+    // OKX GET /api/v5/market/tickers?instType=SPOT — public endpoint, but signed for reliability
+    const path = '/api/v5/market/tickers?instType=SPOT';
+    const headers = getOKXHeaders(path);
 
-    // Remap BNB -> OKB for Arena display (same "exchange token" category)
-    const symbolMap: Record<string, string> = { BNB: "OKB" };
+    const res = await fetch(`https://www.okx.com${path}`, {
+      headers,
+      next: { revalidate: 15 },
+    });
+
+    if (!res.ok) throw new Error(`OKX market tickers error: ${res.status}`);
+    const json = await res.json();
+
+    if (json.code !== '0') throw new Error(`OKX API error: ${json.msg}`);
+
+    // Filter to our Arena symbols
+    const tickerMap: Record<string, any> = {};
+    for (const t of json.data) {
+      if (ARENA_SYMBOLS.includes(t.instId)) {
+        tickerMap[t.instId] = t;
+      }
+    }
 
     let totalChange = 0;
-    const tokens: TokenData[] = responses
-      .filter((ticker: any) => ticker.symbol && ticker.lastPrice)
-      .map((ticker: any) => {
-        const rawSymbol = ticker.symbol.replace("USDT", "");
-        const symbol = symbolMap[rawSymbol] ?? rawSymbol;
-        const price = parseFloat(ticker.lastPrice);
-        const change24h = parseFloat(ticker.priceChangePercent);
-        const volumeUsd = parseFloat(ticker.quoteVolume);
-        totalChange += change24h;
+    const tokens: TokenData[] = ARENA_SYMBOLS.map(instId => {
+      const t = tickerMap[instId];
+      const symbol = instId.replace('-USDT', '');
+      if (!t) return { symbol, price: 0, change24h: 0, volume24h: '$0', trend: 'flat' as const };
 
-        return {
-          symbol,
-          price,
-          change24h,
-          volume24h: formatVolume(volumeUsd),
-          trend: change24h > 2 ? "up" : change24h < -2 ? "down" : "flat",
-        };
-      });
+      const price = parseFloat(t.last);
+      const open24h = parseFloat(t.open24h);
+      const change24h = open24h > 0 ? ((price - open24h) / open24h) * 100 : 0;
+      const volumeUsd = parseFloat(t.volCcy24h) || parseFloat(t.vol24h) * price;
+
+      totalChange += change24h;
+
+      return {
+        symbol,
+        price,
+        change24h,
+        volume24h: formatVolume(volumeUsd),
+        trend: change24h > 2 ? 'up' : change24h < -2 ? 'down' : 'flat',
+      };
+    });
 
     const avgChange = totalChange / tokens.length;
-    const overallSentiment = avgChange > 1 ? "bullish" : avgChange < -1 ? "bearish" : "neutral";
+    const overallSentiment = avgChange > 1 ? 'bullish' : avgChange < -1 ? 'bearish' : 'neutral';
 
-    // Simulate whale movements based on real price action
+    // Derive whale movements from the biggest movers
     const bigMover = tokens.reduce((a, b) => Math.abs(a.change24h) > Math.abs(b.change24h) ? a : b);
     const whaleMovements: WhaleMovement[] = [
       {
-        wallet: "0x7a2...3f1c",
-        action: bigMover.change24h > 0 ? "BUY" : "SELL",
+        wallet: '0x7a2...3f1c',
+        action: bigMover.change24h > 0 ? 'BUY' : 'SELL',
         amount: `${(Math.random() * 2000 + 500).toFixed(0)} ${bigMover.symbol}`,
         token: bigMover.symbol,
-        timestamp: "1 min ago",
+        timestamp: '1 min ago',
       },
       {
-        wallet: "0x99f...8b1e",
-        action: avgChange > 0 ? "BUY" : "SELL",
+        wallet: '0x99f...8b1e',
+        action: avgChange > 0 ? 'BUY' : 'SELL',
         amount: `${(Math.random() * 300 + 50).toFixed(0)} ETH`,
-        token: "ETH",
-        timestamp: "3 mins ago",
+        token: 'ETH',
+        timestamp: '3 mins ago',
       },
     ];
 
-    console.log(`[Market] Live Binance data: BTC=$${tokens.find(t => t.symbol === "BTC")?.price.toFixed(0)}, sentiment=${overallSentiment}`);
+    console.log(`[Market] OKX live data: BTC=$${tokens.find(t => t.symbol === 'BTC')?.price.toFixed(0)}, sentiment=${overallSentiment}`);
 
     return { tokens, whaleMovements, overallSentiment };
 
   } catch (err) {
-    console.error("[Market] Binance fetch failed:", err);
-    // Last-resort static fallback — shouldn't hit this
+    console.error('[Market] OKX fetch failed:', err);
     return {
-      overallSentiment: "neutral",
+      overallSentiment: 'neutral',
       tokens: [
-        { symbol: "BTC", price: 70000, change24h: 0, volume24h: "$1B", trend: "flat" },
-        { symbol: "ETH", price: 3500, change24h: 0, volume24h: "$500M", trend: "flat" },
-        { symbol: "SOL", price: 150, change24h: 0, volume24h: "$200M", trend: "flat" },
-        { symbol: "OKB", price: 45, change24h: 0, volume24h: "$30M", trend: "flat" },
+        { symbol: 'BTC', price: 70000, change24h: 0, volume24h: '$1B', trend: 'flat' },
+        { symbol: 'ETH', price: 3500, change24h: 0, volume24h: '$500M', trend: 'flat' },
+        { symbol: 'SOL', price: 150, change24h: 0, volume24h: '$200M', trend: 'flat' },
+        { symbol: 'OKB', price: 45, change24h: 0, volume24h: '$30M', trend: 'flat' },
       ],
       whaleMovements: [],
     };
