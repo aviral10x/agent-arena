@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+
+// Global SSE connection counter per competition — prevents runaway memory on viral traffic
+const sseConnections = new Map<string, number>();
+const MAX_SSE_PER_COMP = 200; // ~200 concurrent spectators per match
 
 // SSE: push competition state + recent trades every time something changes.
 // Client connects once; server polls DB and pushes diffs.
@@ -10,6 +13,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // SSE connection cap
+  const current = sseConnections.get(id) ?? 0;
+  if (current >= MAX_SSE_PER_COMP) {
+    return new Response(JSON.stringify({ error: 'Too many spectators — try again shortly' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': '5' },
+    });
+  }
+  sseConnections.set(id, current + 1);
 
   const encoder = new TextEncoder();
 
@@ -83,10 +96,21 @@ export async function GET(
             send('settled', { winnerId: comp.winnerId });
             closed = true;
             controller.close();
+            // Decrement connection counter on close
+            const c = sseConnections.get(id) ?? 1;
+            if (c <= 1) sseConnections.delete(id);
+            else sseConnections.set(id, c - 1);
           }
         } catch (err) {
           console.error('[SSE] stream error:', err);
         }
+      };
+
+      const cleanup = () => {
+        closed = true;
+        const c = sseConnections.get(id) ?? 1;
+        if (c <= 1) sseConnections.delete(id);
+        else sseConnections.set(id, c - 1);
       };
 
       // Initial push immediately, then every 5s
@@ -99,7 +123,7 @@ export async function GET(
       // Keep-alive heartbeat every 20s
       const heartbeat = setInterval(() => {
         if (closed) { clearInterval(heartbeat); return; }
-        try { controller.enqueue(encoder.encode(': ping\n\n')); } catch { closed = true; }
+        try { controller.enqueue(encoder.encode(': ping\n\n')); } catch { cleanup(); }
       }, 20_000);
     },
   });

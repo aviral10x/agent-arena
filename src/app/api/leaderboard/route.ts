@@ -13,7 +13,6 @@ export async function GET(req: Request) {
     where:   { totalCompetitions: { gte: 1 } },
     include: {
       agent: {
-        select: { id: true, name: true, color: true, archetype: true, risk: true, wallet: true },
         include: { card: true },
       },
     },

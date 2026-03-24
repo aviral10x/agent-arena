@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { createAgenticWallet } from '@/lib/okx-os';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +19,24 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const limited = checkRateLimit(request, 20, 60_000); // 20 agent creates/min
+  if (limited) return limited;
+
   try {
     const body = await request.json();
-    const bankroll = parseFloat(body.bankroll ?? '10');
+
+    // Input validation
+    if (!body.name || typeof body.name !== 'string' || body.name.trim().length < 2) {
+      return NextResponse.json({ error: 'Agent name must be at least 2 characters' }, { status: 400 });
+    }
+    if (body.name.length > 64) {
+      return NextResponse.json({ error: 'Agent name too long (max 64 chars)' }, { status: 400 });
+    }
+    if (!body.archetype || !body.strategy || !body.risk) {
+      return NextResponse.json({ error: 'archetype, strategy, and risk are required' }, { status: 400 });
+    }
+
+    const bankroll = Math.min(100, Math.max(1, parseFloat(body.bankroll ?? '10')));
 
     const agent = await prisma.agent.create({
       data: {

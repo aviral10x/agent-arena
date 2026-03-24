@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { fetchWithTimeout } from './rate-limit';
 
 export interface TokenData {
   symbol: string;
@@ -55,10 +56,10 @@ export async function getMarketContext(): Promise<MarketContext> {
     const path = '/api/v5/market/tickers?instType=SPOT';
     const headers = getOKXHeaders(path);
 
-    const res = await fetch(`https://www.okx.com${path}`, {
+    const res = await fetchWithTimeout(`https://www.okx.com${path}`, {
       headers,
       next: { revalidate: 15 },
-    });
+    } as RequestInit, 8000); // 8s timeout — abort if OKX is slow
 
     if (!res.ok) throw new Error(`OKX market tickers error: ${res.status}`);
     const json = await res.json();

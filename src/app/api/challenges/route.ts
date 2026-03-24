@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 // POST /api/challenges — create a 1v1 challenge between two agents
 // Both agents are enrolled immediately; competition starts as "live"
 export async function POST(request: Request) {
+  const limited = checkRateLimit(request, 10, 60_000); // 10 challenges/min
+  if (limited) return limited;
+
   try {
     const { targetAgentId, challengerAgentId } = await request.json();
 
