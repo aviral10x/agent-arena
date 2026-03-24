@@ -7,6 +7,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ─── Core: Agent ──────────────────────────────────────────────────────────────
 model Agent {
   id          String   @id @default(cuid())
   name        String
@@ -19,15 +20,20 @@ model Agent {
   wallet      String   @default("0x000...0000")
   bio         String   @default("")
   traits      String   @default("[]")
-  walletKey   String?  // encrypted private key for on-chain execution (null = simulated mode)
+  walletKey   String?  // encrypted private key for on-chain execution
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  competitions CompetitionAgent[]
-  trades       Trade[]
-  signals      Signal[]           // Phase 6: signal marketplace
+  competitions    CompetitionAgent[]
+  trades          Trade[]
+  signals         Signal[]
+  stats           AgentStats?         // Phase 1: global career stats
+  card            AgentCard?          // Phase 1: visual identity
+  tournamentSlots TournamentSlot[]    // Phase 1: tournament enrollments
+  spectatorBets   SpectatorBet[]      // Phase 1: bets placed by agent owner
 }
 
+// ─── Core: Competition ────────────────────────────────────────────────────────
 model Competition {
   id              String    @id @default(cuid())
   title           String
@@ -45,16 +51,23 @@ model Competition {
   winnerId        String?
   startedAt       DateTime?
   isTicking       Boolean   @default(false)
-  // Phase 6: matchmaking — who issued the challenge
-  challengerId    String?   // agentId of the challenger (matchmaking)
+  challengerId    String?
+  // Phase 1: tournament linkage
+  tournamentId    String?
+  bettingOpen     Boolean   @default(false) // Phase 1: spectator betting window
+  bettingClosedAt DateTime?
+  totalBetUsdc    Float     @default(0)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  agents   CompetitionAgent[]
-  trades   Trade[]
-  signals  Signal[]           // Phase 6
+  agents        CompetitionAgent[]
+  trades        Trade[]
+  signals       Signal[]
+  tournament    Tournament?     @relation(fields: [tournamentId], references: [id])
+  bets          SpectatorBet[]  // Phase 1
 }
 
+// ─── Core: CompetitionAgent ───────────────────────────────────────────────────
 model CompetitionAgent {
   id                String  @id @default(cuid())
   competitionId     String
@@ -72,6 +85,7 @@ model CompetitionAgent {
   @@unique([competitionId, agentId])
 }
 
+// ─── Core: Trade ──────────────────────────────────────────────────────────────
 model Trade {
   id            String   @id @default(cuid())
   competitionId String
@@ -88,34 +102,199 @@ model Trade {
   agent        Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
 }
 
-// Phase 6: x402 access grants — server-side record of paid access
+// ─── Core: AccessGrant ───────────────────────────────────────────────────────
 model AccessGrant {
   id            String   @id @default(cuid())
   walletAddress String
-  resourceType  String   // "leaderboard" | "replay" | "signal"
-  resourceId    String   // competitionId or signalId
-  txSignature   String   // EIP-3009 signature used (prevents replay)
+  resourceType  String
+  resourceId    String
+  txSignature   String
   amountUsd     Float
   grantedAt     DateTime @default(now())
-  expiresAt     DateTime // access TTL
+  expiresAt     DateTime
 
   @@unique([walletAddress, resourceType, resourceId])
   @@index([walletAddress, resourceType])
 }
 
-// Phase 6: signal marketplace
+// ─── Core: Signal ─────────────────────────────────────────────────────────────
 model Signal {
   id            String   @id @default(cuid())
   agentId       String
   competitionId String
-  tradeType     String   // "BUY" | "SELL"
+  tradeType     String
   pair          String
   rationale     String
   priceAtSignal Float    @default(0)
-  priceUsd      Float    @default(1)   // cost to unlock in USDC
+  priceUsd      Float    @default(1)
   unlockCount   Int      @default(0)
   createdAt     DateTime @default(now())
 
   agent        Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
   competition  Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 1 — VIRAL GROWTH FOUNDATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── AgentCard: visual identity + career summary ─────────────────────────────
+// Generated once on first competition win, updated on settle.
+// Powers OG share images and agent profile cards.
+model AgentCard {
+  id          String   @id @default(cuid())
+  agentId     String   @unique
+  tagline     String   @default("") // auto-generated from strategy e.g. "Momentum hunter"
+  avatarUrl   String?  // generated avatar image URL (optional, Phase 2)
+  bgGradient  String   @default("") // CSS gradient string for card background
+  accentColor String   @default("#66e3ff")
+
+  // Career stats (denormalized for fast OG image generation)
+  totalPnlPct      Float @default(0)   // lifetime PnL %
+  totalWins        Int   @default(0)
+  totalLosses      Int   @default(0)
+  totalCompetitions Int  @default(0)
+  bestWinPct       Float @default(0)   // best single competition PnL %
+  currentStreak    Int   @default(0)   // positive = win streak, negative = loss streak
+  longestWinStreak Int   @default(0)
+
+  // Last 5 results for the dots display: "W,W,L,W,W"
+  recentResults    String @default("") // comma-separated "W"/"L"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+// ─── AgentStats: global leaderboard data ─────────────────────────────────────
+// One row per agent, updated atomically on every competition settle.
+// The source of truth for the global leaderboard.
+model AgentStats {
+  id          String   @id @default(cuid())
+  agentId     String   @unique
+
+  // Performance
+  totalPnlPct      Float @default(0)
+  winRate          Float @default(0)   // 0.0–1.0
+  totalWins        Int   @default(0)
+  totalLosses      Int   @default(0)
+  totalCompetitions Int  @default(0)
+  totalTradesPlaced Int  @default(0)
+  bestWinPct       Float @default(0)
+  worstLossPct     Float @default(0)
+  avgPnlPct        Float @default(0)
+
+  // Streaks
+  currentStreak    Int   @default(0)  // +N = win streak, -N = loss streak
+  longestWinStreak Int   @default(0)
+
+  // Leaderboard rank (recalculated on settle)
+  rankAllTime      Int   @default(0)  // 1 = best
+  rankThisWeek     Int   @default(0)
+  rankDelta        Int   @default(0)  // +2 = climbed 2 spots since last week
+
+  // Earnings
+  totalPrizeUsdc   Float @default(0)  // total USDC won from competitions
+  totalSignalRevenue Float @default(0) // USDC earned from signal marketplace
+
+  updatedAt DateTime @updatedAt
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+// ─── Tournament ───────────────────────────────────────────────────────────────
+// Weekly/monthly structured events with brackets and prize pools.
+model Tournament {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @default("")
+  mode        String   // "1v1_ladder" | "royale" | "grand_prix"
+  status      String   // "upcoming" | "enrolling" | "live" | "settled"
+
+  // Schedule
+  enrollmentOpensAt DateTime
+  startAt           DateTime
+  endAt             DateTime?
+
+  // Economics
+  entryFeeUsdc  Float   @default(1)
+  prizePoolUsdc Float   @default(100)
+  rake          Float   @default(0.10) // 10% platform fee
+  maxAgents     Int     @default(8)
+  currentAgents Int     @default(0)
+
+  // Result
+  winnerId        String?  // agentId of winner
+  winnerPrizeUsdc Float    @default(0)
+
+  // Metadata
+  isRecurring   Boolean  @default(false) // auto-recreated (e.g. Friday Royale)
+  recurringTag  String?  // e.g. "friday-royale" for cron identification
+  featuredImage String?  // URL for tournament card image
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  slots        TournamentSlot[]
+  competitions Competition[]    // competitions generated for this tournament
+}
+
+// ─── TournamentSlot: agent enrollment in a tournament ────────────────────────
+model TournamentSlot {
+  id           String   @id @default(cuid())
+  tournamentId String
+  agentId      String
+
+  // Payment
+  entryPaid     Boolean  @default(false)
+  entryTxSig    String?  // EIP-3009 signature used to pay
+  entryPaidAt   DateTime?
+
+  // Result
+  finalRank          Int?   // 1 = winner
+  prizeUsdc          Float  @default(0)
+  prizeClaimed       Boolean @default(false)
+  prizeClaimedTxHash String?
+
+  // Stats snapshot at tournament end
+  totalPnlPct  Float @default(0)
+  totalTrades  Int   @default(0)
+
+  enrolledAt DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  agent      Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, agentId])
+}
+
+// ─── SpectatorBet: bet on a competition outcome ───────────────────────────────
+// Spectators pay x402 to predict which agent wins.
+// Correct bettors split 90% of total bet pool. Platform keeps 10%.
+model SpectatorBet {
+  id            String   @id @default(cuid())
+  competitionId String
+  betterWallet  String   // wallet address of the bettor
+  betterAgentId String?  // optional: agentId if the bettor is also an agent owner
+
+  // Prediction
+  predictedWinnerId String  // agentId they're betting on
+
+  // Payment (x402)
+  amountUsdc    Float
+  txSignature   String  // EIP-3009 sig — replay protection
+  paidAt        DateTime @default(now())
+
+  // Settlement
+  isCorrect     Boolean?  // null until settled
+  payoutUsdc    Float     @default(0)
+  claimed       Boolean   @default(false)
+  claimedTxHash String?
+  settledAt     DateTime?
+
+  competition  Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  betterAgent  Agent?      @relation(fields: [betterAgentId], references: [id])
+
+  @@index([competitionId])
+  @@index([betterWallet])
 }

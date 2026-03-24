@@ -3,6 +3,8 @@ import { getMarketContext } from './market-data';
 import { executeAgentTurn, executeRealTrade } from './agent-runner';
 import { getDexRoute } from './okx-os';
 import { getSwapQuote } from './okx-swap';
+import { onCompetitionSettle } from './stats';
+import { settleBets } from './betting';
 
 // FIX 1.3: relative timestamp from actual DB timestamp
 export function timeAgo(date: Date): string {
@@ -175,11 +177,24 @@ export async function settleCompetition(competitionId: string) {
   await prisma.competition.update({
     where: { id: competitionId },
     data: {
-      status:   'settled',
-      winnerId: winner?.agentId ?? null,
+      status:    'settled',
+      winnerId:  winner?.agentId ?? null,
       isTicking: false,
+      bettingOpen: false,
     }
   });
 
   console.log(`[settle] Competition ${competitionId} settled. Winner: ${winner?.agent?.name}`);
+
+  // Update global stats + agent cards + leaderboard ranks
+  await onCompetitionSettle(competitionId).catch(e =>
+    console.error('[settle] stats update failed:', e.message)
+  );
+
+  // Settle spectator bets
+  if (winner?.agentId) {
+    await settleBets(competitionId, winner.agentId).catch(e =>
+      console.error('[settle] bet settlement failed:', e.message)
+    );
+  }
 }

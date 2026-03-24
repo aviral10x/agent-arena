@@ -6,6 +6,7 @@ import { Surface, StatusPill, ButtonLink } from "@/components/arena/ui";
 import { featureRail } from "@/lib/arena-data";
 import { LiveCountdown } from "@/components/arena/competition-filters";
 import { X402ButtonClient } from "@/components/arena/x402-btn-client";
+import { ShareButton } from "@/components/arena/share-button";
 import { prisma } from "@/lib/db";
 import type { Competition } from "@/lib/arena-data";
 
@@ -14,6 +15,20 @@ export const dynamic = "force-dynamic";
 type PageProps = {
   params: Promise<{ id: string }>;
 };
+
+export async function generateMetadata(props: PageProps) {
+  const { id } = await props.params;
+  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://agentarena.xyz';
+  return {
+    openGraph: {
+      images: [`${base}/api/og/competition/${id}`],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: [`${base}/api/og/competition/${id}`],
+    },
+  };
+}
 
 export default async function CompetitionPage(props: PageProps) {
   const { id } = await props.params;
@@ -132,12 +147,19 @@ export default async function CompetitionPage(props: PageProps) {
                     amount={5}
                   />
                 ) : competition.status === "settled" ? (
-                  <Link
-                    href={`/competitions/${competition.id}/replay`}
-                    className="rounded-full border border-white/10 px-5 py-3 text-sm text-[var(--text-primary)] transition hover:bg-white/5"
-                  >
-                    Open replay
-                  </Link>
+                  <>
+                    <Link
+                      href={`/competitions/${competition.id}/replay`}
+                      className="rounded-full border border-white/10 px-5 py-3 text-sm text-[var(--text-primary)] transition hover:bg-white/5"
+                    >
+                      Open replay
+                    </Link>
+                    <ShareButton
+                      url={`${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://agentarena.xyz'}/competitions/${competition.id}`}
+                      text={`AI agents just battled on @AgentArenaXYZ — "${competition.title}". Watch the replay 👇`}
+                      label="Share result"
+                    />
+                  </>
                 ) : null}
               </div>
             </div>

@@ -14,6 +14,8 @@ export default async function AgentsPage() {
         orderBy: { competition: { createdAt: "desc" } },
         take: 1,
       },
+      stats: true,
+      card: true,
     },
   });
 
@@ -85,7 +87,12 @@ export default async function AgentsPage() {
                   </div>
                   <div className="shrink-0 text-right">
                     <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Win rate</div>
-                    <div className="font-mono text-sm text-white">{agent.winRate}</div>
+                    <div className="font-mono text-sm text-white">
+                      {agent.stats ? `${(agent.stats.winRate * 100).toFixed(0)}%` : agent.winRate}
+                    </div>
+                    {agent.stats?.rankAllTime > 0 && (
+                      <div className="text-[10px] text-[var(--text-muted)]">#{agent.stats.rankAllTime}</div>
+                    )}
                   </div>
                 </div>
 

@@ -14,6 +14,8 @@ const navigation = [
   { href: "/",             label: "Overview"     },
   { href: "/competitions", label: "Competitions" },
   { href: "/challenges",   label: "Challenge"    },
+  { href: "/tournaments",  label: "Tournaments"  },
+  { href: "/leaderboard",  label: "Leaderboard"  },
   { href: "/signals",      label: "Signals"      },
   { href: "/agents",       label: "Agents"       },
   { href: "/agents/create",label: "Build Agent"  },
