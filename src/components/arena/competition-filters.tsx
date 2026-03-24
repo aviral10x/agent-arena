@@ -71,57 +71,69 @@ export function CompetitionFilters({
   );
 }
 
+// FIX 5.1: real countdown derived from startedAt + durationSeconds instead of
+// parsing a static string that never updates.
 export function LiveCountdown({
   targetText,
   status,
+  startedAt,
+  durationSeconds,
 }: {
   targetText: string;
   status: Competition["status"];
+  startedAt?: string | null;    // ISO string from DB
+  durationSeconds?: number;
 }) {
-  const [seconds, setSeconds] = useState(() => parseCountdown(targetText));
   const [mounted, setMounted] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+
+  // Compute initial seconds remaining
+  const computeRemaining = () => {
+    if (startedAt && durationSeconds) {
+      const elapsed = (Date.now() - new Date(startedAt).getTime()) / 1000;
+      return Math.max(0, Math.round(durationSeconds - elapsed));
+    }
+    // Fallback: parse the static string
+    return parseCountdown(targetText);
+  };
 
   useEffect(() => {
     setMounted(true);
+    setSeconds(computeRemaining());
   }, []);
 
   useEffect(() => {
-    if (status !== "live" || seconds <= 0) return;
-
+    if (!mounted || status !== "live") return;
+    // Re-sync every second
     const interval = setInterval(() => {
-      setSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+      setSeconds(computeRemaining());
     }, 1000);
-
     return () => clearInterval(interval);
-  }, [status, seconds > 0]);
+  }, [mounted, status, startedAt, durationSeconds]);
 
   if (!mounted) {
-    return <div className="mt-2 font-mono text-lg text-white">{targetText}</div>;
+    return <span className="font-mono text-lg text-white">{targetText}</span>;
   }
 
   if (status === "settled") {
-    return (
-      <div className="mt-2 font-mono text-lg text-[var(--text-secondary)]">
-        {targetText}
-      </div>
-    );
+    return <span className="font-mono text-lg text-[var(--text-secondary)]">Settled</span>;
   }
 
   if (status === "open") {
-    return (
-      <div className="mt-2 font-mono text-lg text-[var(--gold)]">
-        {targetText}
-      </div>
-    );
+    return <span className="font-mono text-lg text-[var(--gold)]">{targetText}</span>;
+  }
+
+  if (seconds <= 0) {
+    return <span className="font-mono text-lg text-[var(--red)]">Settling…</span>;
   }
 
   return (
-    <div className="mt-2 font-mono text-lg text-white">
+    <span className="font-mono text-lg text-white">
       {formatTime(seconds)}
       <span className="ml-2 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
         remaining
       </span>
-    </div>
+    </span>
   );
 }
 

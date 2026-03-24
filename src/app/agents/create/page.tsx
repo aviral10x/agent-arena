@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SiteChrome } from "@/components/arena/site-chrome";
-import { AgentBuilderPanel } from "@/components/arena/agent-panels";
+import { AgentBuilderLazy as AgentBuilderPanel } from "@/components/arena/agent-builder-wrapper";
 import { Surface, ButtonLink } from "@/components/arena/ui";
 import { roadmap } from "@/lib/arena-data";
 

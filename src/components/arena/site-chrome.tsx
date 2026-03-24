@@ -8,6 +8,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 const navigation = [
   { href: "/", label: "Overview" },
   { href: "/competitions", label: "Competitions" },
+  { href: "/agents", label: "Agents" },
   { href: "/agents/create", label: "Build Agent" },
 ];
 

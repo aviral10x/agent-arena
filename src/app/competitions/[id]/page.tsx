@@ -104,7 +104,12 @@ export default async function CompetitionPage(props: PageProps) {
                     </div>
                     <div className="mt-2 font-mono text-lg text-white">
                       {label === "Countdown" ? (
-                        <LiveCountdown targetText={value} status={competition.status} />
+                        <LiveCountdown
+                          targetText={value}
+                          status={competition.status}
+                          startedAt={(compRecord as any).startedAt?.toISOString()}
+                          durationSeconds={(compRecord as any).durationSeconds}
+                        />
                       ) : (
                         value
                       )}

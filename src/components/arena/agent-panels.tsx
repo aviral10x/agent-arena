@@ -1,7 +1,15 @@
 "use client";
 
-import { useState, useCallback, type FormEvent } from "react";
+import { useState, useCallback, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useAccount } from "wagmi";
+import dynamic from "next/dynamic";
+
+// Lazy-load ConnectButton to avoid SSR crash (RainbowKit calls useConfig at import time)
+const ConnectButton = dynamic(
+  () => import("@rainbow-me/rainbowkit").then(m => ({ default: m.ConnectButton })),
+  { ssr: false }
+);
 import type { AgentProfile } from "@/lib/arena-data";
 
 const STRATEGY_TEMPLATES = [
@@ -57,6 +65,12 @@ type AgentFormState = {
 
 export function AgentBuilderPanel() {
   const router = useRouter();
+  const { isConnected } = useAccount();
+
+  // Avoid SSR mismatch — wagmi isConnected is always false on server
+  const [clientMounted, setClientMounted] = useState(false);
+  useEffect(() => { setClientMounted(true); }, []);
+
   const [form, setForm] = useState<AgentFormState>({
     name: "",
     strategy: "momentum",
@@ -180,6 +194,24 @@ export function AgentBuilderPanel() {
             ))}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // FIX 5.2: show wallet connect prompt if not connected (skip on SSR)
+  if (clientMounted && !isConnected) {
+    return (
+      <div className="glass-panel rounded-[1.6rem] p-8 flex flex-col items-center gap-5 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/5 text-3xl">
+          🔗
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-white">Connect your wallet</h3>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+            You need an X Layer wallet to deploy an agent and pay the x402 entry fee.
+          </p>
+        </div>
+        <ConnectButton />
       </div>
     );
   }
