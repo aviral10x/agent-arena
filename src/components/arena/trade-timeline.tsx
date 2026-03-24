@@ -1,5 +1,14 @@
 import type { TradeEvent } from "@/lib/arena-data";
 
+// FIX 1.3: compute relative time from real timestamp field
+function timeAgo(ts: string | Date | undefined): string {
+  if (!ts) return "just now";
+  const secs = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (secs < 60) return `${secs}s ago`;
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  return `${Math.floor(secs / 3600)}h ago`;
+}
+
 export function TradeTimeline({
   trades,
   title = "Trade timeline",
@@ -12,6 +21,15 @@ export function TradeTimeline({
       <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
         {title}
       </div>
+
+      {/* FIX 4.4: empty state */}
+      {trades.length === 0 && (
+        <div className="mt-10 flex flex-col items-center gap-3 pb-6 text-center">
+          <div className="h-8 w-8 animate-pulse rounded-full bg-white/10" />
+          <p className="text-sm text-[var(--text-muted)]">Waiting for first trade…</p>
+        </div>
+      )}
+
       <div className="mt-5 space-y-3">
         {trades.map((trade, index) => (
           <div
@@ -46,8 +64,9 @@ export function TradeTimeline({
 
               <div className="shrink-0 text-right">
                 <div className="font-mono text-sm text-white">{trade.priceImpact}</div>
+                {/* FIX 1.3: use real timestamp, not hardcoded "Just now" */}
                 <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--text-muted)] text-right">
-                  {trade.time}
+                  {timeAgo((trade as any).timestamp ?? undefined)}
                 </div>
               </div>
             </div>

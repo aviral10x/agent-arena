@@ -106,7 +106,7 @@ export default async function CompetitionsPage() {
               description="Cards are arranged to make the motion obvious: status, countdown, capital, and agent performance sit together so the screen can be understood at a glance."
             />
 
-            <CompetitionFilters competitions={competitions} />
+            {/* FIX 4.6: removed duplicate CompetitionFilters — already rendered in hero above */}
           </div>
 
           <div className="space-y-5">

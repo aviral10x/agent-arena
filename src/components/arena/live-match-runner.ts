@@ -1,34 +1,48 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
-export function LiveMatchRunner({ competitionId, isLive }: { competitionId: string; isLive: boolean }) {
-  const mounted = useRef(false);
+const CRON_SECRET = process.env.NEXT_PUBLIC_CRON_SECRET ?? '';
+const TICK_INTERVAL_MS = 10_000;
+
+export function LiveMatchRunner({
+  competitionId,
+  isLive,
+}: {
+  competitionId: string;
+  isLive: boolean; // FIX 2.4: driven from SWR-refreshed status in LiveMatchWrapper
+}) {
+  const mounted   = useRef(false);
+  const tickingRef = useRef(false);
 
   useEffect(() => {
-    if (!isLive) return;
+    if (!isLive) return; // FIX 2.3: stop immediately when status is no longer live
+
     mounted.current = true;
 
     const tick = async () => {
-      if (!mounted.current) return;
+      if (!mounted.current || tickingRef.current) return;
+      tickingRef.current = true;
       try {
-        await fetch(`/api/competitions/${competitionId}/tick`, { method: "POST" });
+        await fetch(`/api/competitions/${competitionId}/tick`, {
+          method:  'POST',
+          headers: CRON_SECRET ? { 'x-cron-secret': CRON_SECRET } : {},
+        });
       } catch (err) {
-        console.error("Tick failed", err);
+        console.error('Tick failed', err);
+      } finally {
+        tickingRef.current = false;
       }
     };
 
-    // Run a tick every 10 seconds to simulate real-time AI trading
-    const interval = setInterval(tick, 10000);
-    
-    // Initial kick to get trades flowing immediately on load
-    tick();
+    const interval = setInterval(tick, TICK_INTERVAL_MS);
+    tick(); // immediate first tick
 
     return () => {
       mounted.current = false;
       clearInterval(interval);
     };
-  }, [competitionId, isLive]);
+  }, [competitionId, isLive]); // re-run if isLive changes
 
-  return null; // Invisible driver component
+  return null;
 }

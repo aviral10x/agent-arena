@@ -40,16 +40,19 @@ export default async function CompetitionPage(props: PageProps) {
 
   const competition: Competition = {
     ...compRecord,
-    mode: compRecord.mode as any,
+    mode:   compRecord.mode as any,
     status: compRecord.status as any,
+    // FIX 1.2: derive display string from raw volumeUsd
+    volume: `$${((compRecord as any).volumeUsd / 1000).toFixed(1)}k`,
     agents: compRecord.agents.map((ca: any) => ({
       ...ca.agent,
-      traits: JSON.parse(ca.agent.traits),
-      risk: ca.agent.risk,
-      pnl: ca.pnl,
-      trades: ca.trades,
+      traits:    JSON.parse(ca.agent.traits),
+      risk:      ca.agent.risk,
+      pnl:       ca.pnl,
+      pnlPct:    ca.pnlPct,
+      trades:    ca.trades,
       portfolio: ca.portfolio,
-      score: ca.score,
+      score:     ca.score,
     })),
   };
 

@@ -1,7 +1,8 @@
 import type { AgentStanding } from "@/lib/arena-data";
 
-function formatPnl(value: number) {
-  return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+// FIX 1.1: format pnlPct (%), not raw pnl ($)
+function formatPnl(pct: number) {
+  return `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`;
 }
 
 function pnlColor(value: number) {
@@ -11,7 +12,8 @@ function pnlColor(value: number) {
 }
 
 export function LiveLeaderboard({ agents }: { agents: AgentStanding[] }) {
-  const sorted = [...agents].sort((left, right) => right.pnl - left.pnl);
+  const sorted = [...agents].sort((left, right) => right.portfolio - left.portfolio);
+  // FIX 1.4: dynamic max — no hardcoded 120
   const maxScore = Math.max(...sorted.map((agent) => agent.score), 1);
 
   return (
@@ -54,8 +56,9 @@ export function LiveLeaderboard({ agents }: { agents: AgentStanding[] }) {
                   <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
                     PnL
                   </div>
-                  <div className="mt-0.5 font-mono text-base" style={{ color: pnlColor(agent.pnl) }}>
-                    {formatPnl(agent.pnl)}
+                  {/* FIX 1.1: show pnlPct (%) — fall back to pnl if pnlPct not available */}
+                  <div className="mt-0.5 font-mono text-base" style={{ color: pnlColor((agent as any).pnlPct ?? agent.pnl) }}>
+                    {formatPnl((agent as any).pnlPct ?? agent.pnl)}
                   </div>
                 </div>
                 <div>
@@ -70,9 +73,10 @@ export function LiveLeaderboard({ agents }: { agents: AgentStanding[] }) {
             </div>
 
             <div className="mt-4">
+              {/* FIX 1.4: dynamic max, no hardcoded /120 */}
               <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                 <span>Composite score</span>
-                <span>{agent.score}/120</span>
+                <span>{agent.score}</span>
               </div>
               <div className="h-2 rounded-full bg-white/5">
                 <div

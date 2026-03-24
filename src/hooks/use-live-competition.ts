@@ -1,7 +1,10 @@
 import useSWR from 'swr';
 import type { Competition, TradeEvent } from '@/lib/arena-data';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+// FIX 4.5: align poll with tick interval — no point polling faster than ticks fire
+const POLL_INTERVAL_MS = 10_000;
 
 export function useLiveCompetition(initialCompetition: Competition, initialTrades: TradeEvent[]) {
   const isLive = initialCompetition.status === 'live';
@@ -11,21 +14,22 @@ export function useLiveCompetition(initialCompetition: Competition, initialTrade
     fetcher,
     {
       fallbackData: initialCompetition,
-      refreshInterval: isLive ? 3000 : 0,
+      refreshInterval: POLL_INTERVAL_MS,
     }
   );
 
   const { data: trades } = useSWR<TradeEvent[]>(
-    isLive ? `/api/competitions/${initialCompetition.id}/trades` : null,
+    // FIX 2.3: use live status from SWR data, not stale initial prop
+    competition?.status === 'live' ? `/api/competitions/${initialCompetition.id}/trades` : null,
     fetcher,
     {
       fallbackData: initialTrades,
-      refreshInterval: isLive ? 3000 : 0,
+      refreshInterval: POLL_INTERVAL_MS,
     }
   );
 
   return {
     competition: competition ?? initialCompetition,
-    trades: trades ?? initialTrades,
+    trades:      trades ?? initialTrades,
   };
 }

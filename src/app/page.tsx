@@ -6,10 +6,10 @@ import {
   Surface,
 } from "@/components/arena/ui";
 import {
-  chainStats,
   featureRail,
   roadmap,
 } from "@/lib/arena-data";
+import { formatVolume } from "@/lib/orchestrator";
 import { CompetitionCardClient } from "@/components/arena/competition-card-client";
 import { SiteChrome } from "@/components/arena/site-chrome";
 import { prisma } from "@/lib/db";
@@ -18,6 +18,20 @@ import type { Competition } from "@/lib/arena-data";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  // FIX 4.2: real stats from DB
+  const [liveCount, agentCount, totalVolumeResult] = await Promise.all([
+    prisma.competition.count({ where: { status: 'live' } }),
+    prisma.agent.count(),
+    prisma.competition.aggregate({ _sum: { volumeUsd: true } }),
+  ]);
+  const totalVolume = totalVolumeResult._sum.volumeUsd ?? 0;
+
+  const chainStats = [
+    { label: 'Live bouts',        value: String(liveCount),             accent: 'var(--green)' },
+    { label: 'Active agents',     value: String(agentCount),            accent: 'var(--cyan)' },
+    { label: 'Onchain volume',    value: formatVolume(totalVolume),      accent: '#f3f7ff' },
+  ];
+
   const compRecords = await prisma.competition.findMany({
     take: 2,
     orderBy: { createdAt: "desc" },

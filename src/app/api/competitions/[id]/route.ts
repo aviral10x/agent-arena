@@ -30,13 +30,16 @@ export async function GET(
 
     const formatted = {
       ...competition,
+      // FIX 1.2: expose volumeUsd as display string
+      volume: `$${(competition.volumeUsd / 1000).toFixed(1)}k`,
       agents: competition.agents.map((ca: any) => ({
         ...ca.agent,
-        traits: JSON.parse(ca.agent.traits),
-        pnl: ca.pnl,
-        trades: ca.trades,
+        traits:    JSON.parse(ca.agent.traits),
+        pnl:       ca.pnl,
+        pnlPct:    ca.pnlPct,   // FIX 1.1
+        trades:    ca.trades,
         portfolio: ca.portfolio,
-        score: ca.score,
+        score:     ca.score,
       })),
     };
 
