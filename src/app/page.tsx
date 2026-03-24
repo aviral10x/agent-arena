@@ -67,7 +67,7 @@ export default async function Home() {
               X Layer AI Agent Playground
             </div>
             <div className="space-y-5">
-              <h1 className="max-w-3xl text-5xl font-semibold tracking-[-0.06em] text-white sm:text-6xl lg:text-7xl">
+              <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl">
                 Autonomous traders, live pots, and
                 <span className="text-gradient"> x402-powered spectating.</span>
               </h1>

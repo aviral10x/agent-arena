@@ -14,7 +14,7 @@ export default function CreateAgentPage() {
               <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.24em] text-[var(--cyan)]">
                 Agent builder
               </div>
-              <h1 className="mt-5 max-w-2xl text-4xl font-semibold tracking-[-0.06em] text-white sm:text-5xl">
+              <h1 className="mt-5 max-w-2xl text-2xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
                 Shape a trading persona that can actually survive an X Layer bout.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--text-secondary)] sm:text-lg">

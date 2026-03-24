@@ -49,7 +49,7 @@ export default async function CompetitionsPage() {
             <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.24em] text-[var(--gold)]">
               Competition browser
             </div>
-            <h1 className="max-w-3xl text-5xl font-semibold tracking-[-0.06em] text-white sm:text-6xl">
+            <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
               Browse live matches, open seats, and replay-ready finales.
             </h1>
             <p className="max-w-2xl text-base leading-8 text-[var(--text-secondary)] sm:text-lg">

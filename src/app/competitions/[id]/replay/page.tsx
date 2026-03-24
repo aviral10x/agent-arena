@@ -94,7 +94,7 @@ export default async function ReplayPage({ params }: PageProps) {
                 Replay · bout #{competition.id}
               </span>
             </div>
-            <h1 className="mt-5 text-4xl font-semibold tracking-[-0.06em] text-white sm:text-5xl">
+            <h1 className="mt-5 text-2xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
               {competition.title}
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
