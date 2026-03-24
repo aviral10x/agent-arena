@@ -20,6 +20,8 @@ import { getSwapQuote, executeSwap, getOnChainBalance, TOKENS } from '@/lib/okx-
 import {
   getAavePosition, aaveSupply, aaveWithdraw, aaveBorrow,
   getAllBalances, getProtocolStatus, PROTOCOLS, XLAYER_TOKENS,
+  smartQuote, smartSwap, getIZUMIQuote, executeIZUMISwap,
+  getOKXDexQuote, executeOKXSwap,
 } from '@/lib/defi-xlayer';
 
 export const dynamic = 'force-dynamic';
@@ -33,8 +35,37 @@ const err = (id: unknown, code: number, message: string) =>
 const TOOLS = [
   {
     name: 'get_protocols',
-    description: 'List all DeFi protocols live on X Layer with their addresses, types (dex/lending), and on-chain status.',
+    description: 'List all DeFi protocols live on X Layer: OKX DEX Aggregator, iZUMi Finance (Swap/Quoter/LiquidityManager), Aave V3. Includes addresses, types, and on-chain status.',
     inputSchema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'izumi_quote',
+    description: 'Get a swap quote directly from iZUMi Finance on-chain quoter (no API key needed). More reliable than OKX API for small amounts.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from_token:  { type: 'string', description: 'Token to sell: OKB | WOKB | USDC | USDT | WETH | WBTC' },
+        to_token:    { type: 'string', description: 'Token to buy:  OKB | WOKB | USDC | USDT | WETH | WBTC' },
+        amount_usd:  { type: 'number', description: 'USD value to swap' },
+      },
+      required: ['from_token', 'to_token', 'amount_usd'],
+    },
+  },
+  {
+    name: 'izumi_swap',
+    description: 'Execute a real swap directly via iZUMi Finance on X Layer (bypasses OKX API — useful when OKX API has liquidity issues).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from_token:     { type: 'string' },
+        to_token:       { type: 'string' },
+        amount_usd:     { type: 'number' },
+        competition_id: { type: 'string' },
+        rationale:      { type: 'string' },
+        dry_run:        { type: 'boolean' },
+      },
+      required: ['from_token', 'to_token', 'amount_usd', 'competition_id', 'rationale'],
+    },
   },
   {
     name: 'aave_supply',
@@ -158,20 +189,20 @@ async function handleGetMarket() {
 
 async function handleGetQuote(args: any) {
   const { from_token, to_token, amount_usd } = args;
-  if (!TOKENS[from_token]) throw new Error(`Unknown from_token: ${from_token}`);
-  if (!TOKENS[to_token])   throw new Error(`Unknown to_token: ${to_token}`);
+  if (!XLAYER_TOKENS[from_token] && !TOKENS[from_token]) throw new Error(`Unknown from_token: ${from_token}`);
+  if (!XLAYER_TOKENS[to_token]   && !TOKENS[to_token])   throw new Error(`Unknown to_token: ${to_token}`);
   if (amount_usd <= 0)     throw new Error('amount_usd must be > 0');
 
-  const quote = await getSwapQuote(from_token, to_token, amount_usd, '0x0000000000000000000000000000000000000000');
+  // Use smart quote: OKX API first, iZUMi fallback
+  const quote = await smartQuote(from_token, to_token, amount_usd);
   return {
-    from_token:    quote.fromToken,
-    to_token:      quote.toToken,
-    from_amount:   quote.fromAmount,
-    to_amount:     quote.toAmount,
-    price_impact:  `${quote.priceImpact.toFixed(4)}%`,
-    route:         quote.dexPath,
-    router:        quote.routerAddress,
-    estimated_gas: quote.estimatedGas,
+    from_token:   quote.fromToken,
+    to_token:     quote.toToken,
+    from_amount:  quote.fromAmount,
+    to_amount:    quote.toAmount,
+    price_impact: `${quote.priceImpact.toFixed(4)}%`,
+    route:        quote.route,
+    source:       quote.source,
   };
 }
 
@@ -272,6 +303,56 @@ async function handleExecuteSwap(args: any, agent: any) {
     gas_used:      result.gasUsed ?? null,
     trade_recorded: true,
   };
+}
+
+async function handleIZUMIQuote(args: any) {
+  const q = await getIZUMIQuote(args.from_token, args.to_token, args.amount_usd);
+  return { ...q, price_impact: `${q.priceImpact.toFixed(4)}%` };
+}
+
+async function handleIZUMISwap(args: any, agent: any) {
+  const walletKey = (agent as any).walletKey;
+  if (!walletKey && !args.dry_run) throw new Error('Agent wallet not funded. Use dry_run: true.');
+
+  const result = await executeIZUMISwap(args.from_token, args.to_token, args.amount_usd, walletKey ?? '0x01', args.dry_run ?? !walletKey);
+  if (!result.success) throw new Error(result.error ?? 'iZUMi swap failed');
+
+  // Record to competition
+  await recordTradeToCompetition(args, agent, result);
+  return { success: true, txHash: result.txHash ?? null, dryRun: !!result.dryRun, route: result.route, toAmount: result.toAmount };
+}
+
+async function recordTradeToCompetition(args: any, agent: any, result: any) {
+  if (!args.competition_id) return;
+  const { prisma } = await import('@/lib/db');
+  const ca = await prisma.competitionAgent.findUnique({
+    where: { competitionId_agentId: { competitionId: args.competition_id, agentId: agent.id } },
+  });
+  if (!ca) return;
+  const pair = `${args.from_token} → ${args.to_token}`;
+  await prisma.$transaction([
+    prisma.trade.create({
+      data: {
+        competitionId: args.competition_id, agentId: agent.id,
+        type: args.from_token === 'USDC' || args.from_token === 'USDT' ? 'BUY' : 'SELL',
+        pair, amount: `${args.amount_usd.toFixed(2)} ${args.from_token}`, amountUsd: args.amount_usd,
+        rationale: args.rationale ?? 'MCP trade', priceImpact: `${(result.priceImpact ?? 0).toFixed(2)}%`,
+      },
+    }),
+    prisma.competitionAgent.update({
+      where: { id: ca.id }, data: { trades: ca.trades + 1 },
+    }),
+    prisma.competition.update({
+      where: { id: args.competition_id }, data: { volumeUsd: { increment: args.amount_usd } },
+    }),
+  ]).catch(() => {});
+  await prisma.signal.create({
+    data: {
+      agentId: agent.id, competitionId: args.competition_id,
+      tradeType: args.from_token === 'USDC' || args.from_token === 'USDT' ? 'BUY' : 'SELL',
+      pair, rationale: args.rationale ?? 'MCP trade', priceAtSignal: args.amount_usd, priceUsd: 1,
+    },
+  }).catch(() => {});
 }
 
 async function handleGetProtocols() {
@@ -422,6 +503,8 @@ export async function POST(req: Request) {
         case 'get_portfolio': result = await handleGetPortfolio(agent);            break;
         case 'get_positions': result = await handleGetPositions(args, agent);      break;
         case 'get_protocols': result = await handleGetProtocols();                 break;
+        case 'izumi_quote':   result = await handleIZUMIQuote(args);               break;
+        case 'izumi_swap':    result = await handleIZUMISwap(args, agent);         break;
         case 'aave_position': result = await handleAavePosition(agent);            break;
         case 'aave_supply':   result = await handleAaveSupply(args, agent);        break;
         case 'aave_withdraw': result = await handleAaveWithdraw(args, agent);      break;
