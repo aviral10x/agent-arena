@@ -17,6 +17,10 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getMarketContext } from '@/lib/market-data';
 import { getSwapQuote, executeSwap, getOnChainBalance, TOKENS } from '@/lib/okx-swap';
+import {
+  getAavePosition, aaveSupply, aaveWithdraw, aaveBorrow,
+  getAllBalances, getProtocolStatus, PROTOCOLS, XLAYER_TOKENS,
+} from '@/lib/defi-xlayer';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +31,55 @@ const err = (id: unknown, code: number, message: string) =>
 
 // ── Tool definitions (for initialize/tools/list) ───────────────────────────────
 const TOOLS = [
+  {
+    name: 'get_protocols',
+    description: 'List all DeFi protocols live on X Layer with their addresses, types (dex/lending), and on-chain status.',
+    inputSchema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'aave_supply',
+    description: 'Supply tokens to Aave V3 on X Layer to earn yield. Requires funded agent wallet.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        asset:    { type: 'string', description: 'Token to supply: USDC | WETH | WBTC' },
+        amount_usd: { type: 'number', description: 'USD amount to supply' },
+        dry_run:  { type: 'boolean', description: 'Simulate without executing' },
+      },
+      required: ['asset', 'amount_usd'],
+    },
+  },
+  {
+    name: 'aave_withdraw',
+    description: 'Withdraw supplied tokens from Aave V3 on X Layer.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        asset:    { type: 'string', description: 'Token to withdraw: USDC | WETH | WBTC' },
+        amount_usd: { type: 'number', description: 'USD amount to withdraw' },
+        dry_run:  { type: 'boolean', description: 'Simulate without executing' },
+      },
+      required: ['asset', 'amount_usd'],
+    },
+  },
+  {
+    name: 'aave_borrow',
+    description: 'Borrow tokens from Aave V3 on X Layer against supplied collateral.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        asset:    { type: 'string', description: 'Token to borrow: USDC | WETH | WBTC' },
+        amount_usd: { type: 'number', description: 'USD amount to borrow' },
+        dry_run:  { type: 'boolean', description: 'Simulate without executing' },
+      },
+      required: ['asset', 'amount_usd'],
+    },
+  },
+  {
+    name: 'aave_position',
+    description: 'Check the agent\'s Aave V3 position: collateral, debt, available borrows, health factor.',
+    inputSchema: { type: 'object', properties: {}, required: [] },
+  },
   {
     name: 'get_market',
     description: 'Get live OKX market data: token prices, 24h changes, volume, whale movements, and overall sentiment.',
@@ -221,6 +274,47 @@ async function handleExecuteSwap(args: any, agent: any) {
   };
 }
 
+async function handleGetProtocols() {
+  const status = await getProtocolStatus();
+  return Object.entries(PROTOCOLS).map(([key, proto]) => ({
+    key,
+    name:     proto.name,
+    type:     proto.type,
+    address:  proto.address,
+    live:     status[key]?.live ?? false,
+    bytecodeSize: status[key]?.bytecodeSize ?? 0,
+  }));
+}
+
+async function handleAavePosition(agent: any) {
+  const wallet = agent.wallet as `0x${string}`;
+  return getAavePosition(wallet);
+}
+
+async function handleAaveSupply(args: any, agent: any) {
+  const walletKey = (agent as any).walletKey;
+  if (!walletKey && !args.dry_run) throw new Error('Agent wallet not funded. Use dry_run: true to simulate.');
+  const result = await aaveSupply(args.asset, args.amount_usd, walletKey ?? '0x01', args.dry_run ?? !walletKey);
+  if (!result.success) throw new Error(result.error ?? 'Aave supply failed');
+  return { success: true, txHash: result.txHash ?? null, dryRun: !!args.dry_run, asset: args.asset, amountUsd: args.amount_usd };
+}
+
+async function handleAaveWithdraw(args: any, agent: any) {
+  const walletKey = (agent as any).walletKey;
+  if (!walletKey && !args.dry_run) throw new Error('Agent wallet not funded. Use dry_run: true to simulate.');
+  const result = await aaveWithdraw(args.asset, args.amount_usd, walletKey ?? '0x01', args.dry_run ?? !walletKey);
+  if (!result.success) throw new Error(result.error ?? 'Aave withdraw failed');
+  return { success: true, txHash: result.txHash ?? null, amountOut: result.amountOut, dryRun: !!args.dry_run };
+}
+
+async function handleAaveBorrow(args: any, agent: any) {
+  const walletKey = (agent as any).walletKey;
+  if (!walletKey && !args.dry_run) throw new Error('Agent wallet not funded. Use dry_run: true to simulate.');
+  const result = await aaveBorrow(args.asset, args.amount_usd, walletKey ?? '0x01', args.dry_run ?? !walletKey);
+  if (!result.success) throw new Error(result.error ?? 'Aave borrow failed');
+  return { success: true, txHash: result.txHash ?? null, dryRun: !!args.dry_run, asset: args.asset, amountUsd: args.amount_usd };
+}
+
 async function handleGetPortfolio(agent: any) {
   const address = agent.wallet as `0x${string}`;
   const market  = await getMarketContext();
@@ -325,8 +419,13 @@ export async function POST(req: Request) {
         case 'get_market':    result = await handleGetMarket();                    break;
         case 'get_quote':     result = await handleGetQuote(args);                 break;
         case 'execute_swap':  result = await handleExecuteSwap(args, agent);       break;
-        case 'get_portfolio': result = await handleGetPortfolio(agent);             break;
+        case 'get_portfolio': result = await handleGetPortfolio(agent);            break;
         case 'get_positions': result = await handleGetPositions(args, agent);      break;
+        case 'get_protocols': result = await handleGetProtocols();                 break;
+        case 'aave_position': result = await handleAavePosition(agent);            break;
+        case 'aave_supply':   result = await handleAaveSupply(args, agent);        break;
+        case 'aave_withdraw': result = await handleAaveWithdraw(args, agent);      break;
+        case 'aave_borrow':   result = await handleAaveBorrow(args, agent);        break;
         default:              return NextResponse.json(err(id, -32601, `Unknown tool: ${name}`));
       }
 
