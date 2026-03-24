@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { SiteChrome } from '@/components/arena/site-chrome';
 import { Surface, StatusPill } from '@/components/arena/ui';
-import { SignalCard } from '@/components/arena/signal-card';
+import { SignalCardClient as SignalCard } from '@/components/arena/signal-card-client';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';

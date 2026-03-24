@@ -1,12 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Note: OG image routes (/api/og/*) work correctly in production build.
-  // Turbopack dev mode has a known issue with ImageResponse piping.
-  // Use `npm run build && npm start` to test OG images locally.
-  turbopack: {
-    root: process.cwd(),
-  },
+  // Turbopack disabled: ImageResponse (next/og) requires webpack for dev streaming.
+  // Re-enable with `next dev --turbopack` only when this is resolved upstream.
+  // turbopack: { root: process.cwd() },
 
   async headers() {
     return [
