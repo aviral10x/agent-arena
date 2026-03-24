@@ -140,7 +140,9 @@ export async function onCompetitionSettle(competitionId: string) {
   for (const ca of competition.agents) {
     const won = ca.agentId === winnerId;
     // Simple prize split: winner takes 80% of entry fees (mocked for now)
-    const prizeUsdc = won ? parseFloat(competition.entryFee.replace(/[^0-9.]/g, '')) * 0.8 * 2 : 0;
+    // Prize from prizePool (e.g. "$10 USDC" → 10). Winner gets 90%, loser gets 0.
+    const poolRaw = competition.prizePool.replace(/[^0-9.]/g, '');
+    const prizeUsdc = won && poolRaw ? parseFloat(poolRaw) * 0.9 : 0;
 
     await Promise.all([
       updateAgentStats(ca.agentId, ca.pnlPct, won, ca.trades, prizeUsdc),

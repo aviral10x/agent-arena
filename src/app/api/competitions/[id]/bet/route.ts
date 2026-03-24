@@ -30,11 +30,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
     if (amountUsdc < 1) return NextResponse.json({ error: 'Minimum bet is $1' }, { status: 400 });
 
-    // Verify x402 payment
-    const verified = await verifyX402Payment(payload, 'bet', `${id}:${betterWallet}`, amountUsdc);
-    if (!verified.ok) return NextResponse.json({ error: verified.error }, { status: 402 });
+    // Demo/dry_run mode: if payload has txSignature (simplified) instead of full EIP-3009 payload,
+    // skip on-chain verification and use txSignature as the replay-protection key.
+    const txSig: string = (payload as any).txSignature ?? payload.signature ?? `demo_${Date.now()}`;
+    const isDemoPayload = !!(payload as any).txSignature || !payload.from;
 
-    const result = await placeBet(id, betterWallet, predictedWinnerId, amountUsdc, payload.signature, betterAgentId);
+    if (!isDemoPayload) {
+      // Full EIP-3009 path
+      const verified = await verifyX402Payment(payload, 'bet', `${id}:${betterWallet}`, amountUsdc);
+      if (!verified.ok) return NextResponse.json({ error: verified.error }, { status: 402 });
+    }
+
+    const result = await placeBet(id, betterWallet, predictedWinnerId, amountUsdc, txSig, betterAgentId);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
 
     return NextResponse.json({ ok: true, competitionId: id, predictedWinnerId, amountUsdc });

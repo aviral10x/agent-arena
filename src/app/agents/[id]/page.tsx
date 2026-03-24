@@ -88,7 +88,7 @@ export default async function AgentPage(props: PageProps) {
                 style={{ background: agent.color, boxShadow: `0 0 32px ${agent.color}60` }}
               />
               <div>
-                <h1 className="text-3xl font-black tracking-tight text-white">{agent.name}</h1>
+                <h1 className="text-2xl font-black tracking-tight text-white break-all sm:text-3xl">{agent.name}</h1>
                 <p className="mt-1 text-sm uppercase tracking-widest" style={{ color: agent.color }}>
                   {agent.archetype}
                 </p>

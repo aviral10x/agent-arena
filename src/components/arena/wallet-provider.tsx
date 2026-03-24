@@ -18,8 +18,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   useEffect(() => { setReady(true); }, []);
 
-  if (!ready) return <>{children}</>;
-
+  // Always wrap in providers — WagmiProvider is safe server-side with ssr:true.
+  // The `ready` gate was causing useAccount() to crash when called before providers mounted.
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>

@@ -10,15 +10,15 @@ const ConnectButtonSafe = dynamic(
   { ssr: false, loading: () => <div className="h-9 w-28 rounded-full bg-white/10 animate-pulse" /> }
 );
 
+// Primary nav shown on desktop
 const navigation = [
-  { href: "/",             label: "Overview"     },
-  { href: "/competitions", label: "Competitions" },
-  { href: "/challenges",   label: "Challenge"    },
-  { href: "/tournaments",  label: "Tournaments"  },
-  { href: "/leaderboard",  label: "Leaderboard"  },
-  { href: "/signals",      label: "Signals"      },
-  { href: "/agents",       label: "Agents"       },
-  { href: "/agents/create",label: "Build Agent"  },
+  { href: "/",             label: "Overview"    },
+  { href: "/competitions", label: "Compete"     },
+  { href: "/challenges",   label: "Challenge"   },
+  { href: "/tournaments",  label: "Tournaments" },
+  { href: "/leaderboard",  label: "Leaderboard" },
+  { href: "/agents",       label: "Agents"      },
+  { href: "/agents/create",label: "Build"       },
 ];
 
 export function SiteChrome({ children, activeHref }: { children: ReactNode; activeHref?: string }) {
@@ -94,7 +94,7 @@ export function SiteChrome({ children, activeHref }: { children: ReactNode; acti
         {menuOpen && (
           <div className="border-t border-white/10 bg-[rgba(7,17,31,0.97)] px-4 py-3 md:hidden">
             <nav className="flex flex-col gap-1">
-              {navigation.map(item => (
+              {[...navigation, { href: "/signals", label: "Signals" }].map(item => (
                 <Link key={item.href} href={item.href}
                   onClick={() => setMenuOpen(false)}
                   className={cx(

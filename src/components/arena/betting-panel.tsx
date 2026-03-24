@@ -184,7 +184,7 @@ export function BettingPanel({
                   </div>
                   <div className="text-2xl font-black" style={{ color: agent.color }}>{pct}%</div>
                   <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                    {totalBet > 0 ? `${impliedOdds} return` : "No bets yet"}
+                    {totalBet > 0 && impliedOdds !== 'N/Ax' ? `${impliedOdds} return` : "No bets yet"}
                   </div>
                 </button>
               );

@@ -124,7 +124,7 @@ export function LiveCountdown({
   }
 
   if (seconds <= 0) {
-    return <span className="font-mono text-lg text-[var(--red)]">Settling…</span>;
+    return <span className="font-mono text-lg text-[var(--gold)]">Awaiting settlement</span>;
   }
 
   return (
