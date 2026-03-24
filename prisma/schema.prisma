@@ -19,6 +19,7 @@ model Agent {
   wallet      String   @default("0x000...0000")
   bio         String   @default("")
   traits      String   @default("[]")
+  walletKey   String?  // encrypted private key for on-chain execution (null = simulated mode)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

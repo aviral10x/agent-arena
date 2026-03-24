@@ -1,7 +1,8 @@
 import { prisma } from './db';
 import { getMarketContext } from './market-data';
-import { executeAgentTurn } from './agent-runner';
+import { executeAgentTurn, executeRealTrade } from './agent-runner';
 import { getDexRoute } from './okx-os';
+import { getSwapQuote } from './okx-swap';
 
 // FIX 1.3: relative timestamp from actual DB timestamp
 export function timeAgo(date: Date): string {
@@ -59,64 +60,76 @@ export async function runCompetitionTick(competitionId: string) {
 
       if (decision.action !== 'HOLD') {
         const amountValue = (ca.portfolio * decision.amountPercentage) / 100;
-        const amountStr = `${amountValue.toFixed(2)} ${decision.action === 'BUY' ? 'USDC' : decision.token}`;
-        const pair = decision.action === 'BUY'
-          ? `USDC → ${decision.token}`
-          : `${decision.token} → USDC`;
+        const fromToken   = decision.action === 'BUY' ? 'USDC' : decision.token;
+        const toToken     = decision.action === 'BUY' ? decision.token : 'USDC';
+        const pair        = `${fromToken} → ${toToken}`;
+        const amountStr   = `${amountValue.toFixed(2)} ${fromToken}`;
+        const hasWallet   = !!(ca.agent as any).walletKey;
 
-        const fromToken = decision.action === 'BUY' ? 'USDC' : decision.token;
-        const toToken   = decision.action === 'BUY' ? decision.token : 'USDC';
-        const route = await getDexRoute(fromToken, toToken, amountValue.toString());
+        let priceImpactNum  = 0;
+        let priceImpactStr  = '+0.00%';
+        let pnlChange       = 0;
+        let txHash: string | undefined;
 
-        const priceImpactNum  = Number(route.priceImpact) || 0;
-        const priceImpactStr  = `${priceImpactNum > 0 ? '-' : '+'}${Math.abs(priceImpactNum * 100).toFixed(2)}%`;
-        const marketMove      = (market.tokens.find(t => t.symbol === decision.token)?.change24h || 0) / 100;
-        const slippageCost    = amountValue * Math.abs(priceImpactNum);
-        const executionEdge   = decision.action === 'BUY'
-          ? amountValue * marketMove
-          : amountValue * -marketMove;
-        const luck            = (Math.random() - 0.45) * amountValue * 0.05;
-        const pnlChange       = executionEdge - slippageCost + luck;
+        if (hasWallet) {
+          // ── REAL MODE: actual on-chain swap ──────────────────────────────
+          const realResult = await executeRealTrade(ca.agent, decision, ca.portfolio);
+          if (realResult && !realResult.error) {
+            priceImpactNum = realResult.priceImpact;
+            priceImpactStr = `${priceImpactNum > 0 ? '-' : '+'}${Math.abs(priceImpactNum * 100).toFixed(2)}%`;
+            txHash         = realResult.txHash;
+            // PnL from actual price movement: output value - input value
+            const tokenPrice = market.tokens.find(t => t.symbol === decision.token)?.price ?? 1;
+            const outputUsd  = decision.action === 'BUY'
+              ? realResult.toAmount * tokenPrice
+              : realResult.toAmount; // USDC out
+            pnlChange = outputUsd - amountValue;
+            console.log(`[real] ${ca.agent.name} ${decision.action} ${decision.token} tx=${txHash} pnl=$${pnlChange.toFixed(4)}`);
+          } else {
+            console.warn(`[real] ${ca.agent.name} swap failed: ${realResult?.error} — falling back to simulation`);
+          }
+        }
 
-        const newPortfolio    = Math.max(0, ca.portfolio + pnlChange);
-        // FIX 1.1: pnl in $ absolute, pnlPct relative to startingPortfolio
-        const newPnl          = ca.pnl + pnlChange;
-        const newPnlPct       = ((newPortfolio - ca.startingPortfolio) / ca.startingPortfolio) * 100;
-        // FIX 1.4: score unbounded integer, display uses dynamic max
-        const newScore        = Math.max(0, Math.floor(ca.score + pnlChange * 10));
+        if (!hasWallet || pnlChange === 0) {
+          // ── SIMULATED MODE: quote-based PnL ──────────────────────────────
+          const route      = await getDexRoute(fromToken, toToken, amountValue.toString());
+          priceImpactNum   = Number(route.priceImpact) || 0;
+          priceImpactStr   = `${priceImpactNum > 0 ? '-' : '+'}${Math.abs(priceImpactNum * 100).toFixed(2)}%`;
+          const marketMove = (market.tokens.find(t => t.symbol === decision.token)?.change24h || 0) / 100;
+          const slippage   = amountValue * Math.abs(priceImpactNum);
+          const edge       = decision.action === 'BUY' ? amountValue * marketMove : amountValue * -marketMove;
+          const luck       = (Math.random() - 0.45) * amountValue * 0.05;
+          pnlChange        = edge - slippage + luck;
+        }
+
+        const newPortfolio = Math.max(0, ca.portfolio + pnlChange);
+        const newPnl       = ca.pnl + pnlChange;
+        const newPnlPct    = ((newPortfolio - ca.startingPortfolio) / ca.startingPortfolio) * 100;
+        const newScore     = Math.max(0, Math.floor(ca.score + pnlChange * 10));
 
         await prisma.$transaction([
           prisma.trade.create({
             data: {
               competitionId,
-              agentId:      ca.agentId,
-              type:         decision.action,
+              agentId:     ca.agentId,
+              type:        decision.action,
               pair,
-              amount:       amountStr,
-              amountUsd:    amountValue,       // FIX 1.2: raw USD
-              rationale:    decision.rationale,
-              priceImpact:  priceImpactStr,
-              // timestamp defaults to now() — FIX 1.3 source of truth
+              amount:      amountStr,
+              amountUsd:   amountValue,
+              rationale:   decision.rationale,
+              priceImpact: priceImpactStr,
             }
           }),
           prisma.competitionAgent.update({
             where: { id: ca.id },
-            data: {
-              portfolio: newPortfolio,
-              pnl:       newPnl,
-              pnlPct:    newPnlPct,            // FIX 1.1
-              score:     newScore,
-              trades:    ca.trades + 1,
-            }
+            data:  { portfolio: newPortfolio, pnl: newPnl, pnlPct: newPnlPct, score: newScore, trades: ca.trades + 1 }
           }),
-          // FIX 1.2: accumulate raw USD, format on display
           prisma.competition.update({
             where: { id: competitionId },
-            data: { volumeUsd: { increment: amountValue } }
+            data:  { volumeUsd: { increment: amountValue } }
           })
         ]);
 
-        // Publish signal to marketplace for every non-HOLD trade
         await prisma.signal.create({
           data: {
             agentId:       ca.agentId,
@@ -127,9 +140,9 @@ export async function runCompetitionTick(competitionId: string) {
             priceAtSignal: market.tokens.find(t => t.symbol === decision.token)?.price ?? 0,
             priceUsd:      1,
           },
-        }).catch(() => {}); // fire-and-forget, don't block tick on signal errors
+        }).catch(() => {});
 
-        results.push({ agent: ca.agent.name, action: decision.action, token: decision.token, pnlChange });
+        results.push({ agent: ca.agent.name, action: decision.action, token: decision.token, pnlChange, txHash, realMode: hasWallet });
       } else {
         results.push({ agent: ca.agent.name, action: 'HOLD' });
       }
