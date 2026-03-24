@@ -3,7 +3,7 @@ import { xLayer } from 'wagmi/chains';
 
 export const config = getDefaultConfig({
   appName: 'Agent Arena',
-  projectId: '1f32db4abfb5f5287e0bddd7d04e4c27', // Demo placeholder or standard test ID
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? '0ca407866485bb159d3a29329ac34ff0',
   chains: [xLayer],
   ssr: true, 
 });
