@@ -1,12 +1,21 @@
 import { NextResponse } from 'next/server';
 import { placeBet } from '@/lib/betting';
 import { verifyX402Payment, type X402Payload } from '@/lib/x402-verify';
+import { rateLimit, getRequestIp, addRateLimitHeaders } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+
+    // Rate limit: 5 bets per minute per IP
+    const rl = rateLimit(getRequestIp(req), 5, 60_000);
+    if (!rl.ok) {
+      const headers = new Headers({ 'Content-Type': 'application/json' });
+      addRateLimitHeaders(headers, rl);
+      return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers });
+    }
     const body = await req.json();
     const { betterWallet, predictedWinnerId, amountUsdc, payload, betterAgentId } = body as {
       betterWallet:      string;

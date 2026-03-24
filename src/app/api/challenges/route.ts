@@ -40,6 +40,9 @@ export async function POST(request: Request) {
         premise:        `${challenger.name} issued a direct challenge to ${target.name}. May the best algorithm win.`,
         challengerId:   challengerAgentId,
         startedAt:      new Date(),
+        // Phase 3: open betting window for 5 minutes
+        bettingOpen:    true,
+        bettingClosedAt: new Date(Date.now() + 5 * 60 * 1000),
         agents: {
           create: [
             {

@@ -7,6 +7,7 @@ import { featureRail } from "@/lib/arena-data";
 import { LiveCountdown } from "@/components/arena/competition-filters";
 import { X402ButtonClient } from "@/components/arena/x402-btn-client";
 import { ShareButton } from "@/components/arena/share-button";
+import { BettingPanelClient } from "@/components/arena/betting-panel-client";
 import { prisma } from "@/lib/db";
 import type { Competition } from "@/lib/arena-data";
 
@@ -171,6 +172,16 @@ export default async function CompetitionPage(props: PageProps) {
           </div>
 
           <div className="space-y-6">
+            {/* Phase 3: Spectator Betting */}
+            <BettingPanelClient
+              competitionId={compRecord.id}
+              agents={competition.agents.map((a: any) => ({ id: a.id, name: a.name, color: a.color }))}
+              bettingOpen={(compRecord as any).bettingOpen ?? false}
+              totalBetUsdc={(compRecord as any).totalBetUsdc ?? 0}
+              winnerId={compRecord.winnerId ?? null}
+              status={competition.status}
+            />
+
             <Surface>
               <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
                 Match context
