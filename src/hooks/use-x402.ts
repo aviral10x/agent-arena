@@ -1,99 +1,118 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useSignTypedData, useAccount } from "wagmi";
+import { useState, useCallback, useEffect } from 'react';
+import { useSignTypedData, useAccount } from 'wagmi';
 
-export function useX402Payment() {
+// USDC on X Layer (chain 196)
+const USDC_ADDRESS = '0x74b7f16337b8972027f6196a17a631ac6de26d22' as const;
+
+type PaymentState = 'idle' | 'awaiting_wallet' | 'signing' | 'verifying' | 'success' | 'error';
+
+export function useX402Payment(resourceType: string, resourceId: string) {
   const { address, isConnected } = useAccount();
   const { signTypedDataAsync } = useSignTypedData();
+  const [state,   setState]  = useState<PaymentState>('idle');
+  const [errMsg,  setErrMsg] = useState<string>('');
 
-  const [paymentState, setPaymentState] = useState<"idle" | "awaiting_wallet" | "signing" | "success" | "error">("idle");
+  // On mount: check if wallet already has an active grant (avoids re-payment)
+  useEffect(() => {
+    if (!address || !resourceType || !resourceId) return;
+    fetch(`/api/x402/verify?wallet=${address}&resourceType=${resourceType}&resourceId=${resourceId}`)
+      .then(r => r.json())
+      .then(data => { if (data.active) setState('success'); })
+      .catch(() => {});
+  }, [address, resourceType, resourceId]);
 
-  const pay = async (amountUsdc: number = 1, memo: string = "x402: access") => {
+  const pay = useCallback(async (amountUsdc = 1): Promise<boolean> => {
     if (!isConnected || !address) {
-      alert("Please connect your wallet first via the RainbowKit button.");
+      setErrMsg('Connect your wallet first.');
+      setState('error');
+      setTimeout(() => setState('idle'), 3000);
       return false;
     }
 
-    setPaymentState("awaiting_wallet");
-    
+    setState('awaiting_wallet');
+    setErrMsg('');
+
     try {
-      // Simulate receiving an HTTP 402 with an accepts[] payload from our server.
-      // Real x402 would extract this from response headers. We hardcode the OKX USDG test token 
-      // or USDC for the sake of the EIP-3009 signature simulation on X Layer (Chain 196).
-      const tokenAddress = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; 
-      const amountMinimal = (amountUsdc * 1_000_000).toString(); // 6 decimals
-      const nonce = crypto.randomUUID().replace(/-/g, ''); 
-      const validBefore = Math.floor(Date.now() / 1000) + 300; // 5 mins
+      const amountMicro    = BigInt(Math.round(amountUsdc * 1_000_000));
+      const nonce          = crypto.randomUUID().replace(/-/g, '');
+      const validBefore    = BigInt(Math.floor(Date.now() / 1000) + 300); // 5 min window
+      const arenaReceiver  = (process.env.NEXT_PUBLIC_ARENA_WALLET ?? '0x0000000000000000000000000000000000000000') as `0x${string}`;
 
       const domain = {
-        name: "USD Coin",
-        version: "2",
-        chainId: 196,
-        verifyingContract: tokenAddress as `0x${string}`,
+        name:             'USD Coin',
+        version:          '2',
+        chainId:          196,
+        verifyingContract: USDC_ADDRESS,
       };
 
       const types = {
         TransferWithAuthorization: [
-          { name: "from", type: "address" },
-          { name: "to", type: "address" },
-          { name: "value", type: "uint256" },
-          { name: "validAfter", type: "uint256" },
-          { name: "validBefore", type: "uint256" },
-          { name: "nonce", type: "bytes32" },
+          { name: 'from',        type: 'address' },
+          { name: 'to',          type: 'address' },
+          { name: 'value',       type: 'uint256' },
+          { name: 'validAfter',  type: 'uint256' },
+          { name: 'validBefore', type: 'uint256' },
+          { name: 'nonce',       type: 'bytes32' },
         ],
-      };
+      } as const;
 
       const message = {
-        from: address,
-        to: "0x000000000000000000000000000000000000x402" as `0x${string}`,
-        value: BigInt(amountMinimal),
-        validAfter: BigInt(0),
-        validBefore: BigInt(validBefore),
-        nonce: `0x${nonce}` as `0x${string}`,
+        from:        address,
+        to:          arenaReceiver,
+        value:       amountMicro,
+        validAfter:  BigInt(0),
+        validBefore,
+        nonce:       `0x${nonce}` as `0x${string}`,
       };
 
-      setPaymentState("signing");
+      setState('signing');
+      const signature = await signTypedDataAsync({ domain, types, primaryType: 'TransferWithAuthorization', message });
 
-      // Request EIP-3009 Signature via their injected wallet (MetaMask, OKX, etc)
-      const signature = await signTypedDataAsync({
-        domain,
-        types,
-        primaryType: "TransferWithAuthorization",
-        message,
+      // --- Server-side verification ---
+      setState('verifying');
+      const res = await fetch('/api/x402/verify', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resourceType,
+          resourceId,
+          payload: {
+            signature,
+            from:        address,
+            to:          arenaReceiver,
+            value:       amountMicro.toString(),
+            validAfter:  '0',
+            validBefore: validBefore.toString(),
+            nonce:       `0x${nonce}`,
+          },
+        }),
       });
 
-      console.log("[x402] EIP-3009 Signature Generated:", signature);
-      
-      // In a real flow, we assemble the PAYMENT-SIGNATURE header and replay the HTTP request:
-      /*
-      const paymentPayload = {
-        x402Version: 2,
-        payload: {
-          signature,
-          authorization: { ...message }
-        }
-      };
-      const headerValue = btoa(JSON.stringify(paymentPayload));
-      // fetch('/api/...', { headers: { 'PAYMENT-SIGNATURE': headerValue } })
-      */
-      
-      setPaymentState("success");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? 'Payment verification failed');
+      }
+
+      setState('success');
       return true;
-      
-    } catch (err) {
-      console.error("x402 signature rejected or failed:", err);
-      setPaymentState("error");
-      setTimeout(() => setPaymentState("idle"), 3000);
+    } catch (err: any) {
+      console.error('[x402]', err);
+      setErrMsg(err.message ?? 'Payment failed');
+      setState('error');
+      setTimeout(() => setState('idle'), 4000);
       return false;
     }
-  };
+  }, [address, isConnected, signTypedDataAsync, resourceType, resourceId]);
 
   return {
     pay,
-    state: paymentState,
-    isPending: paymentState === "awaiting_wallet" || paymentState === "signing",
-    isSuccess: paymentState === "success",
-    reset: () => setPaymentState("idle"),
+    state,
+    errMsg,
+    isPending:  state === 'awaiting_wallet' || state === 'signing' || state === 'verifying',
+    isSuccess:  state === 'success',
+    isError:    state === 'error',
+    reset:      () => { setState('idle'); setErrMsg(''); },
   };
 }

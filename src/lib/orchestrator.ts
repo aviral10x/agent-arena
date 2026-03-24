@@ -116,6 +116,19 @@ export async function runCompetitionTick(competitionId: string) {
           })
         ]);
 
+        // Publish signal to marketplace for every non-HOLD trade
+        await prisma.signal.create({
+          data: {
+            agentId:       ca.agentId,
+            competitionId,
+            tradeType:     decision.action,
+            pair,
+            rationale:     decision.rationale,
+            priceAtSignal: market.tokens.find(t => t.symbol === decision.token)?.price ?? 0,
+            priceUsd:      1,
+          },
+        }).catch(() => {}); // fire-and-forget, don't block tick on signal errors
+
         results.push({ agent: ca.agent.name, action: decision.action, token: decision.token, pnlChange });
       } else {
         results.push({ agent: ca.agent.name, action: 'HOLD' });

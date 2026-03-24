@@ -1,35 +1,59 @@
-import useSWR from 'swr';
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
 import type { Competition, TradeEvent } from '@/lib/arena-data';
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+// SSE-based live competition hook — replaces SWR polling.
+// Falls back to a one-time fetch for settled/open competitions.
+export function useLiveCompetition(
+  initialCompetition: Competition,
+  initialTrades:      TradeEvent[]
+) {
+  const [competition, setCompetition] = useState<Competition>(initialCompetition);
+  const [trades,      setTrades]      = useState<TradeEvent[]>(initialTrades);
+  const esRef = useRef<EventSource | null>(null);
 
-// FIX 4.5: align poll with tick interval — no point polling faster than ticks fire
-const POLL_INTERVAL_MS = 10_000;
+  const isLive = competition.status === 'live';
 
-export function useLiveCompetition(initialCompetition: Competition, initialTrades: TradeEvent[]) {
-  const isLive = initialCompetition.status === 'live';
+  useEffect(() => {
+    if (!isLive) return;
 
-  const { data: competition } = useSWR<Competition>(
-    isLive ? `/api/competitions/${initialCompetition.id}` : null,
-    fetcher,
-    {
-      fallbackData: initialCompetition,
-      refreshInterval: POLL_INTERVAL_MS,
-    }
-  );
+    const es = new EventSource(`/api/competitions/${initialCompetition.id}/stream`);
+    esRef.current = es;
 
-  const { data: trades } = useSWR<TradeEvent[]>(
-    // FIX 2.3: use live status from SWR data, not stale initial prop
-    competition?.status === 'live' ? `/api/competitions/${initialCompetition.id}/trades` : null,
-    fetcher,
-    {
-      fallbackData: initialTrades,
-      refreshInterval: POLL_INTERVAL_MS,
-    }
-  );
+    es.addEventListener('leaderboard', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setCompetition(prev => ({
+          ...prev,
+          status: data.status,
+          agents: data.agents,
+        }));
+      } catch {}
+    });
 
-  return {
-    competition: competition ?? initialCompetition,
-    trades:      trades ?? initialTrades,
-  };
+    es.addEventListener('trades', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setTrades(data);
+      } catch {}
+    });
+
+    es.addEventListener('settled', () => {
+      setCompetition(prev => ({ ...prev, status: 'settled' }));
+      es.close();
+    });
+
+    es.addEventListener('error', () => {
+      // On error, close and let the component re-mount if needed
+      es.close();
+    });
+
+    return () => {
+      es.close();
+      esRef.current = null;
+    };
+  }, [initialCompetition.id, isLive]);
+
+  return { competition, trades };
 }
