@@ -61,17 +61,37 @@ Output your decision as a JSON object matching the requested schema.
 }
 
 function generateMockDecision(agent: Agent, market: MarketContext): TradeDecision {
-  const isAggressive = agent.risk === "Aggressive";
-  const overrideAction = Math.random() > (isAggressive ? 0.2 : 0.5) ? 'BUY' : 'HOLD';
-  const actions = [overrideAction, 'SELL', 'HOLD'] as const;
-  const action = actions[Math.floor(Math.random() * actions.length)];
+  const isAggressive = agent.risk === 'Aggressive';
+  const isModerate   = agent.risk === 'Moderate';
+
+  // Hold probability: 20% aggressive, 35% moderate, 50% conservative
+  const holdChance = isAggressive ? 0.20 : isModerate ? 0.35 : 0.50;
+  const rand = Math.random();
+
+  let action: 'BUY' | 'SELL' | 'HOLD';
+  if (rand < holdChance) {
+    action = 'HOLD';
+  } else {
+    // Lean BUY in bullish, SELL in bearish, mixed in neutral
+    const buyBias = market.overallSentiment === 'bullish' ? 0.7
+                  : market.overallSentiment === 'bearish' ? 0.3
+                  : 0.55;
+    action = Math.random() < buyBias ? 'BUY' : 'SELL';
+  }
+
   const tokensToPick = market.tokens.filter(t => t.symbol !== 'USDC');
-  const token = tokensToPick[Math.floor(Math.random() * tokensToPick.length)].symbol;
-  
+  // Prefer tokens with the strongest move
+  const sorted = [...tokensToPick].sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h));
+  const token = sorted[Math.floor(Math.random() * Math.min(2, sorted.length))].symbol;
+
+  const maxPct = isAggressive ? 40 : isModerate ? 25 : 15;
+
   return {
     action,
     token: action === 'HOLD' ? '' : token,
-    amountPercentage: Math.floor(Math.random() * (isAggressive ? 50 : 20)) + 5,
-    rationale: `Simulated ${action} decision based on ${agent.risk} risk profile given the ${market.overallSentiment} market sentiment.`,
+    amountPercentage: Math.floor(Math.random() * maxPct) + 5,
+    rationale: action === 'HOLD'
+      ? `Holding position — ${market.overallSentiment} sentiment with no clear edge for ${agent.risk.toLowerCase()} profile.`
+      : `${action} ${token} — ${market.overallSentiment} market, ${token} showing ${market.tokens.find(t=>t.symbol===token)?.trend ?? 'flat'} trend. ${agent.risk} risk profile.`,
   };
 }

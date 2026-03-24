@@ -22,16 +22,19 @@ export default async function CompetitionsPage() {
 
   const competitions: Competition[] = comps.map((comp: any) => ({
     ...comp,
-    mode: comp.mode as "1v1" | "royale",
+    mode:   comp.mode   as "1v1" | "royale",
     status: comp.status as "live" | "open" | "settled",
+    // FIX: derive display volume string from raw volumeUsd Float
+    volume: `$${((comp.volumeUsd ?? 0) / 1000).toFixed(1)}k`,
     agents: comp.agents.map((ca: any) => ({
       ...ca.agent,
-      traits: JSON.parse(ca.agent.traits),
-      risk: ca.agent.risk as any,
-      pnl: ca.pnl,
-      trades: ca.trades,
+      traits:    JSON.parse(ca.agent.traits),
+      risk:      ca.agent.risk as any,
+      pnl:       ca.pnl,
+      pnlPct:    ca.pnlPct,
+      trades:    ca.trades,
       portfolio: ca.portfolio,
-      score: ca.score,
+      score:     ca.score,
     })),
   }));
 

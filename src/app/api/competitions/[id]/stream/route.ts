@@ -74,7 +74,7 @@ export async function GET(
               amount:      t.amount,
               rationale:   t.rationale,
               priceImpact: t.priceImpact,
-              timestamp:   t.timestamp,
+              timestamp:   (t.timestamp ?? t.createdAt ?? new Date()).toISOString(),
             })));
           }
 

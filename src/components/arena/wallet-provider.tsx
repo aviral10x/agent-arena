@@ -7,17 +7,18 @@ import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { config } from "@/lib/wagmi-config";
 import { useState, useEffect } from "react";
 
+// Singleton QueryClient
+const queryClient = new QueryClient();
+
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Gate the entire provider tree behind a client-side mount check.
+  // WalletConnect initializes localStorage at module evaluation time —
+  // if ANY of these providers run on the server, it crashes with
+  // "localStorage.getItem is not a function".
+  const [ready, setReady] = useState(false);
+  useEffect(() => { setReady(true); }, []);
 
-  const [queryClient] = useState(() => new QueryClient());
-
-  if (!mounted) {
-    return <>{children}</>;
-  }
+  if (!ready) return <>{children}</>;
 
   return (
     <WagmiProvider config={config}>

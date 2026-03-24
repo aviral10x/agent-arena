@@ -2,8 +2,14 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { cx } from "@/components/arena/ui";
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+
+// Import the isolated safe wrapper (not RainbowKit directly) to prevent SSR crash
+const ConnectButtonSafe = dynamic(
+  () => import('./connect-button-safe'),
+  { ssr: false, loading: () => <div className="h-10 w-32 rounded-full bg-white/10 animate-pulse" /> }
+);
 
 const navigation = [
   { href: "/",            label: "Overview"     },
@@ -70,7 +76,7 @@ export function SiteChrome({
             <div className="hidden rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-[var(--text-secondary)] sm:block">
               Chain 196 · x402 ready
             </div>
-            {mounted && <ConnectButton showBalance={false} chainStatus="icon" />}
+            {mounted && <ConnectButtonSafe />}
           </div>
         </div>
       </header>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Competition } from "@/lib/arena-data";
 import { Dot, StatusPill } from "@/components/arena/ui";
 import { LiveCountdown, AnimatedSpectators } from "@/components/arena/competition-filters";
-import { X402Button } from "@/components/arena/x402-btn";
+import { X402ButtonClient as X402Button } from "@/components/arena/x402-btn-client";
 
 function pnlColor(value: number) {
   if (value > 0) return "var(--green)";

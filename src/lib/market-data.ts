@@ -122,16 +122,30 @@ export async function getMarketContext(): Promise<MarketContext> {
     return { tokens, whaleMovements, overallSentiment };
 
   } catch (err) {
-    console.error('[Market] OKX fetch failed:', err);
+    console.error('[Market] OKX fetch failed, using simulated market data:', (err as any)?.message?.slice(0, 80));
+    // Simulated market with realistic volatility so mock agents actually trade
+    const seed = Date.now() % 10000;
+    const rng = (s: number) => { let x = Math.sin(s) * 10000; return x - Math.floor(x); };
+    const mkChange = (i: number) => parseFloat(((rng(seed + i) * 14) - 7).toFixed(2)); // -7% to +7%
+    const tokens = [
+      { symbol: 'BTC',  price: 87000 + rng(seed)   * 3000, change24h: mkChange(1), volume24h: '$1.2B', trend: mkChange(1) > 2 ? 'up' as const : mkChange(1) < -2 ? 'down' as const : 'flat' as const },
+      { symbol: 'ETH',  price: 2000  + rng(seed+1) * 300,  change24h: mkChange(2), volume24h: '$600M', trend: mkChange(2) > 2 ? 'up' as const : mkChange(2) < -2 ? 'down' as const : 'flat' as const },
+      { symbol: 'SOL',  price: 130   + rng(seed+2) * 30,   change24h: mkChange(3), volume24h: '$250M', trend: mkChange(3) > 2 ? 'up' as const : mkChange(3) < -2 ? 'down' as const : 'flat' as const },
+      { symbol: 'OKB',  price: 45    + rng(seed+3) * 8,    change24h: mkChange(4), volume24h: '$40M',  trend: mkChange(4) > 2 ? 'up' as const : mkChange(4) < -2 ? 'down' as const : 'flat' as const },
+    ];
+    const avgChange = tokens.reduce((s, t) => s + t.change24h, 0) / tokens.length;
+    const sentiment = avgChange > 1 ? 'bullish' as const : avgChange < -1 ? 'bearish' as const : 'neutral' as const;
+    const bigMover = tokens.reduce((a, b) => Math.abs(a.change24h) > Math.abs(b.change24h) ? a : b);
     return {
-      overallSentiment: 'neutral',
-      tokens: [
-        { symbol: 'BTC', price: 70000, change24h: 0, volume24h: '$1B', trend: 'flat' },
-        { symbol: 'ETH', price: 3500, change24h: 0, volume24h: '$500M', trend: 'flat' },
-        { symbol: 'SOL', price: 150, change24h: 0, volume24h: '$200M', trend: 'flat' },
-        { symbol: 'OKB', price: 45, change24h: 0, volume24h: '$30M', trend: 'flat' },
-      ],
-      whaleMovements: [],
+      overallSentiment: sentiment,
+      tokens,
+      whaleMovements: [{
+        wallet: '0x7a2...3f1c',
+        action: bigMover.change24h > 0 ? 'BUY' : 'SELL',
+        amount: `${(rng(seed+5) * 500 + 100).toFixed(0)} ${bigMover.symbol}`,
+        token: bigMover.symbol,
+        timestamp: '1 min ago',
+      }],
     };
   }
 }

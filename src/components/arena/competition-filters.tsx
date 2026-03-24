@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Competition } from "@/lib/arena-data";
-import { CompetitionCard } from "@/components/arena/competition-card";
+import { CompetitionCardClient as CompetitionCard } from "@/components/arena/competition-card-client";
 
 type FilterKey = "all" | "live" | "open" | "settled";
 

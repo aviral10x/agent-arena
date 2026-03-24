@@ -18,15 +18,16 @@ export async function GET(
     });
 
     const formatted = trades.map((t: any) => ({
-      id: t.id,
-      type: t.type,
-      agentId: t.agentId,
-      agentName: t.agent.name,
-      pair: t.pair,
-      amount: t.amount,
-      rationale: t.rationale,
+      id:          t.id,
+      type:        t.type,
+      agentId:     t.agentId,
+      agentName:   t.agent?.name ?? t.agentId,
+      pair:        t.pair,
+      amount:      t.amount,
+      rationale:   t.rationale,
       priceImpact: t.priceImpact,
-      time: t.time,
+      // Always return a real timestamp — fall back to createdAt if null
+      timestamp:   (t.timestamp ?? t.createdAt ?? new Date()).toISOString(),
     }));
 
     return NextResponse.json(formatted);

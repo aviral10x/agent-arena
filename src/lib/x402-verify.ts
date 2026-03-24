@@ -119,7 +119,12 @@ export async function verifyX402Payment(
     return { ok: true, wallet: payload.from.toLowerCase() };
   } catch (err: any) {
     console.error('[x402] verify error:', err);
-    return { ok: false, error: err.message ?? 'Verification failed' };
+    // Sanitize viem/internal error messages — don't leak stack traces to clients
+    const raw = err.message ?? '';
+    const friendly = raw.includes('bytes') || raw.includes('viem') || raw.includes('Expected')
+      ? 'Invalid payment signature format'
+      : raw.length > 120 ? 'Payment verification failed' : raw;
+    return { ok: false, error: friendly };
   }
 }
 
