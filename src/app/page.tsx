@@ -1,204 +1,190 @@
 import Link from "next/link";
-import {
-  ButtonLink,
-  MetricCard,
-  SectionIntro,
-  Surface,
-} from "@/components/arena/ui";
-import {
-  featureRail,
-  roadmap,
-} from "@/lib/arena-data";
-import { formatVolume } from "@/lib/orchestrator";
-import { CompetitionCardClient } from "@/components/arena/competition-card-client";
 import { SiteChrome } from "@/components/arena/site-chrome";
 import { prisma } from "@/lib/db";
-import type { Competition } from "@/lib/arena-data";
+import { formatVolume } from "@/lib/orchestrator";
+import { CompetitionRow } from "@/components/arena/competition-row";
+import { ActivityFeed } from "@/components/arena/activity-feed";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // FIX 4.2: real stats from DB
-  const [liveCount, agentCount, totalVolumeResult] = await Promise.all([
-    prisma.competition.count({ where: { status: 'live' } }),
+  const [liveCount, agentCount, volResult, recentTrades, topAgents, competitions] = await Promise.all([
+    prisma.competition.count({ where: { status: "live" } }),
     prisma.agent.count(),
     prisma.competition.aggregate({ _sum: { volumeUsd: true } }),
-  ]);
-  const totalVolume = totalVolumeResult._sum.volumeUsd ?? 0;
-
-  const chainStats = [
-    { label: 'Live bouts',        value: String(liveCount),             accent: 'var(--green)' },
-    { label: 'Active agents',     value: String(agentCount),            accent: 'var(--cyan)' },
-    { label: 'Onchain volume',    value: formatVolume(totalVolume),      accent: '#f3f7ff' },
-  ];
-
-  const compRecords = await prisma.competition.findMany({
-    take: 2,
-    orderBy: { createdAt: "desc" },
-    include: {
-      agents: {
-        include: { agent: true },
-        orderBy: { score: "desc" },
+    // Recent trades for activity feed
+    prisma.trade.findMany({
+      take: 20,
+      orderBy: { timestamp: "desc" },
+      include: { agent: { select: { name: true, color: true } } },
+    }),
+    // Top agents for sidebar
+    prisma.agentStats.findMany({
+      take: 5,
+      orderBy: { rankAllTime: "asc" },
+      where: { totalCompetitions: { gte: 1 } },
+      include: { agent: { select: { id: true, name: true, color: true, archetype: true } } },
+    }),
+    // All competitions — live first
+    prisma.competition.findMany({
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      take: 20,
+      include: {
+        agents: { include: { agent: true }, orderBy: { score: "desc" } },
       },
-    },
-  });
+    }),
+  ]);
 
-  const spotlight: Competition[] = compRecords.map((comp: any) => ({
-    ...comp,
-    mode: comp.mode as any,
-    status: comp.status as any,
-    agents: comp.agents.map((ca: any) => ({
-      ...ca.agent,
-      traits: JSON.parse(ca.agent.traits),
-      risk: ca.agent.risk,
-      pnl: ca.pnl,
-      trades: ca.trades,
-      portfolio: ca.portfolio,
-      score: ca.score,
-    })),
-  }));
+  const totalVolume = volResult._sum.volumeUsd ?? 0;
+  const settledCount = await prisma.competition.count({ where: { status: "settled" } });
+
+  // Sort: live first, then open, then settled
+  const sorted = [
+    ...competitions.filter(c => c.status === "live"),
+    ...competitions.filter(c => c.status === "open"),
+    ...competitions.filter(c => c.status === "settled"),
+  ];
 
   return (
     <SiteChrome activeHref="/">
-      <section className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6 lg:px-8 lg:pb-28 lg:pt-16">
-        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-          <div className="fade-up space-y-8">
-            <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.24em] text-[var(--cyan)]">
-              X Layer AI Agent Playground
-            </div>
-            <div className="space-y-5">
-              <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl">
-                Autonomous traders, live pots, and
-                <span className="text-gradient"> x402-powered spectating.</span>
-              </h1>
-              <p className="max-w-2xl text-base leading-8 text-[var(--text-secondary)] sm:text-lg">
-                Agent Arena turns AI trading into a competition format. Each match
-                starts with equal capital, runs on X Layer, and finishes with a
-                transparent winner-take-most payout.
-              </p>
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
+
+        {/* ── Stat bar (Hyperliquid-style) ─────────────────────────── */}
+        <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-white/[0.06] pb-5">
+          <div className="flex items-center gap-2">
+            <div className="live-dot" />
+            <span className="font-mono text-xl font-black text-white tabular-nums">{liveCount}</span>
+            <span className="text-xs text-[var(--text-muted)] uppercase tracking-widest">Live</span>
+          </div>
+          <div className="h-4 w-px bg-white/10 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xl font-black text-white tabular-nums">{agentCount}</span>
+            <span className="text-xs text-[var(--text-muted)] uppercase tracking-widest">Agents</span>
+          </div>
+          <div className="h-4 w-px bg-white/10 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xl font-black text-[var(--teal)] tabular-nums">{formatVolume(totalVolume)}</span>
+            <span className="text-xs text-[var(--text-muted)] uppercase tracking-widest">Volume</span>
+          </div>
+          <div className="h-4 w-px bg-white/10 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xl font-black text-white tabular-nums">{settledCount}</span>
+            <span className="text-xs text-[var(--text-muted)] uppercase tracking-widest">Settled</span>
+          </div>
+
+          <div className="ml-auto flex gap-2">
+            <Link
+              href="/arena"
+              className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-white hover:bg-white/5 transition"
+            >
+              All matches →
+            </Link>
+            <Link
+              href="/agents/create"
+              className="btn-primary px-4 py-1.5 text-xs"
+            >
+              ⚡ Build agent
+            </Link>
+          </div>
+        </div>
+
+        {/* ── Main layout ──────────────────────────────────────────── */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+
+          {/* Competition rows */}
+          <div>
+            {/* Section header */}
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                Matches
+              </h2>
+              <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)] uppercase tracking-widest">
+                <span className="hidden sm:block">Agent A</span>
+                <span className="hidden sm:block w-20 text-center">PnL Gap</span>
+                <span className="hidden sm:block">Agent B</span>
+                <span className="hidden sm:block w-20 text-right">Timer</span>
+                <span className="w-16 text-right">Action</span>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/competitions">Browse competitions</ButtonLink>
-              <Link
-                href="/agents/create"
-                className="inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/5"
-              >
-                Build an agent
-              </Link>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {chainStats.map((stat) => (
-                <MetricCard
-                  key={stat.label}
-                  label={stat.label}
-                  value={stat.value}
-                  accent={stat.accent}
-                />
-              ))}
+            <div className="space-y-1.5">
+              {sorted.length === 0 ? (
+                <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] p-12 text-center">
+                  <div className="text-3xl mb-3">🏟️</div>
+                  <p className="text-sm text-[var(--text-muted)]">No matches yet.</p>
+                  <Link href="/agents/create" className="btn-primary mt-4 inline-block px-5 py-2 text-sm">
+                    Create the first agent →
+                  </Link>
+                </div>
+              ) : (
+                sorted.map((comp) => (
+                  <CompetitionRow key={comp.id} competition={comp as any} />
+                ))
+              )}
             </div>
           </div>
 
-          <Surface className="fade-up relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(102,227,255,0.18),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(255,212,121,0.16),transparent_40%)]" />
-            <div className="relative space-y-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                    Network pulse
-                  </div>
-                  <div className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">
-                    Live on X Layer
-                  </div>
+          {/* Right sidebar */}
+          <div className="space-y-5">
+            {/* Top agents */}
+            {topAgents.length > 0 && (
+              <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                    Top agents
+                  </span>
+                  <Link href="/leaderboard" className="text-[10px] text-[var(--teal)] hover:underline">
+                    All →
+                  </Link>
                 </div>
-                <div className="rounded-full bg-[var(--green-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--green)]">
-                  chain 196
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                    Match tempo
-                  </div>
-                  <div className="mt-3 font-mono text-3xl text-white">2.1s</div>
-                  <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                    Block cadence keeps the arena feeling fast, observable, and
-                    easy to replay.
-                  </p>
-                </div>
-                <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                    x402 access
-                  </div>
-                  <div className="mt-3 font-mono text-3xl text-white">$0.01</div>
-                  <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                    Spectators pay only when they unlock a live leaderboard or
-                    replay.
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-[1.25rem] border border-white/10 bg-[rgba(255,255,255,0.04)] p-4">
-                <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                  Competition loop
-                </div>
-                <div className="mt-4 space-y-3">
-                  {roadmap.map((step, index) => (
-                    <div key={step} className="flex items-start gap-3">
-                      <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 font-mono text-xs text-white">
-                        {index + 1}
+                <div className="space-y-2">
+                  {topAgents.map((s, i) => (
+                    <Link
+                      key={s.agentId}
+                      href={`/agents/${s.agentId}`}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition row-hover"
+                    >
+                      <span className="w-5 text-center text-xs font-mono text-[var(--text-muted)]">
+                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i+1}`}
                       </span>
-                      <div className="text-sm leading-6 text-[var(--text-secondary)]">
-                        {step}
+                      <div
+                        className="h-6 w-6 flex-shrink-0 rounded-full"
+                        style={{ background: s.agent.color, boxShadow: `0 0 8px ${s.agent.color}60` }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-xs font-semibold text-white">{s.agent.name}</div>
+                        <div className="text-[10px] text-[var(--text-muted)]">{s.agent.archetype}</div>
                       </div>
-                    </div>
+                      <div className="text-right shrink-0">
+                        <div
+                          className="text-xs font-mono font-semibold"
+                          style={{ color: s.winRate >= 0.5 ? "var(--green)" : "var(--red)" }}
+                        >
+                          {(s.winRate * 100).toFixed(0)}%
+                        </div>
+                        <div className="text-[10px] text-[var(--text-muted)]">W</div>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Live activity feed */}
+            <ActivityFeed trades={recentTrades as any} />
+
+            {/* CTA */}
+            <div className="rounded-2xl border border-[var(--teal)]/20 bg-[var(--teal)]/5 p-5 text-center">
+              <div className="text-2xl mb-2">⚡</div>
+              <p className="text-sm font-semibold text-white mb-1">Build your agent</p>
+              <p className="text-xs text-[var(--text-muted)] mb-4">60 seconds. Pick a strategy. Enter the arena.</p>
+              <Link href="/agents/create" className="btn-primary block w-full py-2.5 text-sm text-center">
+                Start building
+              </Link>
             </div>
-          </Surface>
+          </div>
         </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:px-8 lg:pb-28">
-        <SectionIntro
-          eyebrow="Why it stands out"
-          title="Competition design that feels native to the chain, not pasted on top of it."
-          description="We shaped the UI around live state, payment gates, and agent personalities so the first impression already tells the hackathon story."
-        />
-
-        <div className="mt-8 grid gap-4 lg:grid-cols-3">
-          {featureRail.map((item) => (
-            <Surface key={item.title} className="h-full">
-              <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--cyan)]">
-                {item.title}
-              </div>
-              <p className="mt-4 text-sm leading-7 text-[var(--text-secondary)]">
-                {item.detail}
-              </p>
-            </Surface>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:px-8 lg:pb-28">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <SectionIntro
-            eyebrow="Featured bouts"
-            title="A lobby with enough contrast to sell the idea in a single glance."
-            description="The snapshot below previews a live duel, an open seat, and a larger royale so the browse experience immediately feels active."
-          />
-          <ButtonLink href="/competitions">Open full browse view</ButtonLink>
-        </div>
-
-        <div className="mt-8 grid gap-5">
-          {spotlight.map((competition) => (
-            <CompetitionCardClient key={competition.id} competition={competition} />
-          ))}
-        </div>
-      </section>
+      </div>
     </SiteChrome>
   );
 }

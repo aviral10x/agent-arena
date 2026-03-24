@@ -1,24 +1,64 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   AGENT ARENA — Design System v2
+   Inspired by: Hyperliquid (teal + pure dark), Polymarket (high contrast),
+   Bloomberg Terminal (information density), Robinhood (profit psychology)
+   
+   Color psychology:
+   - #0a0a12  "terminal black" — focus, no distraction, serious money
+   - #00d4aa  "mint teal"     — financial intelligence, cutting-edge tech
+   - #00ff87  "profit green"  — dopamine, reward signal, money hitting account  
+   - #ff3a50  "loss red"      — urgency, action required (not soft pink)
+   - #f5c842  "arena gold"    — scarcity, prestige, tournament prizes
+   - #f0f8ff  "crisp white"   — maximum contrast, trustworthy data
+───────────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --bg: #07111f;
-  --bg-soft: #0d1b2f;
-  --panel: rgba(11, 22, 41, 0.78);
-  --panel-strong: rgba(10, 19, 36, 0.96);
-  --panel-border: rgba(140, 192, 255, 0.18);
-  --panel-border-strong: rgba(140, 192, 255, 0.32);
-  --text-primary: #eaf4ff;
-  --text-secondary: #a2b7d4;
-  --text-muted: #7388a5;
-  --cyan: #66e3ff;
-  --cyan-soft: rgba(102, 227, 255, 0.18);
-  --gold: #ffd479;
-  --gold-soft: rgba(255, 212, 121, 0.18);
-  --green: #49f3a6;
-  --green-soft: rgba(73, 243, 166, 0.16);
-  --red: #ff7a90;
-  --red-soft: rgba(255, 122, 144, 0.16);
-  --shadow: 0 24px 60px rgba(3, 9, 19, 0.42);
+  /* Backgrounds — pure dark, no blue cast */
+  --bg:           #0a0a12;
+  --bg-soft:      #0f0f1a;
+  --bg-card:      #111118;
+  --bg-raised:    #16161f;
+
+  /* Panels */
+  --panel:        rgba(14, 14, 22, 0.82);
+  --panel-strong: rgba(10, 10, 16, 0.97);
+  --panel-border: rgba(255, 255, 255, 0.07);
+  --panel-border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Text — high contrast, no blue tint */
+  --text-primary:   #f0f8ff;
+  --text-secondary: #9ba3b4;
+  --text-muted:     #5a6272;
+
+  /* Accent — electric teal (Hyperliquid DNA) */
+  --teal:       #00d4aa;
+  --teal-soft:  rgba(0, 212, 170, 0.14);
+  --teal-glow:  rgba(0, 212, 170, 0.30);
+
+  /* Legacy alias — keeps old --cyan references working */
+  --cyan:       #00d4aa;
+  --cyan-soft:  rgba(0, 212, 170, 0.14);
+
+  /* Profit / Loss — maximum clarity */
+  --green:      #00ff87;
+  --green-dim:  #00cc6a;
+  --green-soft: rgba(0, 255, 135, 0.12);
+
+  --red:        #ff3a50;
+  --red-dim:    #cc2f40;
+  --red-soft:   rgba(255, 58, 80, 0.12);
+
+  /* Gold — tournaments, prizes, rank #1 */
+  --gold:       #f5c842;
+  --gold-soft:  rgba(245, 200, 66, 0.14);
+
+  /* Shadows */
+  --shadow-sm:  0 2px 8px rgba(0, 0, 0, 0.40);
+  --shadow:     0 8px 32px rgba(0, 0, 0, 0.50);
+  --shadow-lg:  0 24px 60px rgba(0, 0, 0, 0.60);
+  --shadow-teal: 0 0 24px rgba(0, 212, 170, 0.20);
 }
 
 @theme inline {
@@ -28,82 +68,78 @@
   --font-mono: var(--font-mono-family);
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(102, 227, 255, 0.18), transparent 28%),
-    radial-gradient(circle at top right, rgba(255, 212, 121, 0.16), transparent 30%),
-    linear-gradient(180deg, #08101c 0%, #07111f 42%, #050b15 100%);
+  background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-display-family), sans-serif;
+  /* Subtle radial depth — just enough to feel alive, not distracting */
+  background-image:
+    radial-gradient(ellipse 120% 60% at 50% -20%, rgba(0, 212, 170, 0.06) 0%, transparent 70%);
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+a { color: inherit; text-decoration: none; }
 
 ::selection {
-  background: rgba(102, 227, 255, 0.28);
+  background: rgba(0, 212, 170, 0.25);
   color: white;
 }
 
+/* ── Grid background (very subtle) ── */
 .arena-grid {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-position: center;
-  background-size: 72px 72px;
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 64px 64px;
 }
 
+/* ── Panels ── */
 .glass-panel {
   background: var(--panel);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(16px);
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow);
 }
 
 .glass-panel-strong {
   background: var(--panel-strong);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--panel-border-strong);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-lg);
 }
 
-.text-balance {
-  text-wrap: balance;
+/* Standard card — used everywhere */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--panel-border);
+  border-radius: 1rem;
 }
+
+.card-raised {
+  background: var(--bg-raised);
+  border: 1px solid var(--panel-border);
+  border-radius: 1rem;
+}
+
+/* ── Typography ── */
+.text-balance { text-wrap: balance; }
 
 .text-gradient {
-  background: linear-gradient(120deg, var(--cyan) 10%, #d8f8ff 40%, var(--gold) 92%);
+  background: linear-gradient(135deg, var(--teal) 0%, #80ffdb 50%, var(--gold) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.pill {
-  border: 1px solid var(--panel-border);
-  background: rgba(255, 255, 255, 0.03);
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
-.divider {
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0),
-    rgba(140, 192, 255, 0.28),
-    rgba(255, 255, 255, 0)
-  );
-}
-
+/* ── Status pills ── */
 .status-live {
   color: var(--green);
   background: var(--green-soft);
@@ -115,130 +151,145 @@ a {
 }
 
 .status-settled {
-  color: var(--text-secondary);
-  background: rgba(162, 183, 212, 0.12);
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
 }
 
+/* ── Profit / Loss colors ── */
+.profit { color: var(--green); }
+.loss   { color: var(--red); }
+.neutral { color: var(--text-secondary); }
+
+/* ── Teal glow button ── */
+.btn-primary {
+  background: var(--teal);
+  color: #000;
+  font-weight: 700;
+  border-radius: 999px;
+  transition: opacity 0.15s, transform 0.15s;
+  box-shadow: 0 0 20px rgba(0, 212, 170, 0.30);
+}
+.btn-primary:hover { opacity: 0.90; transform: translateY(-1px); }
+.btn-primary:active { transform: scale(0.97); }
+
+.btn-ghost {
+  border: 1px solid var(--panel-border-strong);
+  color: var(--text-primary);
+  border-radius: 999px;
+  transition: background 0.15s;
+}
+.btn-ghost:hover { background: rgba(255, 255, 255, 0.05); }
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--panel-border-strong), transparent);
+}
+
+/* ── Live pulse dot ── */
+.live-dot {
+  width: 7px; height: 7px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* ── Scanline shimmer (cards) ── */
 .signal-line {
   position: relative;
   overflow: hidden;
 }
-
 .signal-line::after {
   content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    110deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.06) 25%,
-    transparent 50%
-  );
+  position: absolute; inset: 0;
+  background: linear-gradient(110deg, transparent 0%, rgba(0,212,170,0.04) 50%, transparent 100%);
   transform: translateX(-140%);
-  animation: sweep 8s linear infinite;
+  animation: sweep 10s linear infinite;
 }
 
 @keyframes sweep {
-  to {
-    transform: translateX(160%);
-  }
+  to { transform: translateX(160%); }
 }
 
+/* ── Row hover (Hyperliquid-style) ── */
+.row-hover {
+  transition: background 0.12s;
+  cursor: pointer;
+}
+.row-hover:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+/* ── Animations ── */
 @keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
+.fade-up { animation: rise 0.5s ease both; }
+
+@keyframes flash-green {
+  0%   { background: rgba(0, 255, 135, 0.15); }
+  100% { background: transparent; }
+}
+@keyframes flash-red {
+  0%   { background: rgba(255, 58, 80, 0.15); }
+  100% { background: transparent; }
+}
+
+.flash-profit { animation: flash-green 1.2s ease; }
+.flash-loss   { animation: flash-red 1.2s ease; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.18); }
+
+/* ── Mobile bottom nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 50;
+  background: rgba(10, 10, 18, 0.96);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+}
+
+/* ── Price flash (ticker updates) ── */
+@keyframes tick-up {
+  0%   { color: var(--green); }
+  100% { color: inherit; }
+}
+@keyframes tick-down {
+  0%   { color: var(--red); }
+  100% { color: inherit; }
+}
+.tick-up   { animation: tick-up   0.8s ease; }
+.tick-down { animation: tick-down 0.8s ease; }
+
+/* ── Pill ── */
+.pill {
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ── Overlay grid (hero sections) ── */
 .arena-overlay-grid {
   background-image:
-    linear-gradient(rgba(102, 227, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(102, 227, 255, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(0, 212, 170, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 170, 0.04) 1px, transparent 1px);
   background-size: 80px 80px;
-  background-position: center;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 85%);
-}
-
-@keyframes arena-float-up {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.92);
-  }
-
-  16% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate3d(0, -76px, 0) scale(1.06);
-  }
-}
-
-@keyframes arena-crit-banner {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.86);
-  }
-
-  18% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.04);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -88px) scale(1);
-  }
-}
-
-@keyframes arena-scanline {
-  0% {
-    transform: translateX(-135%);
-  }
-
-  100% {
-    transform: translateX(135%);
-  }
-}
-
-.arena-scanline {
-  position: relative;
-  overflow: hidden;
-}
-
-.arena-scanline::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    110deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.12) 30%,
-    transparent 60%
-  );
-  animation: arena-scanline 7s linear infinite;
-}
-
-.fade-up {
-  animation: rise 0.7s ease both;
-}
-
-::-webkit-scrollbar {
-  width: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: #07111f;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(140, 192, 255, 0.18);
-  border-radius: 999px;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.8), transparent 90%);
 }

@@ -20,7 +20,7 @@ function TournamentCard({ t }: { t: any }) {
   return (
     <div className={`rounded-[1.6rem] border p-6 transition ${
       isLive
-        ? "border-[var(--cyan)]/30 bg-[var(--cyan)]/5"
+        ? "border-[var(--teal)]/30 bg-[var(--teal)]/5"
         : "border-white/10 bg-white/5 hover:bg-white/8"
     }`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -43,9 +43,9 @@ function TournamentCard({ t }: { t: any }) {
         </div>
 
         {/* Prize pool badge */}
-        <div className="rounded-[1rem] border border-[var(--cyan)]/20 bg-[var(--cyan)]/10 px-4 py-3 text-center">
+        <div className="rounded-[1rem] border border-[var(--teal)]/20 bg-[var(--teal)]/10 px-4 py-3 text-center">
           <div className="text-xs uppercase tracking-wider text-[var(--text-muted)]">Prize Pool</div>
-          <div className="mt-1 text-2xl font-black text-[var(--cyan)]">
+          <div className="mt-1 text-2xl font-black text-[var(--teal)]">
             ${t.prizePoolUsdc.toFixed(0)}
           </div>
           <div className="text-[10px] text-[var(--text-muted)]">USDC</div>
@@ -98,8 +98,8 @@ function TournamentCard({ t }: { t: any }) {
               spotsLeft === 0
                 ? "border border-white/10 text-[var(--text-muted)] cursor-not-allowed"
                 : isLive
-                ? "bg-[var(--cyan)] text-black hover:opacity-90"
-                : "border border-[var(--cyan)]/30 text-[var(--cyan)] hover:bg-[var(--cyan)]/10"
+                ? "bg-[var(--teal)] text-black hover:opacity-90"
+                : "border border-[var(--teal)]/30 text-[var(--teal)] hover:bg-[var(--teal)]/10"
             }`}
           >
             {spotsLeft === 0 ? "Full" : isLive ? "Enter now" : "Enroll →"}
@@ -148,7 +148,7 @@ export default async function TournamentsPage() {
               </p>
               <Link
                 href="/challenges"
-                className="mt-6 inline-block rounded-full bg-[var(--cyan)] px-6 py-3 text-sm font-semibold text-black"
+                className="mt-6 inline-block rounded-full bg-[var(--teal)] px-6 py-3 text-sm font-semibold text-black"
               >
                 Start competing →
               </Link>

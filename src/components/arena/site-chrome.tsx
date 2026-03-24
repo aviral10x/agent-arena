@@ -1,107 +1,111 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { useState, useEffect, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { cx } from "@/components/arena/ui";
 
 const ConnectButtonSafe = dynamic(
   () => import('./connect-button-safe'),
-  { ssr: false, loading: () => <div className="h-9 w-28 rounded-full bg-white/10 animate-pulse" /> }
+  { ssr: false, loading: () => <div className="h-8 w-24 rounded-full bg-white/8 animate-pulse" /> }
 );
 
-// Primary nav shown on desktop
-const navigation = [
-  { href: "/",             label: "Overview"    },
-  { href: "/competitions", label: "Compete"     },
-  { href: "/challenges",   label: "Challenge"   },
-  { href: "/tournaments",  label: "Tournaments" },
-  { href: "/leaderboard",  label: "Leaderboard" },
-  { href: "/agents",       label: "Agents"      },
-  { href: "/agents/create",label: "Build"       },
+/* 4 nav items — Arena covers competitions+challenges+tournaments */
+const NAV = [
+  { href: "/arena",       label: "Arena",       icon: "⚔" },
+  { href: "/leaderboard", label: "Ranks",        icon: "🏆" },
+  { href: "/agents",      label: "Agents",       icon: "🤖" },
+  { href: "/agents/create", label: "Build",      icon: "⚡" },
 ];
 
 export function SiteChrome({ children, activeHref }: { children: ReactNode; activeHref?: string }) {
-  const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const active = activeHref ?? pathname;
 
-  useEffect(() => { setMounted(true); }, []);
-  // Close menu on route change
-  useEffect(() => { setMenuOpen(false); }, [activeHref]);
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+
+  const isActive = (href: string) =>
+    active === href || (href !== "/" && active?.startsWith(href));
 
   return (
-    <div className="arena-grid min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-[rgba(7,17,31,0.85)] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+    <div className="arena-grid min-h-screen flex flex-col">
+      {/* ── Top nav ─────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[rgba(10,10,18,0.92)] backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--panel-border-strong)] bg-[rgba(102,227,255,0.1)]">
-              <svg viewBox="0 0 40 40" className="h-5 w-5 text-[var(--cyan)]" fill="none">
-                <path d="M10 28L20 10L30 28H10Z" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round"/>
-                <circle cx="20" cy="22" r="3" fill="currentColor"/>
+          <Link href="/" className="flex items-center gap-2.5 shrink-0 mr-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--teal)]/25 bg-[var(--teal)]/10">
+              <svg viewBox="0 0 40 40" className="h-4 w-4 text-[var(--teal)]" fill="none">
+                <path d="M10 28L20 10L30 28H10Z" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round"/>
+                <circle cx="20" cy="23" r="3" fill="currentColor"/>
               </svg>
             </div>
-            <div className="hidden sm:block">
-              <div className="text-base font-semibold tracking-[-0.04em] text-white">Agent Arena</div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-muted)]">X Layer</div>
-            </div>
-            <div className="sm:hidden">
-              <div className="text-sm font-semibold tracking-[-0.03em] text-white">Agent Arena</div>
-            </div>
+            <span className="hidden text-sm font-bold tracking-tight text-white sm:block">
+              Agent Arena
+            </span>
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden items-center gap-1 md:flex">
-            {navigation.map(item => (
-              <Link key={item.href} href={item.href}
+          <nav className="hidden md:flex items-center gap-0.5">
+            {NAV.map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
                 className={cx(
-                  "rounded-full px-3 py-1.5 text-sm transition",
-                  activeHref === item.href ? "bg-white/10 text-white" : "text-[var(--text-secondary)] hover:text-white"
+                  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                  isActive(item.href)
+                    ? "bg-[var(--teal)]/12 text-[var(--teal)]"
+                    : "text-[var(--text-secondary)] hover:text-white hover:bg-white/5"
                 )}
               >
+                <span className="text-xs">{item.icon}</span>
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          {/* Right controls */}
-          <div className="flex items-center gap-2">
-            <div className="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-[var(--text-secondary)] sm:block">
-              Chain 196 · x402
+          {/* Right side */}
+          <div className="ml-auto flex items-center gap-2">
+            {/* Live indicator */}
+            <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-[var(--green)]/20 bg-[var(--green)]/8 px-2.5 py-1">
+              <div className="live-dot" />
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--green)]">Live</span>
             </div>
-            {mounted && <ConnectButtonSafe />}
-            {/* Hamburger — mobile only */}
+
+            <ConnectButtonSafe />
+
+            {/* Mobile hamburger */}
             <button
               onClick={() => setMenuOpen(v => !v)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10 md:hidden"
-              aria-label="Toggle menu"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white md:hidden"
+              aria-label="Menu"
             >
-              {menuOpen ? (
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              ) : (
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-              )}
+              {menuOpen
+                ? <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                : <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+              }
             </button>
           </div>
         </div>
 
-        {/* Mobile dropdown nav */}
+        {/* Mobile dropdown */}
         {menuOpen && (
-          <div className="border-t border-white/10 bg-[rgba(7,17,31,0.97)] px-4 py-3 md:hidden">
+          <div className="border-t border-white/[0.06] bg-[rgba(10,10,18,0.98)] px-4 py-3 md:hidden">
             <nav className="flex flex-col gap-1">
-              {[...navigation, { href: "/signals", label: "Signals" }].map(item => (
-                <Link key={item.href} href={item.href}
-                  onClick={() => setMenuOpen(false)}
+              {[...NAV, { href: "/signals", label: "Signals", icon: "📡" }].map(item => (
+                <Link
+                  key={item.href}
+                  href={item.href}
                   className={cx(
-                    "rounded-xl px-4 py-2.5 text-sm transition",
-                    activeHref === item.href ? "bg-white/10 text-white font-medium" : "text-[var(--text-secondary)] hover:bg-white/5 hover:text-white"
+                    "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
+                    isActive(item.href)
+                      ? "bg-[var(--teal)]/12 text-[var(--teal)]"
+                      : "text-[var(--text-secondary)] hover:text-white hover:bg-white/5"
                   )}
                 >
+                  <span>{item.icon}</span>
                   {item.label}
                 </Link>
               ))}
@@ -110,20 +114,35 @@ export function SiteChrome({ children, activeHref }: { children: ReactNode; acti
         )}
       </header>
 
-      <main>{children}</main>
+      {/* ── Page content ──────────────────────────────────────────────── */}
+      <main className="flex-1 pb-20 md:pb-0">{children}</main>
 
-      <footer className="border-t border-white/10">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-sm text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <div className="text-xs leading-6">Agent Arena · Autonomous trading competitions on X Layer.</div>
-          <div className="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-[0.18em]">
-            <span>OKX Onchain OS</span>
-            <span className="text-white/20">/</span>
-            <span>x402</span>
-            <span className="text-white/20">/</span>
-            <span>USDC pots</span>
-          </div>
-        </div>
-      </footer>
+      {/* ── Mobile bottom nav (Robinhood/Hyperliquid style) ──────────── */}
+      <nav className="bottom-nav md:hidden">
+        {NAV.map(item => {
+          const on = isActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex flex-1 flex-col items-center gap-0.5 py-1 transition-colors"
+            >
+              <span className="text-lg leading-none">{item.icon}</span>
+              <span
+                className={cx(
+                  "text-[10px] font-semibold transition-colors",
+                  on ? "text-[var(--teal)]" : "text-[var(--text-muted)]"
+                )}
+              >
+                {item.label}
+              </span>
+              {on && (
+                <div className="mt-0.5 h-0.5 w-4 rounded-full bg-[var(--teal)]" />
+              )}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

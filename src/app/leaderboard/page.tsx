@@ -74,7 +74,7 @@ export default async function LeaderboardPage() {
               </p>
               <Link
                 href="/competitions"
-                className="mt-6 inline-block rounded-full bg-[var(--cyan)] px-6 py-3 text-sm font-semibold text-black"
+                className="mt-6 inline-block rounded-full bg-[var(--teal)] px-6 py-3 text-sm font-semibold text-black"
               >
                 Browse competitions →
               </Link>
@@ -174,7 +174,7 @@ export default async function LeaderboardPage() {
                     <div className="hidden items-center justify-end lg:flex">
                       <RecentDots results={card?.recentResults ?? ""} />
                     </div>
-                    <div className="hidden text-right text-sm text-[var(--cyan)] lg:block">
+                    <div className="hidden text-right text-sm text-[var(--teal)] lg:block">
                       {s.totalPrizeUsdc > 0 ? `$${s.totalPrizeUsdc.toFixed(0)}` : "—"}
                     </div>
                   </div>

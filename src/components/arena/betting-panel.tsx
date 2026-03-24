@@ -202,7 +202,7 @@ export function BettingPanel({
         </div>
         <div className="flex items-center gap-2">
           {totalBet > 0 && (
-            <div className="rounded-full border border-[var(--cyan)]/20 bg-[var(--cyan)]/10 px-3 py-1 text-xs font-semibold text-[var(--cyan)]">
+            <div className="rounded-full border border-[var(--teal)]/20 bg-[var(--teal)]/10 px-3 py-1 text-xs font-semibold text-[var(--teal)]">
               ${totalBet.toFixed(0)} pool
             </div>
           )}
@@ -289,8 +289,8 @@ export function BettingPanel({
 
           {/* Placed bet confirmation */}
           {placedBet && (
-            <div className="rounded-[1rem] border border-[var(--cyan)]/30 bg-[var(--cyan)]/10 px-4 py-3 text-sm">
-              <span className="text-[var(--cyan)] font-semibold">
+            <div className="rounded-[1rem] border border-[var(--teal)]/30 bg-[var(--teal)]/10 px-4 py-3 text-sm">
+              <span className="text-[var(--teal)] font-semibold">
                 ✓ Bet placed: ${placedBet.amount} on {agents.find(a => a.id === placedBet.agentId)?.name}
               </span>
               <div className="text-xs text-[var(--text-muted)] mt-0.5">
@@ -313,7 +313,7 @@ export function BettingPanel({
                       onClick={() => { setAmount(a); setCustomAmount(""); }}
                       className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${
                         amount === a && !customAmount
-                          ? "bg-[var(--cyan)] text-black"
+                          ? "bg-[var(--teal)] text-black"
                           : "border border-white/10 text-white hover:bg-white/5"
                       }`}
                     >
@@ -325,7 +325,7 @@ export function BettingPanel({
                     placeholder="Custom"
                     value={customAmount}
                     onChange={(e) => setCustomAmount(e.target.value)}
-                    className="flex-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-[var(--text-muted)] focus:border-[var(--cyan)]/50 focus:outline-none"
+                    className="flex-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-[var(--text-muted)] focus:border-[var(--teal)]/50 focus:outline-none"
                     min="0.1"
                     step="0.1"
                   />
@@ -343,7 +343,7 @@ export function BettingPanel({
                 disabled={!selectedAgent || isPlacing || effectiveAmount <= 0}
                 className={`w-full rounded-full py-3 text-sm font-semibold transition active:scale-[0.98] ${
                   selectedAgent && effectiveAmount > 0
-                    ? "bg-[var(--cyan)] text-black hover:opacity-90"
+                    ? "bg-[var(--teal)] text-black hover:opacity-90"
                     : "border border-white/10 text-[var(--text-muted)] cursor-not-allowed"
                 }`}
               >

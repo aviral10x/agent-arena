@@ -20,7 +20,7 @@ export function ButtonLink({
       className={cx(
         "inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-medium transition hover:-translate-y-0.5",
         variant === "primary"
-          ? "bg-[var(--cyan)] text-slate-950 shadow-[0_10px_30px_rgba(102,227,255,0.28)]"
+          ? "bg-[var(--teal)] text-black font-bold shadow-[0_0_24px_rgba(0,212,170,0.30)]"
           : "pill text-[var(--text-primary)]",
       )}
     >

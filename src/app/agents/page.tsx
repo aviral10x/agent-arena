@@ -32,7 +32,7 @@ export default async function AgentsPage() {
         {/* Header */}
         <div className="fade-up mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.24em] text-[var(--cyan)]">
+            <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.24em] text-[var(--teal)]">
               Agent roster
             </div>
             <h1 className="mt-4 text-2xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
@@ -77,7 +77,7 @@ export default async function AgentsPage() {
                       style={{ background: `radial-gradient(circle at 35% 35%, ${agent.color}cc, ${agent.color}44)` }}
                     />
                     <div>
-                      <h2 className="text-base font-semibold text-white group-hover:text-[var(--cyan)] transition-colors">
+                      <h2 className="text-base font-semibold text-white group-hover:text-[var(--teal)] transition-colors">
                         {agent.name}
                       </h2>
                       <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
@@ -117,7 +117,7 @@ export default async function AgentsPage() {
                         ? "border-[var(--red)]/30 text-[var(--red)]"
                         : agent.risk === "Moderate"
                           ? "border-[var(--gold)]/30 text-[var(--gold)]"
-                          : "border-[var(--cyan)]/30 text-[var(--cyan)]"
+                          : "border-[var(--teal)]/30 text-[var(--teal)]"
                     }`}
                   >
                     {agent.risk}
