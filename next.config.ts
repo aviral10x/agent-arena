@@ -1,8 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Tell Turbopack/bundler NOT to bundle these — use them as native Node.js modules at runtime
-  serverExternalPackages: ['@libsql/client', '@prisma/adapter-libsql'],
+  // Exclude libsql from bundling — must be treated as native Node modules at runtime
+  serverExternalPackages: ['@libsql/client', '@libsql/client/web', '@prisma/adapter-libsql'],
+
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = [
+        ...(Array.isArray(config.externals) ? config.externals : [config.externals].filter(Boolean)),
+        '@libsql/client',
+        '@libsql/client/web',
+        '@prisma/adapter-libsql',
+      ];
+    }
+    return config;
+  },
 
   async headers() {
     return [
