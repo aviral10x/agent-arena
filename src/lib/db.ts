@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
-// Validate environment variables at startup
+import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { createClient } from "@libsql/client";
 import "@/lib/env";
 
 const globalForPrisma = globalThis as unknown as {
@@ -12,24 +13,18 @@ const isSQLite = databaseUrl.startsWith("file:") || databaseUrl.endsWith(".db");
 const isTurso = !!process.env.TURSO_DATABASE_URL;
 
 function createPrismaClient(): PrismaClient {
-  // Turso (cloud SQLite) — used in production/Vercel
   if (isTurso) {
-    const { createClient } = require("@libsql/client");
-    const { PrismaLibSQL } = require("@prisma/adapter-libsql");
-
     const libsql = createClient({
       url: process.env.TURSO_DATABASE_URL!,
       authToken: process.env.TURSO_AUTH_TOKEN!,
     });
-
-    const adapter = new PrismaLibSQL(libsql);
+    const adapter = new PrismaLibSql(libsql as any);
     return new PrismaClient({
       adapter,
       log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-    });
+    } as any);
   }
 
-  // Local SQLite — used in dev
   return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
     datasourceUrl: process.env.DATABASE_URL,
@@ -40,7 +35,6 @@ export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-// Enable WAL mode + busy timeout on first init for local SQLite only
 if (isSQLite && !isTurso && !globalForPrisma.dbReady) {
   globalForPrisma.dbReady = true;
   void (async () => {
