@@ -6,9 +6,9 @@ import { defineChain } from 'viem';
 
 export const USE_TESTNET = process.env.USE_TESTNET === 'true' || process.env.NODE_ENV !== 'production';
 
-// X Layer Testnet (chain ID 195)
+// X Layer Testnet (chain ID 1952 = 0x7a0, confirmed via eth_chainId)
 export const xLayerTestnet = defineChain({
-  id: 195,
+  id: 1952,
   name: 'X Layer Testnet',
   nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
   rpcUrls: {
@@ -40,7 +40,7 @@ export const xLayerMainnet = defineChain({
 });
 
 export const activeChain = USE_TESTNET ? xLayerTestnet : xLayerMainnet;
-export const activeChainId = USE_TESTNET ? 195 : 196;
+export const activeChainId = USE_TESTNET ? 1952 : 196;
 export const explorerBase = USE_TESTNET
   ? 'https://www.oklink.com/xlayer-test/tx'
   : 'https://www.oklink.com/xlayer/tx';

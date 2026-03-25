@@ -141,7 +141,7 @@ export async function getSwapQuote(
 
   const endpoint = forExecution ? 'swap' : 'quote';
   const params = new URLSearchParams({
-    chainIndex:       USE_TESTNET ? '195' : '196',
+    chainIndex:       USE_TESTNET ? '1952' : '196',
     fromTokenAddress: from.address,
     toTokenAddress:   to.address,
     amount:           amountIn,
