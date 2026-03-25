@@ -4,14 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build --webpack",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.47",
     "@libsql/client": "^0.17.2",
+    "@neondatabase/serverless": "^1.0.2",
     "@prisma/adapter-libsql": "^7.5.0",
+    "@prisma/adapter-neon": "^7.5.0",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.94.5",
     "@vercel/og": "^0.11.1",
@@ -23,7 +25,8 @@
     "swr": "^2.4.1",
     "three": "^0.183.2",
     "viem": "^2.47.6",
-    "wagmi": "^2.19.5"
+    "wagmi": "^2.19.5",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@prisma/client": "^6.2.1",

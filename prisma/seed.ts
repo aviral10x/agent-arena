@@ -1,108 +1,18 @@
-import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
-import { agents, competitions, tradeFeed } from "../src/lib/arena-data";
-
 const prisma = new PrismaClient();
 
-// Parse raw dollar volume from display strings like "$4.2k" → 4200
-function parseVolumeUsd(str: string): number {
-  const n = parseFloat(str.replace(/[^0-9.]/g, "") || "0");
-  if (str.toLowerCase().includes("k")) return n * 1000;
-  if (str.toLowerCase().includes("m")) return n * 1_000_000;
-  return n;
-}
+const agents = [
+  { id: "momentum-bot",   name: "MomentumBot",  archetype: "Breakout hunter",    strategy: "Buys tokens showing accelerating volume and clean breakout structure, then exits when momentum cools.", risk: "Aggressive",   color: "#66e3ff", owner: "Arena Labs", wallet: "0x8C490A2", bio: "Designed for noisy meme cycles.", traits: JSON.stringify(["Volume spikes","Fast exits","Meme beta"]) },
+  { id: "mean-revert",    name: "MeanRevertBot", archetype: "Contrarian scalper", strategy: "Fades exhaustion and buys oversold reversion setups.", risk: "Moderate",    color: "#b0a4ff", owner: "Arena Labs", wallet: "0x3F1441B", bio: "Excels in flat ranges.", traits: JSON.stringify(["RSI extremes","Tight stops","Range bias"]) },
+  { id: "whale-follower", name: "WhaleFollower", archetype: "Signal copier",      strategy: "Mirrors high-signal wallet movements from OKX smart-money streams.", risk: "Moderate",    color: "#49f3a6", owner: "Arena Labs", wallet: "0x71DC128", bio: "Each trade backed by wallet flow context.", traits: JSON.stringify(["Whale mirroring","Flow filters","Event driven"]) },
+  { id: "diversi-bot",    name: "DiversiBot",    archetype: "Portfolio balancer", strategy: "Maintains a diversified basket and rebalances aggressively.", risk: "Conservative", color: "#ffd479", owner: "Arena Labs", wallet: "0x4AE0072", bio: "Difficult to knock out over a long match.", traits: JSON.stringify(["Risk caps","Rebalancing","Cash buffers"]) },
+];
 
 async function main() {
-  console.log("Seeding database...");
-
-  // 1. Seed Agents
-  for (const agent of agents) {
-    await prisma.agent.upsert({
-      where:  { id: agent.id },
-      update: {},
-      create: {
-        id:        agent.id,
-        name:      agent.name,
-        archetype: agent.archetype,
-        strategy:  agent.strategy,
-        risk:      agent.risk,
-        winRate:   agent.winRate,
-        color:     agent.color,
-        owner:     agent.owner,
-        wallet:    agent.wallet,
-        bio:       agent.bio,
-        traits:    JSON.stringify(agent.traits),
-      },
-    });
+  for (const a of agents) {
+    await prisma.agent.upsert({ where: { id: a.id }, update: {}, create: { ...a, winRate: "0%" } });
+    console.log(`✓ ${a.name}`);
   }
-  console.log(`Seeded ${agents.length} agents`);
-
-  // 2. Seed Competitions + CompetitionAgent join rows
-  for (const comp of competitions) {
-    await prisma.competition.upsert({
-      where:  { id: comp.id },
-      update: {},
-      create: {
-        id:          comp.id,
-        title:       comp.title,
-        mode:        comp.mode,
-        status:      comp.status,
-        duration:    comp.duration,
-        countdown:   comp.countdown,
-        entryFee:    comp.entryFee,
-        prizePool:   comp.prizePool,
-        spectators:  comp.spectators,
-        volumeUsd:   parseVolumeUsd((comp as any).volume ?? "0"), // FIX 1.2
-        track:       comp.track,
-        premise:     comp.premise,
-        startedAt:   comp.status === "live" || comp.status === "settled" ? new Date() : null,
-      },
-    });
-
-    for (const ca of comp.agents) {
-      const startingPortfolio = 10;
-      await prisma.competitionAgent.upsert({
-        where: {
-          competitionId_agentId: { competitionId: comp.id, agentId: ca.id },
-        },
-        update: {},
-        create: {
-          competitionId:     comp.id,
-          agentId:           ca.id,
-          pnl:               ca.pnl,
-          pnlPct:            ((ca.portfolio - startingPortfolio) / startingPortfolio) * 100, // FIX 1.1
-          portfolio:         ca.portfolio,
-          startingPortfolio,
-          trades:            ca.trades,
-          score:             ca.score,
-        },
-      });
-    }
-  }
-  console.log(`Seeded ${competitions.length} competitions`);
-
-  // 3. Seed Trades (remove hardcoded "time" field — FIX 1.3)
-  for (const trade of tradeFeed) {
-    await prisma.trade.upsert({
-      where:  { id: trade.id },
-      update: {},
-      create: {
-        id:            trade.id,
-        type:          trade.type,
-        agentId:       trade.agentId,
-        competitionId: "047",
-        pair:          trade.pair,
-        amount:        trade.amount,
-        amountUsd:     parseFloat(trade.amount.replace(/[^0-9.]/g, "") || "0"),
-        rationale:     trade.rationale,
-        priceImpact:   trade.priceImpact,
-        // timestamp defaults to now() — FIX 1.3
-      },
-    });
-  }
-  console.log(`Seeded ${tradeFeed.length} trades`);
+  console.log("Seeded!");
 }
-
-main()
-  .then(async () => { await prisma.$disconnect(); console.log("Seeding complete!"); })
-  .catch(async (e) => { console.error(e); await prisma.$disconnect(); process.exit(1); });
+main().catch(console.error).finally(() => prisma.$disconnect());
