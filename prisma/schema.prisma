@@ -312,6 +312,8 @@ model SpectatorBet {
   competition  Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   betterAgent  Agent?      @relation(fields: [betterAgentId], references: [id])
 
+  @@unique([competitionId, betterWallet])  // one bet per wallet per competition — DB-enforced
+  @@unique([txSignature])                  // replay protection — DB-enforced
   @@index([competitionId])
   @@index([betterWallet])
 }

@@ -29,14 +29,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     if (amountUsdc < 0.01) return NextResponse.json({ error: 'Minimum bet is $0.01' }, { status: 400 });
+    if (amountUsdc > 100)  return NextResponse.json({ error: 'Maximum bet is $100' },  { status: 400 });
 
-    // Demo/dry_run mode: if payload has txSignature (simplified) instead of full EIP-3009 payload,
-    // skip on-chain verification and use txSignature as the replay-protection key.
+    // Determine payment mode:
+    // - Full EIP-3009 (payload.from set, no txSignature key) → verify on-chain
+    // - Demo mode (payload.txSignature key present OR no payload.from) → skip verify, cap at $1
     const txSig: string = (payload as any).txSignature ?? payload.signature ?? `demo_${Date.now()}`;
     const isDemoPayload = !!(payload as any).txSignature || !payload.from;
 
-    if (!isDemoPayload) {
-      // Full EIP-3009 path
+    if (isDemoPayload) {
+      // Demo: cap bet at $1 to prevent abuse without real payment
+      if (amountUsdc > 1) return NextResponse.json({ error: 'Demo bets capped at $1 — connect X Layer wallet for larger bets' }, { status: 400 });
+    } else {
+      // Full EIP-3009 path — verify the on-chain payment
       const verified = await verifyX402Payment(payload, 'bet', `${id}:${betterWallet}`, amountUsdc);
       if (!verified.ok) return NextResponse.json({ error: verified.error }, { status: 402 });
     }

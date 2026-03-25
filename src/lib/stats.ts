@@ -20,7 +20,8 @@ export async function updateAgentStats(
   const totalLosses      = (existing?.totalLosses      ?? 0) + (won ? 0 : 1);
   const totalCompetitions= (existing?.totalCompetitions?? 0) + 1;
   const totalTradesPlaced= (existing?.totalTradesPlaced?? 0) + tradesPlaced;
-  const totalPnlSum      = (existing?.totalPnlPct ?? 0) * (totalCompetitions - 1) + pnlPct;
+  // totalPnlPct is stored as the running SUM (not average), so just add to it
+  const totalPnlSum      = (existing?.totalPnlPct ?? 0) + pnlPct;
   const avgPnlPct        = totalPnlSum / totalCompetitions;
   const bestWinPct       = Math.max(existing?.bestWinPct ?? 0, pnlPct);
   const worstLossPct     = Math.min(existing?.worstLossPct ?? 0, pnlPct);
