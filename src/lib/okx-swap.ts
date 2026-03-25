@@ -22,21 +22,28 @@ import {
   type Hash,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { xLayer } from 'wagmi/chains';
+import { activeChain, USE_TESTNET, TESTNET_TOKENS, getTxExplorerUrl } from './chain-config';
 
 // ── Chain clients ──────────────────────────────────────────────────────────────
+const RPC_URL = USE_TESTNET
+  ? (process.env.XLAYER_TESTNET_RPC_URL ?? 'https://testrpc.xlayer.tech')
+  : (process.env.XLAYER_RPC_URL ?? 'https://rpc.xlayer.tech');
+
 const publicClient = createPublicClient({
-  chain: xLayer,
-  transport: http(process.env.XLAYER_RPC_URL ?? 'https://rpc.xlayer.tech'),
+  chain: activeChain,
+  transport: http(RPC_URL),
 });
 
-// ── Token registry (X Layer chain 196) ────────────────────────────────────────
-export const TOKENS: Record<string, { address: `0x${string}`; decimals: number }> = {
+// ── Token registry ─────────────────────────────────────────────────────────────
+// Mainnet tokens (chain 196)
+const MAINNET_TOKENS: Record<string, { address: `0x${string}`; decimals: number }> = {
   OKB:  { address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', decimals: 18 }, // native
   USDC: { address: '0x74b7f16337b8972027f6196a17a631ac6de26d22', decimals: 6  },
   WBTC: { address: '0xea034fb02eb1808c2cc3adbc15f447b93cbe08e1', decimals: 8  },
   WETH: { address: '0x5a77f1443d16ee5761d310e38b62f77f726bc71c', decimals: 18 },
 };
+
+export const TOKENS = USE_TESTNET ? TESTNET_TOKENS : MAINNET_TOKENS;
 
 const ERC20_ABI = parseAbi([
   'function approve(address spender, uint256 amount) external returns (bool)',
@@ -134,7 +141,7 @@ export async function getSwapQuote(
 
   const endpoint = forExecution ? 'swap' : 'quote';
   const params = new URLSearchParams({
-    chainIndex:       '196',
+    chainIndex:       USE_TESTNET ? '195' : '196',
     fromTokenAddress: from.address,
     toTokenAddress:   to.address,
     amount:           amountIn,
@@ -226,8 +233,8 @@ export async function executeSwap(
 
   const walletClient = createWalletClient({
     account,
-    chain: xLayer,
-    transport: http(process.env.XLAYER_RPC_URL ?? 'https://rpc.xlayer.tech'),
+    chain: activeChain,
+    transport: http(RPC_URL),
   });
 
   try {

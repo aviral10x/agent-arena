@@ -81,6 +81,10 @@ export default async function CompetitionPage(props: PageProps) {
     rationale: t.rationale,
     time: t.time,
     priceImpact: t.priceImpact,
+    txHash: t.txHash ?? null,
+    txChain: t.txChain ?? null,
+    txExplorerUrl: t.txExplorerUrl ?? null,
+    timestamp: t.timestamp?.toISOString() ?? new Date().toISOString(),
   }));
 
   return (

@@ -79,15 +79,18 @@ export async function GET(
           if (newestId !== lastTradeId) {
             lastTradeId = newestId;
             send('trades', trades.map((t: any) => ({
-              id:          t.id,
-              type:        t.type,
-              agentId:     t.agentId,
-              agentName:   t.agent?.name ?? t.agentId,
-              pair:        t.pair,
-              amount:      t.amount,
-              rationale:   t.rationale,
-              priceImpact: t.priceImpact,
-              timestamp:   (t.timestamp ?? t.createdAt ?? new Date()).toISOString(),
+              id:           t.id,
+              type:         t.type,
+              agentId:      t.agentId,
+              agentName:    t.agent?.name ?? t.agentId,
+              pair:         t.pair,
+              amount:       t.amount,
+              rationale:    t.rationale,
+              priceImpact:  t.priceImpact,
+              txHash:       t.txHash ?? null,
+              txChain:      t.txChain ?? null,
+              txExplorerUrl: t.txExplorerUrl ?? null,
+              timestamp:    (t.timestamp ?? t.createdAt ?? new Date()).toISOString(),
             })));
           }
 

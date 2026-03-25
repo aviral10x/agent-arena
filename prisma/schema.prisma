@@ -103,6 +103,9 @@ model Trade {
   amountUsd     Float    @default(0)
   rationale     String
   priceImpact   String
+  txHash        String?  // on-chain tx hash (null = simulation)
+  txChain       String?  // chain name e.g. "X Layer Testnet"
+  txExplorerUrl String?  // full block explorer URL
   timestamp     DateTime @default(now())
 
   competition  Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)

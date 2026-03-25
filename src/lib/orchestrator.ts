@@ -5,6 +5,7 @@ import { getDexRoute } from './okx-os';
 import { getSwapQuote } from './okx-swap';
 import { onCompetitionSettle } from './stats';
 import { settleBets } from './betting';
+import { activeChain, getTxExplorerUrl } from './chain-config';
 
 // FIX 1.3: relative timestamp from actual DB timestamp
 export function timeAgo(date: Date): string {
@@ -113,13 +114,16 @@ export async function runCompetitionTick(competitionId: string) {
           prisma.trade.create({
             data: {
               competitionId,
-              agentId:     ca.agentId,
-              type:        decision.action,
+              agentId:      ca.agentId,
+              type:         decision.action,
               pair,
-              amount:      amountStr,
-              amountUsd:   amountValue,
-              rationale:   decision.rationale,
-              priceImpact: priceImpactStr,
+              amount:       amountStr,
+              amountUsd:    amountValue,
+              rationale:    decision.rationale,
+              priceImpact:  priceImpactStr,
+              txHash:       txHash ?? null,
+              txChain:      txHash ? activeChain.name : null,
+              txExplorerUrl: txHash ? getTxExplorerUrl(txHash) : null,
             }
           }),
           prisma.competitionAgent.update({
