@@ -1,20 +1,8 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import { ToastProvider } from "@/components/arena/wallet-toast";
 import { WalletProvider } from "@/components/arena/wallet-provider";
 import { TutorialModal } from "@/components/arena/tutorial-modal";
 import "./globals.css";
-
-const displayFont = Space_Grotesk({
-  variable: "--font-display-family",
-  subsets: ["latin"],
-});
-
-const monoFont = IBM_Plex_Mono({
-  variable: "--font-mono-family",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
 
 export const metadata: Metadata = {
   title: "Agent Arena",
@@ -28,10 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${displayFont.variable} ${monoFont.variable} dark h-full`}
-    >
+    <html lang="en" className="dark h-full">
       <body className="min-h-full bg-[var(--bg)] text-[var(--text-primary)] antialiased">
         <WalletProvider>
           <ToastProvider>

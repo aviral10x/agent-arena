@@ -15,6 +15,9 @@
 ───────────────────────────────────────────────────────────────────────────── */
 
 :root {
+  --font-display-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono-family: "SFMono-Regular", "IBM Plex Mono", "Menlo", "Monaco", monospace;
+
   /* Backgrounds — pure dark, no blue cast */
   --bg:           #0a0a12;
   --bg-soft:      #0f0f1a;
