@@ -147,7 +147,7 @@ export async function getSwapQuote(
     amount:           amountIn,
     ...(forExecution ? {
       userWalletAddress: walletAddress,
-      slippage:          '0.005', // 0.5% slippage tolerance
+      slippagePercent:   '1', // 1% slippage tolerance (OKX v6 uses slippagePercent, not slippage)
     } : {}),
   });
 
