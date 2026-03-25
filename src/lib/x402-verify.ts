@@ -12,11 +12,17 @@ import { prisma } from './db';
 const publicClient = createPublicClient({ chain: xLayer, transport: http() });
 
 // Server wallet — relayer that submits transferWithAuthorization on-chain
-const RELAYER_PRIVATE_KEY = process.env.ARENA_WALLET_PRIVATE_KEY as `0x${string}` | undefined;
-const relayerAccount = RELAYER_PRIVATE_KEY ? privateKeyToAccount(RELAYER_PRIVATE_KEY) : null;
-const walletClient = relayerAccount
-  ? createWalletClient({ account: relayerAccount, chain: xLayer, transport: http() })
-  : null;
+// Lazy — only instantiate wallet client at runtime, not at build/module-load time
+function getRelayerWalletClient() {
+  const key = process.env.ARENA_WALLET_PRIVATE_KEY;
+  if (!key || !key.startsWith('0x') || key.length !== 66) return null;
+  try {
+    const account = privateKeyToAccount(key as `0x${string}`);
+    return createWalletClient({ account, chain: xLayer, transport: http() });
+  } catch {
+    return null;
+  }
+}
 
 // USDC on X Layer (chain 196)
 const USDC_ADDRESS = '0x74b7f16337b8972027f6196a17a631ac6de26d22' as const;
@@ -114,7 +120,8 @@ export async function verifyX402Payment(
 
     // 6. Submit on-chain transferWithAuthorization
     let txHash: string | undefined;
-    if (walletClient && relayerAccount) {
+    const walletClient = getRelayerWalletClient();
+    if (walletClient) {
       try {
         // Parse the compact signature into v, r, s
         const sig = payload.signature.slice(2); // strip 0x
