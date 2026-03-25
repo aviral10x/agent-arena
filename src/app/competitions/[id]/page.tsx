@@ -2,8 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteChrome } from "@/components/arena/site-chrome";
 import { LiveMatchWrapper } from "@/components/arena/live-match-wrapper";
-import { Surface, StatusPill, ButtonLink } from "@/components/arena/ui";
-import { featureRail } from "@/lib/arena-data";
+import { StatusPill } from "@/components/arena/ui";
 import { LiveCountdown } from "@/components/arena/competition-filters";
 import { X402ButtonClient } from "@/components/arena/x402-btn-client";
 import { ShareButton } from "@/components/arena/share-button";
@@ -13,21 +12,14 @@ import type { Competition } from "@/lib/arena-data";
 
 export const dynamic = "force-dynamic";
 
-type PageProps = {
-  params: Promise<{ id: string }>;
-};
+type PageProps = { params: Promise<{ id: string }> };
 
 export async function generateMetadata(props: PageProps) {
   const { id } = await props.params;
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://agentarena.xyz';
   return {
-    openGraph: {
-      images: [`${base}/api/og/competition/${id}`],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      images: [`${base}/api/og/competition/${id}`],
-    },
+    openGraph: { images: [`${base}/api/og/competition/${id}`] },
+    twitter: { card: 'summary_large_image', images: [`${base}/api/og/competition/${id}`] },
   };
 }
 
@@ -36,29 +28,21 @@ export default async function CompetitionPage(props: PageProps) {
 
   const compRecord = await prisma.competition.findUnique({
     where: { id },
-    include: {
-      agents: {
-        include: { agent: true },
-        orderBy: { score: "desc" },
-      },
-    },
+    include: { agents: { include: { agent: true }, orderBy: { score: "desc" } } },
   });
 
-  if (!compRecord) {
-    notFound();
-  }
+  if (!compRecord) notFound();
 
   const dbTrades = await prisma.trade.findMany({
     where: { competitionId: id },
     orderBy: { timestamp: "desc" },
-    take: 50,
+    take: 100,
   });
 
   const competition: Competition = {
     ...compRecord,
     mode:   compRecord.mode as any,
     status: compRecord.status as any,
-    // FIX 1.2: derive display string from raw volumeUsd
     volume: `$${((compRecord as any).volumeUsd / 1000).toFixed(1)}k`,
     agents: compRecord.agents.map((ca: any) => ({
       ...ca.agent,
@@ -73,117 +57,147 @@ export default async function CompetitionPage(props: PageProps) {
   };
 
   const tradeFeed = dbTrades.map((t: any) => ({
-    id: t.id,
-    type: t.type,
-    agentId: t.agentId,
-    pair: t.pair,
-    amount: t.amount,
-    rationale: t.rationale,
-    time: t.time,
-    priceImpact: t.priceImpact,
-    txHash: t.txHash ?? null,
-    txChain: t.txChain ?? null,
+    id: t.id, type: t.type, agentId: t.agentId,
+    pair: t.pair, amount: t.amount, rationale: t.rationale,
+    time: t.time, priceImpact: t.priceImpact,
+    txHash: t.txHash ?? null, txChain: t.txChain ?? null,
     txExplorerUrl: t.txExplorerUrl ?? null,
     timestamp: t.timestamp?.toISOString() ?? new Date().toISOString(),
   }));
 
+  const [agentA, agentB] = competition.agents as any[];
+  const winner = competition.agents.find((a: any) => a.id === compRecord.winnerId) as any;
+  const totalTrades = competition.agents.reduce((s: number, a: any) => s + (a.trades ?? 0), 0);
+
   return (
     <SiteChrome activeHref="/competitions">
-      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <div className="grid gap-5 sm:gap-6 lg:grid-cols-[1.35fr_0.9fr]">
-          <div className="space-y-6">
-            <div className="glass-panel-strong rounded-[1.4rem] p-5 sm:rounded-[1.9rem] sm:p-7 lg:p-8">
-              <div className="flex flex-wrap items-center gap-3">
-                <StatusPill status={competition.status} />
-                <span className="font-mono text-sm text-[var(--text-muted)]">
-                  Bout #{competition.id}
-                </span>
-                <span className="rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.22em] text-[var(--gold)]">
-                  {competition.mode}
-                </span>
-              </div>
+      {/* ── COMPACT HERO STRIP ─────────────────────────────────────── */}
+      <div className="border-b border-white/[0.06] bg-[var(--bg-soft)]">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
 
-              <div className="mt-5 space-y-4">
-                <h1 className="max-w-3xl text-[clamp(1.35rem,3.5vw,2.25rem)] font-semibold tracking-[-0.05em] text-white">
-                  {competition.title}
-                </h1>
-                <p className="max-w-3xl text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
-                  {competition.premise}
-                </p>
-              </div>
-
-              <div className="mt-5 sm:mt-7 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
-                {[
-                  ["Countdown", competition.countdown],
-                  ["Entry fee", competition.entryFee],
-                  ["Prize pool", competition.prizePool],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-[1.25rem] border border-white/10 bg-white/5 p-3 sm:p-4">
-                    <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                      {label}
-                    </div>
-                    <div className="mt-2 font-mono text-lg text-white min-w-0 overflow-hidden">
-                      {label === "Countdown" ? (
-                        <div className="min-w-0 overflow-hidden">
-                          <LiveCountdown
-                            targetText={value}
-                            status={competition.status}
-                            startedAt={(compRecord as any).startedAt?.toISOString()}
-                            durationSeconds={(compRecord as any).durationSeconds}
-                          />
-                        </div>
-                      ) : (
-                        value
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 sm:mt-7 flex flex-wrap gap-3">
-                {competition.status === "open" ? (
-                  <X402ButtonClient
-                    label="Enter a new agent"
-                    amount={0.01}
-                    redirectHref="/agents/create"
-                  />
-                ) : null}
-                {competition.status === "live" ? (
-                  <X402ButtonClient
-                    label="Unlock full replay data"
-                    amount={0.01}
-                  />
-                ) : competition.status === "settled" ? (
-                  <>
-                    <Link
-                      href={`/competitions/${competition.id}/replay`}
-                      className="rounded-full border border-white/10 px-5 py-3 text-sm text-[var(--text-primary)] transition hover:bg-white/5"
-                    >
-                      Open replay
-                    </Link>
-                    <ShareButton
-                      url={`${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://agentarena.xyz'}/competitions/${competition.id}`}
-                      text={`AI agents just battled on @AgentArenaXYZ — "${competition.title}". Watch the replay 👇`}
-                      label="Share result"
-                    />
-                  </>
-                ) : null}
-              </div>
+            {/* Left: title + badges */}
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <StatusPill status={competition.status} />
+              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.22em] text-[var(--gold)]">
+                {competition.mode}
+              </span>
+              <h1 className="min-w-0 truncate text-base font-bold text-white sm:text-lg">
+                {competition.title}
+              </h1>
             </div>
 
+            {/* Right: CTAs */}
+            <div className="flex shrink-0 items-center gap-2">
+              {competition.status === "open" && (
+                <X402ButtonClient label="Enter" amount={0.01} redirectHref="/agents/create" />
+              )}
+              {competition.status === "live" && (
+                <X402ButtonClient label="Unlock data" amount={0.01} />
+              )}
+              {competition.status === "settled" && (
+                <>
+                  <Link href={`/competitions/${competition.id}/replay`}
+                    className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white transition hover:bg-white/5">
+                    Replay
+                  </Link>
+                  <ShareButton
+                    url={`${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://agentarena.xyz'}/competitions/${competition.id}`}
+                    text={`AI agents battled on @AgentArenaXYZ — "${competition.title}" 👇`}
+                    label="Share"
+                  />
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Stats bar — always one line */}
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1">
+            {/* Agent A */}
+            {agentA && (
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full" style={{ background: agentA.color }} />
+                <span className="text-sm font-bold text-white">{agentA.name}</span>
+                <span className="font-mono text-sm font-bold" style={{
+                  color: (agentA.pnlPct ?? 0) >= 0 ? 'var(--green)' : 'var(--red)'
+                }}>
+                  {(agentA.pnlPct ?? 0) >= 0 ? '+' : ''}{(agentA.pnlPct ?? 0).toFixed(1)}%
+                </span>
+                {winner?.id === agentA.id && <span className="text-[var(--gold)]">🏆</span>}
+              </div>
+            )}
+
+            <span className="text-[var(--text-muted)] text-xs font-mono">VS</span>
+
+            {/* Agent B */}
+            {agentB && (
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full" style={{ background: agentB.color }} />
+                <span className="text-sm font-bold text-white">{agentB.name}</span>
+                <span className="font-mono text-sm font-bold" style={{
+                  color: (agentB.pnlPct ?? 0) >= 0 ? 'var(--green)' : 'var(--red)'
+                }}>
+                  {(agentB.pnlPct ?? 0) >= 0 ? '+' : ''}{(agentB.pnlPct ?? 0).toFixed(1)}%
+                </span>
+                {winner?.id === agentB.id && <span className="text-[var(--gold)]">🏆</span>}
+              </div>
+            )}
+
+            <div className="flex items-center gap-4 ml-auto">
+              <div className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
+                <LiveCountdown
+                  targetText={competition.countdown}
+                  status={competition.status}
+                  startedAt={(compRecord as any).startedAt?.toISOString()}
+                  durationSeconds={(compRecord as any).durationSeconds}
+                  compact
+                />
+              </div>
+              <span className="text-[11px] text-[var(--text-muted)]">{totalTrades} trades</span>
+              <span className="text-[11px] font-mono text-[var(--teal)]">{competition.volume} vol</span>
+              <span className="text-[11px] text-[var(--text-muted)]">{competition.duration}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── MAIN DASHBOARD GRID ──────────────────────────────────────── */}
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
+        {/* 
+          Layout: 
+          Mobile: stacked
+          Tablet (md): 2 cols — [leaderboard+portfolio | betting]
+          Desktop (xl): 3 cols — [leaderboard | trade feed | betting+context]
+        */}
+        <div className="grid gap-4 md:grid-cols-[1fr_320px] xl:grid-cols-[300px_1fr_300px]">
+
+          {/* ── COL 1: Leaderboard + Portfolio Bars ── */}
+          <div className="flex flex-col gap-4">
             <LiveMatchWrapper
               initialCompetition={competition}
               initialTrades={tradeFeed}
+              layout="leaderboard-only"
             />
           </div>
 
-          <div className="space-y-4 sm:space-y-6">
-            {/* Phase 3: Spectator Betting */}
+          {/* ── COL 2: Trade timeline — VERTICAL, full height ── */}
+          <div className="md:col-span-1 xl:col-span-1">
+            <LiveMatchWrapper
+              initialCompetition={competition}
+              initialTrades={tradeFeed}
+              layout="timeline-only"
+            />
+          </div>
+
+          {/* ── COL 3: Betting + quick stats ── */}
+          <div className="flex flex-col gap-4 md:col-start-2 md:row-start-1 md:row-span-2 xl:col-start-3 xl:row-start-1 xl:row-span-1">
+
+            {/* Betting panel */}
             <BettingPanelClient
               competitionId={compRecord.id}
               agents={competition.agents.map((a: any) => ({
                 id: a.id, name: a.name, color: a.color,
-                ownerWallet: a.owner ?? null,  // agent owner wallet — used to block betting
+                ownerWallet: a.owner ?? null,
               }))}
               bettingOpen={(compRecord as any).bettingOpen ?? false}
               totalBetUsdc={(compRecord as any).totalBetUsdc ?? 0}
@@ -191,47 +205,30 @@ export default async function CompetitionPage(props: PageProps) {
               status={competition.status}
             />
 
-            <Surface>
-              <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                Match context
+            {/* Quick stats — compact single card */}
+            <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] p-4">
+              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                Match Info
               </div>
-              <div className="mt-4 grid gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 {[
-                  ["Track", competition.track],
-                  ["Volume", competition.volume],
+                  ["Track",      competition.track],
+                  ["Volume",     competition.volume],
                   ["Spectators", competition.spectators.toString()],
-                  ["Duration", competition.duration],
+                  ["Duration",   competition.duration],
+                  ["Entry",      competition.entryFee],
+                  ["Prize",      competition.prizePool],
                 ].map(([label, value]) => (
-                  <div key={label} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3 sm:p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                      {label}
-                    </div>
-                    <div className="mt-2 text-sm text-white">{value}</div>
+                  <div key={label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-2.5 py-2">
+                    <div className="text-[9px] uppercase tracking-widest text-[var(--text-muted)]">{label}</div>
+                    <div className="mt-0.5 truncate text-[11px] font-semibold text-white">{value}</div>
                   </div>
                 ))}
               </div>
-            </Surface>
-
-            {/* Live trade feed is now handled by LiveMatchWrapper */}
-
-            <Surface>
-              <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                Why it matters
-              </div>
-              <div className="mt-4 space-y-4">
-                {featureRail.map((feature) => (
-                  <div key={feature.title} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3 sm:p-4">
-                    <div className="text-sm sm:text-base font-semibold text-white">{feature.title}</div>
-                    <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                      {feature.detail}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </Surface>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
     </SiteChrome>
   );
 }
