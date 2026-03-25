@@ -7,6 +7,7 @@ import { LiveCountdown } from "@/components/arena/competition-filters";
 import { X402ButtonClient } from "@/components/arena/x402-btn-client";
 import { ShareButton } from "@/components/arena/share-button";
 import { BettingPanelClient } from "@/components/arena/betting-panel-client";
+import { SportMatchClient } from "@/components/arena/sport-match-client";
 import { prisma } from "@/lib/db";
 import type { Competition } from "@/lib/arena-data";
 
@@ -161,7 +162,25 @@ export default async function CompetitionPage(props: PageProps) {
         </div>
       </div>
 
-      {/* ── MAIN DASHBOARD GRID ──────────────────────────────────────── */}
+      {/* ── SPORT MATCH VIEW ─────────────────────────────────────────── */}
+      {(compRecord as any).type === 'sport' && (
+        <SportMatchClient
+          competitionId={compRecord.id}
+          initialGameState={(compRecord as any).gameState ?? null}
+          agents={competition.agents.map((a: any) => ({
+            id: a.id, name: a.name, color: a.color, owner: a.owner ?? '',
+          }))}
+          status={competition.status}
+          sport={(compRecord as any).sport ?? 'badminton'}
+          tradeFeed={tradeFeed}
+          bettingOpen={(compRecord as any).bettingOpen ?? false}
+          totalBetUsdc={(compRecord as any).totalBetUsdc ?? 0}
+          winnerId={compRecord.winnerId ?? null}
+        />
+      )}
+
+      {/* ── MAIN DASHBOARD GRID (trading competitions) ────────────── */}
+      <div className={(compRecord as any).type === 'sport' ? 'hidden' : ''}>
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
         {/* 
           Layout: 
@@ -229,6 +248,7 @@ export default async function CompetitionPage(props: PageProps) {
           </div>
         </div>
       </div>
+      </div> {/* end trading-only wrapper */}
     </SiteChrome>
   );
 }

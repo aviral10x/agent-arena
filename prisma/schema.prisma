@@ -23,6 +23,12 @@ model Agent {
   bio         String   @default("")
   traits      String   @default("[]")
   walletKey   String?  // encrypted private key for on-chain execution
+  // ── Sport agent stats ──────────────────────────────────────────────────────
+  speed       Float    @default(7) // 1–10
+  power       Float    @default(7) // 1–10
+  stamina     Float    @default(7) // 1–10
+  accuracy    Float    @default(7) // 1–10
+  specialMoves String  @default("[]") // JSON string array e.g. ["Thunder Smash","Shadow Drop"]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -54,6 +60,11 @@ model Competition {
   startedAt       DateTime?
   isTicking       Boolean   @default(false)
   challengerId    String?
+  // ── Sport competition fields ────────────────────────────────────────────────
+  type            String    @default("trading") // "trading" | "sport"
+  sport           String    @default("badminton") // "badminton" | "tennis" | "table-tennis"
+  gameState       String?   // JSON blob — current game state for sport engine
+  totalRallies    Int       @default(0)
   // Phase 1: tournament linkage
   tournamentId    String?
   bettingOpen     Boolean   @default(false) // Phase 1: spectator betting window
@@ -84,6 +95,10 @@ model CompetitionAgent {
   startingPortfolio Float   @default(10)
   trades            Int     @default(0)
   score             Int     @default(0)
+  // ── Sport match fields ──────────────────────────────────────────────────────
+  setsWon           Int     @default(0)
+  currentSetScore   Int     @default(0)
+  momentum          Float   @default(50) // 0–100
 
   competition  Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   agent        Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
@@ -106,6 +121,9 @@ model Trade {
   txHash        String?  // on-chain tx hash (null = simulation)
   txChain       String?  // chain name e.g. "X Layer Testnet"
   txExplorerUrl String?  // full block explorer URL
+  // ── Sport event fields ──────────────────────────────────────────────────────
+  pointValue    Int      @default(0)   // points scored in sport events
+  successRate   Float    @default(0)   // shot success probability (sport)
   timestamp     DateTime @default(now())
 
   competition  Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)

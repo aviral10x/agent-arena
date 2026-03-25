@@ -7,7 +7,7 @@
  */
 
 import { prisma } from './db';
-import { runCompetitionTick } from './orchestrator';
+import { runCompetitionTick, runSportCompetitionTick } from './orchestrator';
 
 const TICK_INTERVAL_MS = parseInt(process.env.TICK_INTERVAL_MS ?? '30000'); // 30s default
 const MAX_CONCURRENT_TICKS = 3; // Don't overwhelm the server
@@ -30,7 +30,7 @@ async function tickAllLive() {
   try {
     const liveComps = await prisma.competition.findMany({
       where: { status: 'live' },
-      select: { id: true, title: true, startedAt: true, durationSeconds: true },
+      select: { id: true, title: true, startedAt: true, durationSeconds: true, type: true },
     });
 
     if (liveComps.length === 0) return;
@@ -43,10 +43,14 @@ async function tickAllLive() {
       await Promise.allSettled(
         batch.map(async (comp) => {
           try {
-            const results = await runCompetitionTick(comp.id);
+            // Route to sport engine or trading engine based on competition type
+            const isSport = (comp as any).type === 'sport';
+            const results = isSport
+              ? await runSportCompetitionTick(comp.id)
+              : await runCompetitionTick(comp.id);
             const actions = results.filter((r: any) => r.action && r.action !== 'HOLD');
             if (actions.length > 0) {
-              console.log(`[tick-scheduler] ${comp.title}: ${actions.length} trade(s)`);
+              console.log(`[tick-scheduler] ${comp.title} (${isSport ? 'sport' : 'trading'}): ${actions.length} event(s)`);
             }
           } catch (err: any) {
             // Don't crash the scheduler on individual tick failures

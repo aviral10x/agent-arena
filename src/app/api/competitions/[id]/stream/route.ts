@@ -58,9 +58,11 @@ export async function GET(
 
           if (!comp) { send('error', { message: 'Not found' }); closed = true; return; }
 
-          // Leaderboard snapshot
+          // Leaderboard snapshot (includes gameState for sport competitions)
           send('leaderboard', {
-            status: comp.status,
+            status:    comp.status,
+            gameState: (comp as any).gameState ?? null,
+            type:      (comp as any).type ?? 'trading',
             agents: comp.agents.map((ca: any) => ({
               id:        ca.agent.id,
               name:      ca.agent.name,
@@ -71,6 +73,7 @@ export async function GET(
               pnlPct:    ca.pnlPct,
               trades:    ca.trades,
               score:     ca.score,
+              momentum:  (ca as any).momentum ?? 50,
             })),
           });
 

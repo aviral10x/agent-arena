@@ -1,0 +1,137 @@
+/**
+ * Sport Agent Runner — AI decision making for sports matches
+ * Replaces executeAgentTurn for competition.type === "sport"
+ */
+
+import { generateObject } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+import type { Agent } from '@prisma/client';
+import type { GameState, SportAction, ShotDecision } from './game-engine';
+
+// ── Schema ─────────────────────────────────────────────────────────────────────
+export const ShotDecisionSchema = z.object({
+  action: z.enum(['SERVE', 'SMASH', 'DROP', 'CLEAR', 'DRIVE', 'LOB', 'BLOCK', 'SPECIAL']),
+  targetZone: z.number().min(1).max(9).describe(
+    'Target zone 1–9 (1=back-left, 2=back-center, 3=back-right, 4=mid-left, 5=center, 6=mid-right, 7=front-left, 8=front-center, 9=front-right)'
+  ),
+  specialMove: z.string().optional().describe('Name of special move if action is SPECIAL'),
+  rationale: z.string().describe('One-sentence tactical reasoning.'),
+});
+
+// Extended agent type with sport stats
+export type SportAgent = Agent & {
+  speed:        number;
+  power:        number;
+  stamina:      number;
+  accuracy:     number;
+  specialMoves: string; // JSON string array
+};
+
+// ── Main decision function ─────────────────────────────────────────────────────
+export async function executeSportAgentTurn(
+  agent: SportAgent,
+  gameState: GameState,
+  opponentId: string,
+  opponentName: string
+): Promise<ShotDecision> {
+  const myScore      = gameState.sets[gameState.currentSet]?.agentScores[agent.id] ?? 0;
+  const oppScore     = gameState.sets[gameState.currentSet]?.agentScores[opponentId] ?? 0;
+  const myMomentum   = gameState.momentum[agent.id] ?? 50;
+  const shuttlePos   = gameState.shuttlePosition;
+  const myPos        = gameState.agentPositions[agent.id];
+  const trainerCmd   = gameState.trainerCommands[agent.id];
+
+  let specialMovesArr: string[] = [];
+  try { specialMovesArr = JSON.parse(agent.specialMoves || '[]'); } catch {}
+
+  const prompt = `You are an AI ${gameState.sport} agent competing in a live match.
+
+Your Name: ${agent.name}
+Your Play Style: ${agent.strategy || 'Balanced all-rounder'}
+Your Stats: Speed ${agent.speed}/10, Power ${agent.power}/10, Accuracy ${agent.accuracy}/10, Stamina ${agent.stamina}/10
+Your Special Moves: ${specialMovesArr.join(', ') || 'None'}
+Current Momentum: ${myMomentum.toFixed(0)}/100 ${myMomentum > 65 ? '(HOT streak! 🔥)' : myMomentum < 35 ? '(Cold — need a winner)' : ''}
+
+MATCH STATE:
+Sport: ${gameState.sport}
+Score: You ${myScore} – ${oppScore} ${opponentName}
+Set: ${gameState.currentSet + 1} | Current rally length: ${gameState.rallyLength} shots
+Last action in rally: ${gameState.lastAction}
+Shuttle position: (${shuttlePos.x.toFixed(0)}, ${shuttlePos.y.toFixed(0)}) — ${shuttlePos.y < 30 ? 'near the net' : shuttlePos.y > 70 ? 'deep back court' : 'mid court'}
+Your position: (${myPos?.x?.toFixed(0) ?? 50}, ${myPos?.y?.toFixed(0) ?? 50})
+${trainerCmd ? `\n🎯 TRAINER COMMAND: "${trainerCmd}" — FOLLOW THIS INSTRUCTION NOW!\n` : ''}
+
+You are the ${gameState.servingAgentId === agent.id ? 'SERVING' : 'RECEIVING'} player for this rally.
+
+Tactical guidelines:
+- SMASH is high-risk/high-reward: only effective when shuttle y > 50 (above net level)
+- DROP near net wins points but requires high accuracy
+- CLEAR resets the rally safely to back court
+- SPECIAL costs 20 momentum — use only when momentum > 60
+- Choose shot based on your play style, current momentum, and score situation`;
+
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn('[sport-agent] No OPENAI_API_KEY — using mock decision');
+    return generateMockShotDecision(agent, gameState, specialMovesArr);
+  }
+
+  try {
+    const { object } = await generateObject({
+      model:  openai('gpt-4o-mini'),
+      schema: ShotDecisionSchema,
+      prompt,
+    });
+    return object;
+  } catch (err) {
+    console.error(`[sport-agent] LLM failed for ${agent.name}:`, err);
+    return generateMockShotDecision(agent, gameState, specialMovesArr);
+  }
+}
+
+// ── Mock fallback (no API key or LLM failure) ──────────────────────────────────
+function generateMockShotDecision(
+  agent: SportAgent,
+  gameState: GameState,
+  specialMoves: string[]
+): ShotDecision {
+  const momentum  = gameState.momentum[agent.id] ?? 50;
+  const shuttleY  = gameState.shuttlePosition.y;
+
+  // Use special move if momentum is very high and it's available
+  if (momentum > 80 && specialMoves.length > 0 && Math.random() < 0.3) {
+    return {
+      action:      'SPECIAL',
+      targetZone:  Math.floor(Math.random() * 9) + 1,
+      specialMove: specialMoves[Math.floor(Math.random() * specialMoves.length)],
+      rationale:   `Unleashing special move — momentum at ${momentum.toFixed(0)}, time to end the rally!`,
+    };
+  }
+
+  const isAggressive = agent.risk === 'Aggressive';
+  const actions: SportAction[] =
+    shuttleY > 60 && isAggressive
+      ? ['SMASH', 'SMASH', 'DROP', 'DRIVE']
+      : momentum < 35
+      ? ['CLEAR', 'LOB', 'CLEAR', 'BLOCK']
+      : ['DROP', 'DRIVE', 'SMASH', 'CLEAR'];
+
+  const action     = actions[Math.floor(Math.random() * actions.length)];
+  const targetZone = Math.floor(Math.random() * 9) + 1;
+
+  const rationales: Record<string, string> = {
+    SMASH:  `Shuttle is high — driving a smash to zone ${targetZone}.`,
+    DROP:   `Deceptive drop to zone ${targetZone} — forcing a difficult net return.`,
+    CLEAR:  `Clearing to the back to reset and regain positioning.`,
+    DRIVE:  `Flat drive down the line to zone ${targetZone}.`,
+    LOB:    `Lob to push opponent deep and create space at the net.`,
+    BLOCK:  `Defensive block — keeping the rally alive.`,
+    SERVE:  `Serving wide to zone ${targetZone}.`,
+  };
+
+  return {
+    action,
+    targetZone,
+    rationale: rationales[action] ?? 'Tactical shot selection.',
+  };
+}

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const { targetAgentId, challengerAgentId } = await request.json();
+    const { targetAgentId, challengerAgentId, type = 'trading', sport = 'badminton' } = await request.json();
 
     if (!targetAgentId || !challengerAgentId) {
       return NextResponse.json({ error: 'Both agentIds required' }, { status: 400 });
@@ -43,6 +43,8 @@ export async function POST(request: Request) {
         track:          'Challenge match',
         premise:        `${challenger.name} issued a direct challenge to ${target.name}. May the best algorithm win.`,
         challengerId:   challengerAgentId,
+        type:           type === 'sport' ? 'sport' : 'trading',
+        sport:          type === 'sport' ? (sport ?? 'badminton') : 'badminton',
         startedAt:      new Date(),
         // Phase 3: open betting window for 5 minutes
         bettingOpen:    true,
