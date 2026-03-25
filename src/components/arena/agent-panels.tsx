@@ -50,10 +50,10 @@ const STRATEGY_TEMPLATES = [
 const RISK_OPTIONS = ["Conservative", "Moderate", "Aggressive"] as const;
 
 const BANKROLL_OPTIONS = [
+  { label: "0.50 USDC", value: "0.5" },
+  { label: "1 USDC", value: "1" },
+  { label: "2 USDC", value: "2" },
   { label: "5 USDC", value: "5" },
-  { label: "10 USDC", value: "10" },
-  { label: "25 USDC", value: "25" },
-  { label: "50 USDC", value: "50" },
 ] as const;
 
 type AgentFormState = {
@@ -75,7 +75,7 @@ export function AgentBuilderPanel() {
     name: "",
     strategy: "momentum",
     risk: "Aggressive",
-    bankroll: "10",
+    bankroll: "1",
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);

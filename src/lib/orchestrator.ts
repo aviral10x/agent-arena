@@ -140,7 +140,7 @@ export async function runCompetitionTick(competitionId: string) {
             pair,
             rationale:     decision.rationale,
             priceAtSignal: market.tokens.find(t => t.symbol === decision.token)?.price ?? 0,
-            priceUsd:      1,
+            priceUsd:      0.01,
           },
         }).catch(() => {});
 

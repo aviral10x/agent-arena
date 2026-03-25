@@ -24,15 +24,15 @@ export function PortfolioBars({ agents }: { agents: AgentStanding[] }) {
     : "0.00";
 
   return (
-    <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-5 space-y-4">
+    <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-4 sm:p-5 space-y-4">
       {/* Header */}
       <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
         Live Portfolio Battle
       </div>
 
       {/* Who's winning callout */}
-      <div className="rounded-[1.2rem] border border-white/10 bg-white/5 px-4 py-3 text-center">
-        <div className="flex items-center justify-center gap-2">
+      <div className="rounded-[1.2rem] border border-white/10 bg-white/5 px-3 py-2.5 sm:px-4 sm:py-3 text-center">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <div
             className="h-2.5 w-2.5 rounded-full"
             style={{ background: (leader as any).color ?? "#66e3ff", boxShadow: `0 0 8px ${(leader as any).color ?? "#66e3ff"}` }}

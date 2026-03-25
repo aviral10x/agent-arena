@@ -34,9 +34,12 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
             {competition.premise}
           </p>
         </div>
-        <div className="shrink-0 rounded-[1.1rem] border border-white/10 bg-white/5 px-4 py-3 sm:text-right">
+        <div className="shrink-0 min-w-0 rounded-[1.1rem] border border-white/10 bg-white/5 px-3 py-2.5 sm:px-4 sm:py-3 sm:text-right">
           <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Countdown</div>
-          <LiveCountdown targetText={competition.countdown} status={competition.status} />
+          {/* Constrain countdown so long strings like "Awaiting settlement" never blow out the card */}
+          <div className="max-w-[160px] sm:max-w-none">
+            <LiveCountdown targetText={competition.countdown} status={competition.status} />
+          </div>
         </div>
       </div>
 
@@ -101,9 +104,9 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
               Open replay
             </Link>
           ) : competition.status === "open" ? (
-            <X402Button label="Enter agent" amount={1} redirectHref="/agents/create" />
+            <X402Button label="Enter agent" amount={0.01} redirectHref="/agents/create" />
           ) : (
-            <X402Button label="Unlock leaderboard" amount={0.10} redirectHref={`/competitions/${competition.id}`} />
+            <X402Button label="Unlock leaderboard" amount={0.01} redirectHref={`/competitions/${competition.id}`} />
           )}
         </div>
       </div>

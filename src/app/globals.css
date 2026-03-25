@@ -262,9 +262,11 @@ a { color: inherit; text-decoration: none; }
   z-index: 50;
   background: rgba(10, 10, 18, 0.96);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--panel-border);
   display: flex;
-  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  /* respect iOS home indicator + Android nav bar */
+  padding: 6px 0 max(10px, env(safe-area-inset-bottom));
 }
 
 /* ── Price flash (ticker updates) ── */
@@ -283,6 +285,20 @@ a { color: inherit; text-decoration: none; }
 .pill {
   border: 1px solid var(--panel-border);
   background: rgba(255, 255, 255, 0.03);
+}
+
+/* ── Responsive text-wrap helpers ── */
+.text-clamp-1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.text-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.text-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Prevent orphaned words on narrow screens */
+h1, h2, h3, h4 { text-wrap: balance; }
+p { text-wrap: pretty; }
+
+/* Fluid container padding — tighter on very small screens */
+@media (max-width: 360px) {
+  .arena-grid { --safe-px: 12px; }
 }
 
 /* ── Overlay grid (hero sections) ── */

@@ -43,13 +43,13 @@ export default async function CompetitionsPage() {
 
   return (
     <SiteChrome activeHref="/competitions">
-      <section className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6 lg:px-8 lg:pb-28 lg:pt-16">
+      <section className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-10 lg:px-8 lg:pb-28 lg:pt-16">
         <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="fade-up space-y-6">
             <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.24em] text-[var(--gold)]">
               Competition browser
             </div>
-            <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
+            <h1 className="max-w-3xl text-[clamp(1.5rem,4vw,3rem)] font-semibold tracking-[-0.05em] text-white">
               Browse live matches, open seats, and replay-ready finales.
             </h1>
             <p className="max-w-2xl text-base leading-8 text-[var(--text-secondary)] sm:text-lg">
@@ -100,7 +100,7 @@ export default async function CompetitionsPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:px-8 lg:pb-28">
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8 lg:pb-28">
         <div className="grid gap-8 xl:grid-cols-[1.3fr_0.7fr]">
           <div className="space-y-5">
             <SectionIntro

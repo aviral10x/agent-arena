@@ -85,10 +85,10 @@ export default async function CompetitionPage(props: PageProps) {
 
   return (
     <SiteChrome activeHref="/competitions">
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <div className="grid gap-5 sm:gap-6 lg:grid-cols-[1.35fr_0.9fr]">
           <div className="space-y-6">
-            <div className="glass-panel-strong rounded-[1.9rem] p-7 sm:p-8">
+            <div className="glass-panel-strong rounded-[1.4rem] p-5 sm:rounded-[1.9rem] sm:p-7 lg:p-8">
               <div className="flex flex-wrap items-center gap-3">
                 <StatusPill status={competition.status} />
                 <span className="font-mono text-sm text-[var(--text-muted)]">
@@ -100,7 +100,7 @@ export default async function CompetitionPage(props: PageProps) {
               </div>
 
               <div className="mt-5 space-y-4">
-                <h1 className="max-w-3xl text-2xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+                <h1 className="max-w-3xl text-[clamp(1.35rem,3.5vw,2.25rem)] font-semibold tracking-[-0.05em] text-white">
                   {competition.title}
                 </h1>
                 <p className="max-w-3xl text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
@@ -108,24 +108,26 @@ export default async function CompetitionPage(props: PageProps) {
                 </p>
               </div>
 
-              <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              <div className="mt-5 sm:mt-7 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
                 {[
                   ["Countdown", competition.countdown],
                   ["Entry fee", competition.entryFee],
                   ["Prize pool", competition.prizePool],
                 ].map(([label, value]) => (
-                  <div key={label} className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
+                  <div key={label} className="rounded-[1.25rem] border border-white/10 bg-white/5 p-3 sm:p-4">
                     <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
                       {label}
                     </div>
-                    <div className="mt-2 font-mono text-lg text-white">
+                    <div className="mt-2 font-mono text-lg text-white min-w-0 overflow-hidden">
                       {label === "Countdown" ? (
-                        <LiveCountdown
-                          targetText={value}
-                          status={competition.status}
-                          startedAt={(compRecord as any).startedAt?.toISOString()}
-                          durationSeconds={(compRecord as any).durationSeconds}
-                        />
+                        <div className="min-w-0 overflow-hidden">
+                          <LiveCountdown
+                            targetText={value}
+                            status={competition.status}
+                            startedAt={(compRecord as any).startedAt?.toISOString()}
+                            durationSeconds={(compRecord as any).durationSeconds}
+                          />
+                        </div>
                       ) : (
                         value
                       )}
@@ -134,18 +136,18 @@ export default async function CompetitionPage(props: PageProps) {
                 ))}
               </div>
 
-              <div className="mt-7 flex flex-wrap gap-3">
+              <div className="mt-5 sm:mt-7 flex flex-wrap gap-3">
                 {competition.status === "open" ? (
                   <X402ButtonClient
                     label="Enter a new agent"
-                    amount={1}
+                    amount={0.01}
                     redirectHref="/agents/create"
                   />
                 ) : null}
                 {competition.status === "live" ? (
                   <X402ButtonClient
                     label="Unlock full replay data"
-                    amount={5}
+                    amount={0.01}
                   />
                 ) : competition.status === "settled" ? (
                   <>
@@ -171,7 +173,7 @@ export default async function CompetitionPage(props: PageProps) {
             />
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Phase 3: Spectator Betting */}
             <BettingPanelClient
               competitionId={compRecord.id}
@@ -193,7 +195,7 @@ export default async function CompetitionPage(props: PageProps) {
                   ["Spectators", competition.spectators.toString()],
                   ["Duration", competition.duration],
                 ].map(([label, value]) => (
-                  <div key={label} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-4">
+                  <div key={label} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3 sm:p-4">
                     <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                       {label}
                     </div>
@@ -211,8 +213,8 @@ export default async function CompetitionPage(props: PageProps) {
               </div>
               <div className="mt-4 space-y-4">
                 {featureRail.map((feature) => (
-                  <div key={feature.title} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-4">
-                    <div className="text-base font-semibold text-white">{feature.title}</div>
+                  <div key={feature.title} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3 sm:p-4">
+                    <div className="text-sm sm:text-base font-semibold text-white">{feature.title}</div>
                     <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                       {feature.detail}
                     </p>

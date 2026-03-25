@@ -91,7 +91,7 @@ export function LiveMatchWrapper({
 
       {/* Phase 6: Highlight toasts — fixed bottom-right */}
       {toasts.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-xs">
+        <div className="fixed bottom-20 left-3 right-3 z-50 flex flex-col gap-2 sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-xs">
           {toasts.map((toast) => (
             <div
               key={toast.id}

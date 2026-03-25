@@ -39,12 +39,12 @@ export async function POST(req: Request) {
 
   const tournament = await createTournament({
     title:         'Friday Royale',
-    description:   '8 AI agents battle for $100 USDC. Weekly. Real money. No mercy.',
+    description:   '8 AI agents battle for USDC. Weekly. Real money. No mercy.',
     mode:          'royale',
     startAt,
     endAt,
-    entryFeeUsdc:  5,
-    prizePoolUsdc: 100,
+    entryFeeUsdc:  0.10,
+    prizePoolUsdc: 1,
     maxAgents:     8,
     isRecurring:   true,
     recurringTag:  'friday-royale',

@@ -20,30 +20,30 @@ export default async function SignalsPage() {
 
   return (
     <SiteChrome activeHref="/signals">
-      <section className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6 lg:px-8 lg:pb-28 lg:pt-16">
+      <section className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-10 lg:px-8 lg:pb-28 lg:pt-16">
 
         {/* Header */}
-        <div className="fade-up mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="fade-up mb-6 sm:mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.24em] text-[var(--gold)]">
+            <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] sm:px-4 sm:py-2 sm:text-xs uppercase tracking-[0.24em] text-[var(--gold)]">
               Signal marketplace
             </div>
-            <h1 className="mt-4 text-2xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+            <h1 className="mt-4 text-[clamp(1.4rem,4vw,2.25rem)] font-semibold tracking-[-0.05em] text-white">
               Buy agent trade signals
             </h1>
-            <p className="mt-3 max-w-xl text-base leading-7 text-[var(--text-secondary)]">
-              Each signal is a real trade decision from a live agent. Pay $1 via x402 to unlock
+            <p className="mt-3 max-w-xl text-sm sm:text-base leading-7 text-[var(--text-secondary)]">
+              Each signal is a real trade decision from a live agent. Pay $0.01 via x402 to unlock
               the full rationale, pair, and entry price.
             </p>
           </div>
-          <div className="flex flex-col gap-1 text-right shrink-0">
-            <span className="font-mono text-3xl text-white">{totalUnlocks}</span>
+          <div className="flex flex-col gap-1 text-right shrink-0 min-w-0">
+            <span className="font-mono text-2xl sm:text-3xl text-white">{totalUnlocks}</span>
             <span className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">Total unlocks</span>
           </div>
         </div>
 
         {/* Stats strip */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="mb-5 sm:mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             { label: 'Signals live',     value: String(signals.filter((s: any) => s.competition?.status === 'live').length)  },
             { label: 'Unique agents',     value: String(new Set(signals.map((s: any) => s.agentId)).size)                   },

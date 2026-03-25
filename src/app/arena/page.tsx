@@ -41,18 +41,18 @@ export default async function ArenaPage() {
 
   return (
     <SiteChrome activeHref="/arena">
-      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 sm:pt-6">
 
         {/* Header row */}
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3 sm:mb-6 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-white">Arena</h1>
-            <p className="mt-1 text-sm text-[var(--text-muted)]">
+            <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">Arena</h1>
+            <p className="mt-0.5 text-xs text-[var(--text-muted)] sm:mt-1 sm:text-sm">
               {live.length} live · {open.length} open · {settled.length} settled
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {nextRoyale && (
               <div className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--gold)]/25 bg-[var(--gold)]/8 px-3 py-1.5">
                 <span className="text-xs font-semibold text-[var(--gold)]">🏆 Friday Royale</span>
@@ -61,7 +61,7 @@ export default async function ArenaPage() {
                 </span>
               </div>
             )}
-            <Link href="/agents/create" className="btn-primary px-4 py-2 text-sm">
+            <Link href="/agents/create" className="btn-primary px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm">
               ⚡ Build agent
             </Link>
           </div>

@@ -68,10 +68,10 @@ export default async function AgentPage(props: PageProps) {
 
   return (
     <SiteChrome activeHref="/agents">
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         {/* Agent hero card */}
         <div
-          className="mb-6 rounded-[1.9rem] p-8 relative overflow-hidden"
+          className="mb-5 rounded-[1.4rem] p-5 relative overflow-hidden sm:mb-6 sm:rounded-[1.9rem] sm:p-8"
           style={{ background: card?.bgGradient ?? `linear-gradient(135deg, #0e0e18, #13132a)` }}
         >
           {/* Glow */}
@@ -80,20 +80,20 @@ export default async function AgentPage(props: PageProps) {
             style={{ background: `radial-gradient(circle, ${agent.color}, transparent 70%)` }}
           />
 
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4 sm:gap-6">
+            <div className="flex items-center gap-3 sm:gap-4">
               {/* Color dot */}
               <div
-                className="h-14 w-14 rounded-full flex-shrink-0"
+                className="h-11 w-11 rounded-full flex-shrink-0 sm:h-14 sm:w-14"
                 style={{ background: agent.color, boxShadow: `0 0 32px ${agent.color}60` }}
               />
-              <div>
-                <h1 className="text-2xl font-black tracking-tight text-white break-all sm:text-3xl">{agent.name}</h1>
-                <p className="mt-1 text-sm uppercase tracking-widest" style={{ color: agent.color }}>
+              <div className="min-w-0">
+                <h1 className="text-[clamp(1.25rem,4vw,1.875rem)] font-black tracking-tight text-white break-words">{agent.name}</h1>
+                <p className="mt-1 text-xs uppercase tracking-widest sm:text-sm" style={{ color: agent.color }}>
                   {agent.archetype}
                 </p>
                 {card?.tagline && (
-                  <p className="mt-1 text-sm text-[var(--text-muted)]">"{card.tagline}"</p>
+                  <p className="mt-1 text-xs text-[var(--text-muted)] sm:text-sm">"{card.tagline}"</p>
                 )}
               </div>
             </div>
@@ -114,7 +114,7 @@ export default async function AgentPage(props: PageProps) {
             ].map(({ label, value }) => (
               <div key={label} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-4">
                 <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</div>
-                <div className="mt-2 text-xl font-bold text-white">{value}</div>
+                <div className="mt-2 text-lg sm:text-xl font-bold text-white">{value}</div>
               </div>
             ))}
           </div>
@@ -161,7 +161,7 @@ export default async function AgentPage(props: PageProps) {
                   ["Owner",     agent.owner],
                   ["Wallet",    agent.wallet],
                 ].map(([label, value]) => (
-                  <div key={label} className="flex items-start justify-between gap-4 rounded-[1rem] border border-white/10 bg-white/5 px-4 py-3">
+                  <div key={label} className="flex items-start justify-between gap-4 rounded-[1rem] border border-white/10 bg-white/5 px-3 py-2.5 sm:px-4 sm:py-3">
                     <span className="text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">{label}</span>
                     <span className="text-right text-sm text-white">{value}</span>
                   </div>
@@ -185,7 +185,7 @@ export default async function AgentPage(props: PageProps) {
                 <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Status</div>
                 <StatusPill status={activeComp ? activeComp.competition.status as "live" | "open" | "settled" : "open"} />
               </div>
-              <div className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">
+              <div className="mt-3 text-xl sm:text-2xl font-semibold tracking-[-0.04em] text-white">
                 {activeComp ? activeComp.competition.title : "Ready for entry"}
               </div>
               <div className="mt-5 flex flex-wrap gap-3">
@@ -214,7 +214,7 @@ export default async function AgentPage(props: PageProps) {
                       <Link
                         key={ca.competition.id}
                         href={`/competitions/${ca.competition.id}`}
-                        className="flex items-center gap-3 rounded-[1rem] border border-white/10 bg-white/5 px-4 py-3 text-sm transition hover:bg-white/10"
+                        className="flex items-center gap-3 rounded-[1rem] border border-white/10 bg-white/5 px-3 py-2.5 sm:px-4 sm:py-3 text-sm transition hover:bg-white/10"
                       >
                         <div
                           className="h-4 w-4 rounded-full flex-shrink-0"

@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Turbopack disabled: ImageResponse (next/og) requires webpack for dev streaming.
-  // Re-enable with `next dev --turbopack` only when this is resolved upstream.
-  // turbopack: { root: process.cwd() },
 
   async headers() {
     return [

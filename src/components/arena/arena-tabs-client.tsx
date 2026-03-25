@@ -59,7 +59,7 @@ function QuickChallenge({ agents }: { agents: Agent[] }) {
           risk: chosen?.risk ?? "Moderate",
           color: chosen?.color ?? "#00d4aa",
           owner: "Arena User",
-          bankroll: "10",
+          bankroll: "1",
         }),
       });
       if (!agentRes.ok) throw new Error("Agent creation failed");
@@ -208,30 +208,34 @@ export function ArenaTabsClient({ live, open, settled, agents }: ArenaTabsProps)
 
   return (
     <div>
-      {/* Tab bar */}
-      <div className="mb-4 flex items-center gap-1 border-b border-white/[0.06]">
-        {tabs.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={cx(
-              "flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors -mb-px",
-              tab === t.key
-                ? "border-[var(--teal)] text-[var(--teal)]"
-                : "border-transparent text-[var(--text-muted)] hover:text-white"
-            )}
-          >
-            {t.label}
-            {t.count !== undefined && t.count > 0 && (
-              <span className={cx(
-                "rounded-full px-1.5 py-0.5 text-[10px] font-mono",
-                tab === t.key ? "bg-[var(--teal)]/15 text-[var(--teal)]" : "bg-white/8 text-[var(--text-muted)]"
-              )}>
-                {t.count}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* Tab bar — scrollable on very narrow screens */}
+      <div className="mb-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div className="flex min-w-max items-center gap-0.5 border-b border-white/[0.06] sm:gap-1">
+          {tabs.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={cx(
+                "flex items-center gap-1 px-3 py-2 text-xs font-semibold border-b-2 transition-colors -mb-px whitespace-nowrap sm:gap-1.5 sm:px-4 sm:py-2.5 sm:text-sm",
+                tab === t.key
+                  ? "border-[var(--teal)] text-[var(--teal)]"
+                  : "border-transparent text-[var(--text-muted)] hover:text-white"
+              )}
+            >
+              {t.label}
+              {t.count !== undefined && t.count > 0 && (
+                <span className={cx(
+                  "rounded-full px-1 py-0.5 text-[9px] font-mono sm:px-1.5 sm:text-[10px]",
+                  tab === t.key
+                    ? "bg-[var(--teal)]/15 text-[var(--teal)]"
+                    : "bg-white/8 text-[var(--text-muted)]"
+                )}>
+                  {t.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content */}

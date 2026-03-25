@@ -3,11 +3,12 @@ import { verifyX402Payment, hasActiveGrant, type X402Payload } from '@/lib/x402-
 
 export const dynamic = 'force-dynamic';
 
-// Pricing table (USD)
+// Pricing table (USD) — reduced for hackathon testing
 const PRICES: Record<string, number> = {
-  leaderboard: 1,
-  replay:      5,
-  signal:      1,
+  leaderboard: 0.01,
+  replay:      0.05,
+  signal:      0.01,
+  bet:         0.01, // minimum for bet verification
 };
 
 export async function POST(request: Request) {

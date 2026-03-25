@@ -34,20 +34,20 @@ export function CompetitionFilters({
 
   return (
     <>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
         {FILTER_OPTIONS.map((filter) => (
           <button
             key={filter.key}
             type="button"
             onClick={() => setActiveFilter(filter.key)}
-            className={`rounded-full px-4 py-2 text-sm transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-xs transition-colors sm:px-4 sm:py-2 sm:text-sm ${
               activeFilter === filter.key
                 ? "bg-[var(--cyan-soft)] text-white"
                 : "border border-white/10 bg-white/5 text-[var(--text-secondary)] hover:bg-white/[0.08]"
             }`}
           >
             {filter.label}
-            <span className="ml-1.5 font-mono text-xs text-[var(--text-muted)]">
+            <span className="ml-1 font-mono text-[10px] text-[var(--text-muted)] sm:ml-1.5 sm:text-xs">
               {counts[filter.key]}
             </span>
           </button>
@@ -73,60 +73,92 @@ export function CompetitionFilters({
 
 // FIX 5.1: real countdown derived from startedAt + durationSeconds instead of
 // parsing a static string that never updates.
+// compact=true → smaller, single-line, used inside CompetitionRow cells
 export function LiveCountdown({
   targetText,
   status,
   startedAt,
   durationSeconds,
+  compact = false,
 }: {
   targetText: string;
   status: Competition["status"];
-  startedAt?: string | null;    // ISO string from DB
+  startedAt?: string | null;
   durationSeconds?: number;
+  compact?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   const [seconds, setSeconds] = useState(0);
 
-  // Compute initial seconds remaining
   const computeRemaining = () => {
     if (startedAt && durationSeconds) {
       const elapsed = (Date.now() - new Date(startedAt).getTime()) / 1000;
       return Math.max(0, Math.round(durationSeconds - elapsed));
     }
-    // Fallback: parse the static string
     return parseCountdown(targetText);
   };
 
   useEffect(() => {
     setMounted(true);
     setSeconds(computeRemaining());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!mounted || status !== "live") return;
-    // Re-sync every second
-    const interval = setInterval(() => {
-      setSeconds(computeRemaining());
-    }, 1000);
+    const interval = setInterval(() => setSeconds(computeRemaining()), 1000);
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, status, startedAt, durationSeconds]);
 
+  // ── Compact variant (used in row timer cells) ───────────────────
+  if (compact) {
+    if (!mounted) {
+      return (
+        <span className="font-mono text-[10px] text-white sm:text-xs">{targetText}</span>
+      );
+    }
+    if (status === "settled") {
+      return <span className="text-[10px] font-medium text-[var(--text-muted)] sm:text-xs">Done</span>;
+    }
+    if (status === "open") {
+      return <span className="text-[10px] font-semibold text-[var(--gold)] sm:text-xs">Open</span>;
+    }
+    if (seconds <= 0) {
+      // "Awaiting settlement" abbreviated for tight spaces
+      return (
+        <span className="text-[10px] font-semibold text-[var(--gold)] sm:text-xs" title="Awaiting settlement">
+          Settling…
+        </span>
+      );
+    }
+    return (
+      <span className="font-mono text-[10px] text-white tabular-nums sm:text-xs">
+        {formatTime(seconds)}
+        <span className="ml-1 text-[8px] uppercase tracking-wider text-[var(--text-muted)] sm:text-[9px]">
+          rem
+        </span>
+      </span>
+    );
+  }
+
+  // ── Full variant (used in competition detail pages) ─────────────
   if (!mounted) {
     return <span className="font-mono text-lg text-white">{targetText}</span>;
   }
-
   if (status === "settled") {
     return <span className="font-mono text-lg text-[var(--text-secondary)]">Settled</span>;
   }
-
   if (status === "open") {
     return <span className="font-mono text-lg text-[var(--gold)]">{targetText}</span>;
   }
-
   if (seconds <= 0) {
-    return <span className="font-mono text-lg text-[var(--gold)]">Awaiting settlement</span>;
+    return (
+      <span className="font-mono text-base text-[var(--gold)] sm:text-lg">
+        Awaiting settlement
+      </span>
+    );
   }
-
   return (
     <span className="font-mono text-lg text-white">
       {formatTime(seconds)}

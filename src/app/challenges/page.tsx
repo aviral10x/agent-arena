@@ -54,18 +54,18 @@ export default async function ChallengesPage() {
 
   return (
     <SiteChrome activeHref="/challenges">
-      <section className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6 lg:px-8 lg:pb-28 lg:pt-16">
+      <section className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-10 lg:px-8 lg:pb-28 lg:pt-16">
 
         {/* Header */}
-        <div className="fade-up mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="fade-up mb-6 sm:mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.24em] text-[var(--red)]">
+            <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] sm:px-4 sm:py-2 sm:text-xs uppercase tracking-[0.24em] text-[var(--red)]">
               Matchmaking
             </div>
-            <h1 className="mt-4 text-2xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+            <h1 className="mt-4 text-[clamp(1.4rem,4vw,2.25rem)] font-semibold tracking-[-0.05em] text-white">
               Challenge an agent
             </h1>
-            <p className="mt-3 max-w-xl text-base leading-7 text-[var(--text-secondary)]">
+            <p className="mt-3 max-w-xl text-sm sm:text-base leading-7 text-[var(--text-secondary)]">
               Pick an agent from the roster. Deploy your own challenger. The arena opens automatically
               when both seats are filled.
             </p>
@@ -75,7 +75,7 @@ export default async function ChallengesPage() {
 
         {/* Open challenges waiting for a second agent */}
         {formattedOpenComps.length > 0 && (
-          <div className="mb-10">
+          <div className="mb-6 sm:mb-10">
             <h2 className="mb-4 text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
               Open seats — waiting for challenger
             </h2>
@@ -84,7 +84,7 @@ export default async function ChallengesPage() {
                 <Link
                   key={comp.id}
                   href={`/competitions/${comp.id}`}
-                  className="glass-panel rounded-[1.6rem] p-5 hover:bg-white/[0.06] transition flex flex-col gap-3"
+                  className="glass-panel rounded-[1.4rem] p-4 sm:rounded-[1.6rem] sm:p-5 hover:bg-white/[0.06] transition flex flex-col gap-3"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-semibold text-white">{comp.title}</h3>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { useSignTypedData } from "wagmi";
 import useSWR from "swr";
@@ -37,7 +37,7 @@ interface OddsData {
 }
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-const PRESET_AMOUNTS = [1, 5, 10];
+const PRESET_AMOUNTS = [0.10, 0.50, 1];
 
 export function BettingPanel({
   competitionId,
@@ -51,7 +51,7 @@ export function BettingPanel({
   const { signTypedDataAsync } = useSignTypedData();
 
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
-  const [amount, setAmount] = useState<number>(5);
+  const [amount, setAmount] = useState<number>(0.10);
   const [customAmount, setCustomAmount] = useState<string>("");
   const [isPlacing, setIsPlacing] = useState(false);
   const [placedBet, setPlacedBet] = useState<{ agentId: string; amount: number } | null>(null);
@@ -184,8 +184,43 @@ export function BettingPanel({
   const winnerAgent = agents.find((a) => a.id === winnerId);
   const userWon = placedBet && winnerId && placedBet.agentId === winnerId;
 
+  // ── Claim flow ────────────────────────────────────────────────────────────
+  const [claimable, setClaimable] = useState<{ id: string; payout: number; competitionTitle: string }[]>([]);
+  const [claiming, setClaiming] = useState(false);
+  const [claimDone, setClaimDone] = useState(false);
+
+  useEffect(() => {
+    if (!isSettled || !address) return;
+    fetch(`/api/bets/claim?wallet=${address}`)
+      .then(r => r.json())
+      .then(data => {
+        const forThis = (data.claimable ?? []).filter(
+          (c: any) => c.competitionId === competitionId
+        );
+        setClaimable(forThis);
+      })
+      .catch(() => {});
+  }, [isSettled, address, competitionId]);
+
+  const handleClaim = useCallback(async (betId: string) => {
+    if (!address) return;
+    setClaiming(true);
+    try {
+      const res = await fetch('/api/bets/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ betId, walletAddress: address }),
+      });
+      if (res.ok) {
+        setClaimDone(true);
+        setClaimable(prev => prev.filter(c => c.id !== betId));
+      }
+    } catch {}
+    finally { setClaiming(false); }
+  }, [address]);
+
   return (
-    <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-5 space-y-4">
+    <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-4 sm:p-5 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -202,7 +237,7 @@ export function BettingPanel({
         </div>
         <div className="flex items-center gap-2">
           {totalBet > 0 && (
-            <div className="rounded-full border border-[var(--teal)]/20 bg-[var(--teal)]/10 px-3 py-1 text-xs font-semibold text-[var(--teal)]">
+            <div className="rounded-full border border-[var(--teal)]/20 bg-[var(--teal)]/10 px-2.5 sm:px-3 py-1 text-xs font-semibold text-[var(--teal)]">
               ${totalBet.toFixed(0)} pool
             </div>
           )}
@@ -229,7 +264,7 @@ export function BettingPanel({
       {/* Settled result */}
       {isSettled && winnerId && (
         <div
-          className="rounded-[1.2rem] border p-4 text-sm"
+          className="rounded-[1.2rem] border p-3 text-sm sm:p-4"
           style={{
             borderColor: placedBet ? (userWon ? "#22c55e40" : "#ef444440") : "#ffffff20",
             background:  placedBet ? (userWon ? "#22c55e10" : "#ef444410") : "#ffffff06",
@@ -237,9 +272,29 @@ export function BettingPanel({
         >
           {placedBet ? (
             userWon ? (
-              <span className="text-green-400 font-semibold">
-                🎉 You won! Your bet on {agents.find(a => a.id === placedBet.agentId)?.name} paid off.
-              </span>
+              <div>
+                <span className="text-green-400 font-semibold">
+                  🎉 You won! Your bet on {agents.find(a => a.id === placedBet.agentId)?.name} paid off.
+                </span>
+                {/* Claim button */}
+                {claimable.length > 0 && !claimDone && (
+                  <div className="mt-3">
+                    {claimable.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => handleClaim(c.id)}
+                        disabled={claiming}
+                        className="w-full rounded-full bg-[var(--green)] py-2.5 text-sm font-bold text-black transition hover:opacity-90 active:scale-[0.98] disabled:opacity-50 min-h-[44px]"
+                      >
+                        {claiming ? 'Claiming…' : `Claim $${c.payout.toFixed(2)} USDC`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {claimDone && (
+                  <p className="mt-2 text-xs text-green-400">✓ Payout claimed successfully</p>
+                )}
+              </div>
             ) : (
               <span className="text-red-400">
                 😔 {winnerAgent?.name ?? "The other agent"} won. Better luck next time.
@@ -266,7 +321,7 @@ export function BettingPanel({
                   key={agent.id}
                   onClick={() => bettingOpen && !placedBet && setSelectedAgent(agent.id)}
                   disabled={!bettingOpen || !!placedBet}
-                  className={`rounded-[1.2rem] border p-4 text-left transition active:scale-[0.98] ${
+                  className={`rounded-[1.2rem] border p-3 sm:p-4 text-left transition active:scale-[0.98] ${
                     isSelected ? "" : "border-white/10 hover:border-white/20 hover:bg-white/5"
                   } ${!bettingOpen || placedBet ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                   style={isSelected ? { borderColor: agent.color, background: `${agent.color}12` } : undefined}
@@ -278,7 +333,7 @@ export function BettingPanel({
                     />
                     <span className="text-xs font-semibold text-white truncate">{agent.name}</span>
                   </div>
-                  <div className="text-2xl font-black" style={{ color: agent.color }}>{pct}%</div>
+                  <div className="text-xl sm:text-2xl font-black" style={{ color: agent.color }}>{pct}%</div>
                   {impliedOdds && (
                     <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{impliedOdds} payout</div>
                   )}
@@ -289,7 +344,7 @@ export function BettingPanel({
 
           {/* Placed bet confirmation */}
           {placedBet && (
-            <div className="rounded-[1rem] border border-[var(--teal)]/30 bg-[var(--teal)]/10 px-4 py-3 text-sm">
+            <div className="rounded-[1rem] border border-[var(--teal)]/30 bg-[var(--teal)]/10 px-3 py-2.5 sm:px-4 sm:py-3 text-sm">
               <span className="text-[var(--teal)] font-semibold">
                 ✓ Bet placed: ${placedBet.amount} on {agents.find(a => a.id === placedBet.agentId)?.name}
               </span>
@@ -311,7 +366,7 @@ export function BettingPanel({
                     <button
                       key={a}
                       onClick={() => { setAmount(a); setCustomAmount(""); }}
-                      className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${
+                      className={`flex-1 rounded-full py-2 min-h-[44px] text-sm font-semibold transition ${
                         amount === a && !customAmount
                           ? "bg-[var(--teal)] text-black"
                           : "border border-white/10 text-white hover:bg-white/5"
@@ -326,8 +381,8 @@ export function BettingPanel({
                     value={customAmount}
                     onChange={(e) => setCustomAmount(e.target.value)}
                     className="flex-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-[var(--text-muted)] focus:border-[var(--teal)]/50 focus:outline-none"
-                    min="0.1"
-                    step="0.1"
+                    min="0.01"
+                    step="0.01"
                   />
                 </div>
               </div>
@@ -341,7 +396,7 @@ export function BettingPanel({
               <button
                 onClick={placeBet}
                 disabled={!selectedAgent || isPlacing || effectiveAmount <= 0}
-                className={`w-full rounded-full py-3 text-sm font-semibold transition active:scale-[0.98] ${
+                className={`w-full rounded-full py-3 min-h-[44px] text-sm font-semibold transition active:scale-[0.98] ${
                   selectedAgent && effectiveAmount > 0
                     ? "bg-[var(--teal)] text-black hover:opacity-90"
                     : "border border-white/10 text-[var(--text-muted)] cursor-not-allowed"

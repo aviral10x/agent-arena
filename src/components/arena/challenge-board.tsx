@@ -25,7 +25,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: challengerName.trim(), archetype: 'Challenger',
           strategy: 'momentum', description: 'Custom challenger', traits: ['Adaptive', 'Reactive'],
-          risk: 'Moderate', color: '#f59e0b', owner: 'Arena User', bankroll: '10' }),
+          risk: 'Moderate', color: '#f59e0b', owner: 'Arena User', bankroll: '1' }),
       });
       if (!agentRes.ok) throw new Error('Failed to create agent');
       const newAgent = await agentRes.json();
@@ -51,7 +51,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
         <div className="grid gap-3 sm:grid-cols-2">
           {agents.map(agent => (
             <button key={agent.id} onClick={() => setSelectedId(agent.id === selectedId ? null : agent.id)}
-              className={`overflow-hidden rounded-[1.3rem] border p-4 text-left transition-all ${
+              className={`overflow-hidden rounded-[1.3rem] border p-3 sm:p-4 text-left transition-all ${
                 selectedId === agent.id ? 'border-[var(--cyan)] bg-[var(--cyan-soft)]'
                 : 'border-white/10 bg-white/5 hover:bg-white/[0.08]'
               }`}>
@@ -84,7 +84,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
 
       {/* Challenge config panel */}
       <div>
-        <div className="glass-panel overflow-hidden rounded-[1.6rem] p-5">
+        <div className="glass-panel overflow-hidden rounded-[1.6rem] p-4 sm:p-5">
           <h2 className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)] mb-4">Configure challenge</h2>
 
           {/* Opponent */}
@@ -114,8 +114,8 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
           </div>
 
           {/* Match details */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {[['Format','1v1'],['Duration','1 hour'],['Entry','$1 x402'],['Prize','$10 USDC']].map(([l,v]) => (
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mb-4">
+            {[['Format','1v1'],['Duration','5 min'],['Entry','$0.10 x402'],['Prize','$1 USDC']].map(([l,v]) => (
               <div key={l} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
                 <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)]">{l}</div>
                 <div className="mt-0.5 text-xs font-semibold text-white">{v}</div>

@@ -11,7 +11,10 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
-    return NextResponse.json(agents.map((a: any) => ({ ...a, traits: JSON.parse(a.traits) })));
+    return NextResponse.json(agents.map((a: any) => {
+      const { walletKey: _wk, ...safe } = a;
+      return { ...safe, traits: JSON.parse(a.traits) };
+    }));
   } catch (error) {
     console.error('Failed to fetch agents:', error);
     return NextResponse.json({ error: 'Failed to fetch agents' }, { status: 500 });
@@ -36,7 +39,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'archetype, strategy, and risk are required' }, { status: 400 });
     }
 
+    // In production, validate x402 entry payment here before creating agent
+    // For now, skip payment enforcement in demo mode
+    const isDemoMode = !process.env.REQUIRE_ENTRY_FEE || process.env.REQUIRE_ENTRY_FEE !== 'true';
+    if (!isDemoMode && !body.entryPaymentSignature) {
+      return NextResponse.json({ error: 'Entry fee payment required (x402)' }, { status: 402 });
+    }
+
     const bankroll = Math.min(100, Math.max(1, parseFloat(body.bankroll ?? '10')));
+
+    // FIX: persist the wallet private key so agents can execute real on-chain swaps
+    const agentWallet = createAgenticWallet();
 
     const agent = await prisma.agent.create({
       data: {
@@ -46,7 +59,8 @@ export async function POST(request: Request) {
         risk:      body.risk,
         color:     body.color ?? '#66e3ff',
         owner:     body.owner ?? 'Anonymous',
-        wallet:    createAgenticWallet().address,
+        wallet:    agentWallet.address,
+        walletKey: agentWallet.privateKey, // stored for on-chain execution
         bio:       body.description ?? '',
         traits:    JSON.stringify(body.traits ?? []),
       },
@@ -88,9 +102,12 @@ export async function POST(request: Request) {
       }
     }
 
+    // Never leak walletKey to the client
+    const { walletKey: _wk, ...safeAgent } = agent;
+
     return NextResponse.json(
       {
-        ...agent,
+        ...safeAgent,
         traits: JSON.parse(agent.traits),
         enrolledCompetitionId,
       },

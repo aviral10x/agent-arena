@@ -19,15 +19,45 @@ interface RowCompetition {
 function pnlVal(a: Agent) { return (a as any).pnlPct ?? a.pnl ?? 0; }
 
 function PnlBadge({ value }: { value: number }) {
-  const up = value > 0;
+  const up   = value > 0;
   const zero = value === 0;
   return (
     <span
-      className="font-mono text-sm font-bold tabular-nums"
+      className="font-mono text-xs font-bold tabular-nums sm:text-sm"
       style={{ color: zero ? "var(--text-muted)" : up ? "var(--green)" : "var(--red)" }}
     >
       {up ? "+" : ""}{value.toFixed(1)}%
     </span>
+  );
+}
+
+/** Compact timer text — always single-line, never causes overflow */
+function RowTimer({
+  c,
+  isLive,
+  isOpen,
+  isSettled,
+}: {
+  c: RowCompetition;
+  isLive: boolean;
+  isOpen: boolean;
+  isSettled: boolean;
+}) {
+  if (isSettled) {
+    return <span className="text-[10px] font-medium text-[var(--text-muted)] sm:text-xs">Done</span>;
+  }
+  if (isOpen) {
+    return <span className="text-[10px] font-semibold text-[var(--gold)] sm:text-xs">Open</span>;
+  }
+  // live — inline compact countdown (no "remaining" label, truncated status)
+  return (
+    <LiveCountdown
+      targetText={c.countdown}
+      status="live"
+      startedAt={c.startedAt}
+      durationSeconds={c.durationSeconds}
+      compact
+    />
   );
 }
 
@@ -37,24 +67,23 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
   const isOpen    = c.status === "open";
   const isSettled = c.status === "settled";
 
-  const gap = a && b ? Math.abs(pnlVal(a) - pnlVal(b)) : 0;
-  const leader = a && b ? (pnlVal(a) >= pnlVal(b) ? a : b) : a;
-  const trailer = a && b ? (pnlVal(a) >= pnlVal(b) ? b : a) : b;
-
-  // Bar width: leader advantage visualised
-  const maxAbs = Math.max(Math.abs(pnlVal(a ?? {})), Math.abs(pnlVal(b ?? {})), 0.01);
-  const leaderBar = Math.min(100, 50 + (gap / maxAbs) * 40);
-  const trailerBar = Math.max(10, 100 - leaderBar);
+  const gap      = a && b ? Math.abs(pnlVal(a) - pnlVal(b)) : 0;
+  const leader   = a && b ? (pnlVal(a) >= pnlVal(b) ? a : b) : a;
+  const trailer  = a && b ? (pnlVal(a) >= pnlVal(b) ? b : a) : b;
+  const maxAbs   = Math.max(Math.abs(pnlVal(a ?? {})), Math.abs(pnlVal(b ?? {})), 0.01);
+  const leaderPct  = Math.min(100, 50 + (gap / maxAbs) * 40);
+  const trailerPct = Math.max(10, 100 - leaderPct);
 
   return (
     <Link
       href={`/competitions/${c.id}`}
-      className="group block rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] px-4 py-3 transition row-hover hover:border-white/[0.12]"
+      className="group block rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] px-3 py-3 transition row-hover hover:border-white/[0.12] sm:px-4"
     >
-      <div className="flex items-center gap-3">
+      {/* ── Main row ────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 sm:gap-3">
 
-        {/* Status dot */}
-        <div className="flex-shrink-0 w-5 flex justify-center">
+        {/* Status dot — fixed 16px */}
+        <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center">
           {isLive ? (
             <div className="live-dot" />
           ) : isOpen ? (
@@ -64,112 +93,123 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
           )}
         </div>
 
-        {/* Agent A */}
-        {a ? (
-          <div className="flex items-center gap-2 w-[140px] sm:w-[180px] flex-shrink-0 min-w-0">
-            <div
-              className="h-5 w-5 flex-shrink-0 rounded-full"
-              style={{ background: a.color, boxShadow: isLive ? `0 0 8px ${a.color}80` : "none" }}
-            />
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold text-white">{a.name}</div>
-              {isLive || isSettled ? (
-                <PnlBadge value={pnlVal(a)} />
-              ) : (
-                <div className="text-[10px] text-[var(--text-muted)]">{a.archetype}</div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="w-[140px] sm:w-[180px] flex-shrink-0 text-xs text-[var(--text-muted)]">—</div>
-        )}
+        {/* ── Agent A ── fixed max-width, truncates, never pushes */}
+        <div className="flex min-w-0 w-[90px] flex-shrink-0 items-center gap-1.5 sm:w-[140px] sm:gap-2 lg:w-[160px]">
+          {a ? (
+            <>
+              <div
+                className="h-4 w-4 flex-shrink-0 rounded-full sm:h-5 sm:w-5"
+                style={{
+                  background: a.color,
+                  boxShadow: isLive ? `0 0 8px ${a.color}80` : "none",
+                }}
+              />
+              <div className="min-w-0">
+                <div className="truncate text-[11px] font-semibold text-white sm:text-sm">
+                  {a.name}
+                </div>
+                {(isLive || isSettled) ? (
+                  <PnlBadge value={pnlVal(a)} />
+                ) : (
+                  <div className="truncate text-[9px] text-[var(--text-muted)] sm:text-[10px]">
+                    {a.archetype}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <span className="text-[10px] text-[var(--text-muted)]">—</span>
+          )}
+        </div>
 
-        {/* Centre: VS / battle bars / gap */}
-        <div className="flex-1 flex flex-col items-center gap-1 min-w-0 px-2">
+        {/* ── Centre: bars / label ── flex-1 shrinks to available space */}
+        <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 sm:gap-1">
           {isLive && a && b ? (
             <>
-              {/* Battle bars */}
-              <div className="w-full flex h-1.5 rounded-full overflow-hidden bg-white/5">
+              <div className="w-full flex h-1.5 overflow-hidden rounded-full bg-white/5">
                 <div
                   className="h-full rounded-full transition-all duration-1000"
-                  style={{ width: `${leaderBar}%`, background: leader?.color }}
+                  style={{ width: `${leaderPct}%`, background: leader?.color }}
                 />
                 <div
-                  className="h-full rounded-full transition-all duration-1000 ml-auto"
-                  style={{ width: `${trailerBar}%`, background: trailer?.color, opacity: 0.5 }}
+                  className="ml-auto h-full rounded-full opacity-50 transition-all duration-1000"
+                  style={{ width: `${trailerPct}%`, background: trailer?.color }}
                 />
               </div>
-              <div className="text-[10px] font-mono text-[var(--text-muted)] tabular-nums">
+              <div className="text-[9px] font-mono text-[var(--text-muted)] tabular-nums sm:text-[10px]">
                 {gap > 0 ? `gap ${gap.toFixed(1)}%` : "tied"}
               </div>
             </>
           ) : isSettled && c.winnerId ? (
-            <div className="text-[10px] text-[var(--gold)] font-semibold">
+            <div className="text-[9px] font-semibold text-[var(--gold)] sm:text-[10px]">
               🏆 {c.agents.find(ag => ag.id === c.winnerId)?.name ?? "—"}
             </div>
           ) : isOpen ? (
-            <div className="text-[10px] text-[var(--gold)] font-semibold uppercase tracking-widest">
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--gold)] sm:text-[10px]">
               Open seat
             </div>
           ) : (
-            <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">VS</div>
-          )}
-        </div>
-
-        {/* Agent B */}
-        {b ? (
-          <div className="flex items-center gap-2 w-[140px] sm:w-[180px] flex-shrink-0 min-w-0 justify-end">
-            <div className="min-w-0 text-right">
-              <div className="truncate text-sm font-semibold text-white">{b.name}</div>
-              {isLive || isSettled ? (
-                <PnlBadge value={pnlVal(b)} />
-              ) : (
-                <div className="text-[10px] text-[var(--text-muted)]">{b.archetype}</div>
-              )}
+            <div className="text-[9px] uppercase tracking-widest text-[var(--text-muted)] sm:text-[10px]">
+              VS
             </div>
-            <div
-              className="h-5 w-5 flex-shrink-0 rounded-full"
-              style={{ background: b.color, boxShadow: isLive ? `0 0 8px ${b.color}80` : "none" }}
-            />
-          </div>
-        ) : (
-          <div className="w-[140px] sm:w-[180px] flex-shrink-0 text-xs text-[var(--text-muted)] text-right">
-            Waiting…
-          </div>
-        )}
-
-        {/* Timer */}
-        <div className="hidden sm:block w-20 flex-shrink-0 text-right">
-          {isLive ? (
-            <LiveCountdown
-              targetText={c.countdown}
-              status="live"
-              startedAt={c.startedAt}
-              durationSeconds={c.durationSeconds}
-            />
-          ) : isSettled ? (
-            <span className="text-xs text-[var(--text-muted)]">Done</span>
-          ) : (
-            <span className="text-xs text-[var(--gold)]">Open</span>
           )}
         </div>
 
-        {/* Action */}
-        <div className="flex-shrink-0 w-16 text-right">
+        {/* ── Agent B ── mirror of Agent A */}
+        <div className="flex min-w-0 w-[90px] flex-shrink-0 items-center justify-end gap-1.5 sm:w-[140px] sm:gap-2 lg:w-[160px]">
+          {b ? (
+            <>
+              <div className="min-w-0 text-right">
+                <div className="truncate text-[11px] font-semibold text-white sm:text-sm">
+                  {b.name}
+                </div>
+                {(isLive || isSettled) ? (
+                  <PnlBadge value={pnlVal(b)} />
+                ) : (
+                  <div className="truncate text-[9px] text-[var(--text-muted)] sm:text-[10px]">
+                    {b.archetype}
+                  </div>
+                )}
+              </div>
+              <div
+                className="h-4 w-4 flex-shrink-0 rounded-full sm:h-5 sm:w-5"
+                style={{
+                  background: b.color,
+                  boxShadow: isLive ? `0 0 8px ${b.color}80` : "none",
+                }}
+              />
+            </>
+          ) : (
+            <span className="text-[10px] text-[var(--text-muted)]">Waiting…</span>
+          )}
+        </div>
+
+        {/* ── Timer — compact, fixed width, NEVER overflows ── */}
+        <div className="hidden w-[4.5rem] flex-shrink-0 text-right sm:block lg:w-20">
+          <RowTimer c={c} isLive={isLive} isOpen={isOpen} isSettled={isSettled} />
+        </div>
+
+        {/* ── Action pill ── */}
+        <div className="flex w-12 flex-shrink-0 justify-end sm:w-16">
           {isLive ? (
-            <span className="rounded-full bg-[var(--teal)]/12 border border-[var(--teal)]/25 px-2.5 py-1 text-[10px] font-bold text-[var(--teal)] group-hover:bg-[var(--teal)]/20 transition">
+            <span className="rounded-full border border-[var(--teal)]/25 bg-[var(--teal)]/12 px-2 py-1 text-[9px] font-bold text-[var(--teal)] transition group-hover:bg-[var(--teal)]/20 sm:px-2.5 sm:text-[10px]">
               Watch
             </span>
           ) : isOpen ? (
-            <span className="rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/25 px-2.5 py-1 text-[10px] font-bold text-[var(--gold)] group-hover:bg-[var(--gold)]/20 transition">
+            <span className="rounded-full border border-[var(--gold)]/25 bg-[var(--gold)]/10 px-2 py-1 text-[9px] font-bold text-[var(--gold)] transition group-hover:bg-[var(--gold)]/20 sm:px-2.5 sm:text-[10px]">
               Enter
             </span>
           ) : (
-            <span className="rounded-full bg-white/5 border border-white/10 px-2.5 py-1 text-[10px] font-semibold text-[var(--text-muted)] group-hover:bg-white/10 transition">
+            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-semibold text-[var(--text-muted)] transition group-hover:bg-white/10 sm:px-2.5 sm:text-[10px]">
               Replay
             </span>
           )}
         </div>
+      </div>
+
+      {/* ── Mobile-only timer row (below main row on xs) ── */}
+      <div className="mt-1.5 flex items-center justify-end gap-1 sm:hidden">
+        <RowTimer c={c} isLive={isLive} isOpen={isOpen} isSettled={isSettled} />
       </div>
     </Link>
   );

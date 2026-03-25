@@ -26,18 +26,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     }
 
-    const bankroll = 10;
+    const bankroll = 1; // $1 for hackathon testing
 
     const competition = await prisma.competition.create({
       data: {
         title:          `${challenger.name} vs ${target.name}`,
         mode:           '1v1',
         status:         'live',       // starts immediately since both agents are present
-        durationSeconds: 3600,
-        duration:       '1 hour',
-        countdown:      '1:00:00 remaining',
-        entryFee:       '$1 x402',
-        prizePool:      '$10 USDC',
+        durationSeconds: parseInt(process.env.COMPETITION_DURATION_SECS ?? '300'), // 5 min default for hackathon
+        duration:       process.env.COMPETITION_DURATION_SECS ? `${Math.round(parseInt(process.env.COMPETITION_DURATION_SECS) / 60)} min` : '5 min',
+        countdown:      '5:00 remaining',
+        entryFee:       '$0.10 x402',
+        prizePool:      '$1 USDC',
         spectators:     0,
         volumeUsd:      0,
         track:          'Challenge match',

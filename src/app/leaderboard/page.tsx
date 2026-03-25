@@ -58,7 +58,7 @@ export default async function LeaderboardPage() {
 
   return (
     <SiteChrome activeHref="/leaderboard">
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <SectionIntro
           eyebrow="Global Rankings"
           title="Leaderboard"
@@ -82,8 +82,8 @@ export default async function LeaderboardPage() {
           </Surface>
         ) : (
           <div className="space-y-2">
-            {/* Header row */}
-            <div className="hidden grid-cols-[2.5rem_1fr_repeat(5,minmax(5rem,1fr))_6rem_6rem] gap-4 px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)] lg:grid">
+            {/* Header row — only visible at lg+ */}
+            <div className="hidden grid-cols-[2.5rem_1fr_repeat(5,minmax(4.5rem,1fr))_5.5rem_5.5rem] gap-3 px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] lg:grid xl:grid-cols-[2.5rem_1fr_repeat(5,minmax(5rem,1fr))_6rem_6rem] xl:gap-4">
               <span>#</span>
               <span>Agent</span>
               <span className="text-right">Win Rate</span>
@@ -110,24 +110,24 @@ export default async function LeaderboardPage() {
                   href={`/agents/${agent.id}`}
                   className="block rounded-[1.4rem] border border-white/10 bg-white/5 transition hover:bg-white/10 hover:border-white/20"
                 >
-                  <div className="grid grid-cols-[2.5rem_1fr] gap-4 p-4 lg:grid-cols-[2.5rem_1fr_repeat(5,minmax(5rem,1fr))_6rem_6rem] lg:items-center">
+                  <div className="grid grid-cols-[2rem_1fr] gap-3 p-3 sm:grid-cols-[2.5rem_1fr] sm:gap-4 sm:p-4 lg:grid-cols-[2.5rem_1fr_repeat(5,minmax(4.5rem,1fr))_5.5rem_5.5rem] lg:items-center xl:grid-cols-[2.5rem_1fr_repeat(5,minmax(5rem,1fr))_6rem_6rem] xl:gap-4">
                     {/* Rank */}
                     <div className="flex flex-col items-center gap-0.5">
-                      <span className={`text-lg font-black tabular-nums ${rank <= 3 ? "text-white" : "text-[var(--text-muted)]"}`}>
+                      <span className={`text-base font-black tabular-nums sm:text-lg ${rank <= 3 ? "text-white" : "text-[var(--text-muted)]"}`}>
                         {rank <= 3 ? ["🥇","🥈","🥉"][rank - 1] : `#${rank}`}
                       </span>
                       <RankDelta delta={s.rankDelta} />
                     </div>
 
                     {/* Agent identity */}
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 sm:gap-3">
                       <div
-                        className="h-9 w-9 flex-shrink-0 rounded-full"
+                        className="h-8 w-8 flex-shrink-0 rounded-full sm:h-9 sm:w-9"
                         style={{ background: agent.color, boxShadow: `0 0 16px ${agent.color}50` }}
                       />
                       <div className="min-w-0">
-                        <div className="truncate font-semibold text-white">{agent.name}</div>
-                        <div className="truncate text-xs text-[var(--text-muted)]">{agent.archetype}</div>
+                        <div className="truncate text-sm font-semibold text-white sm:text-base">{agent.name}</div>
+                        <div className="truncate text-[10px] text-[var(--text-muted)] sm:text-xs">{agent.archetype}</div>
                         {card?.tagline && (
                           <div className="hidden truncate text-xs text-[var(--text-muted)] lg:block">
                             {card.tagline}

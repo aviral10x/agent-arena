@@ -83,21 +83,21 @@ export default async function ReplayPage({ params }: PageProps) {
 
   return (
     <SiteChrome activeHref="/competitions">
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="space-y-6">
 
           {/* Header */}
-          <div className="glass-panel-strong rounded-[1.9rem] p-7 sm:p-8">
+          <div className="glass-panel-strong rounded-[1.4rem] p-5 sm:rounded-[1.9rem] sm:p-7 lg:p-8">
             <div className="flex flex-wrap items-center gap-3">
               <StatusPill status="settled" />
               <span className="font-mono text-sm text-[var(--text-muted)]">
                 Replay · bout #{competition.id}
               </span>
             </div>
-            <h1 className="mt-5 text-2xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+            <h1 className="mt-5 text-[clamp(1.35rem,3.5vw,2.25rem)] font-semibold tracking-[-0.05em] text-white">
               {competition.title}
             </h1>
-            <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
+            <p className="mt-4 max-w-3xl text-sm sm:text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
               {competition.premise}
             </p>
 
@@ -111,7 +111,7 @@ export default async function ReplayPage({ params }: PageProps) {
               </div>
             )}
 
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-5 sm:mt-7 flex flex-wrap gap-3">
               <ButtonLink href={`/competitions/${competition.id}`}>Back to arena</ButtonLink>
               <Link
                 href="/agents/create"
@@ -127,7 +127,7 @@ export default async function ReplayPage({ params }: PageProps) {
             replay={replay}
           />
 
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid gap-5 sm:gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             {/* Full trade history */}
             <TradeTimeline trades={tradeFeed} title="Settled trade chronology" />
 
@@ -140,9 +140,9 @@ export default async function ReplayPage({ params }: PageProps) {
                   </div>
                   <div className="mt-4 space-y-4">
                     {highlights.map((moment: any, i: number) => (
-                      <div key={i} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-4">
+                      <div key={i} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3 sm:p-4">
                         <div className="flex items-center justify-between gap-4">
-                          <div className="text-base font-semibold text-white">{moment.title}</div>
+                          <div className="text-sm sm:text-base font-semibold text-white">{moment.title}</div>
                           <div className="font-mono text-sm text-[var(--gold)]">0{i + 1}</div>
                         </div>
                         <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{moment.detail}</p>
@@ -159,7 +159,7 @@ export default async function ReplayPage({ params }: PageProps) {
                 </div>
                 <div className="mt-4 grid gap-3">
                   {finalStandings.map((agent, i) => (
-                    <div key={agent.id} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-4">
+                    <div key={agent.id} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3 sm:p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <div className="text-sm font-semibold text-white">

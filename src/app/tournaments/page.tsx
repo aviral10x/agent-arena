@@ -18,7 +18,7 @@ function TournamentCard({ t }: { t: any }) {
   const rake        = Math.round(t.rake * 100);
 
   return (
-    <div className={`rounded-[1.6rem] border p-6 transition ${
+    <div className={`rounded-[1.4rem] border p-4 sm:rounded-[1.6rem] sm:p-6 transition ${
       isLive
         ? "border-[var(--teal)]/30 bg-[var(--teal)]/5"
         : "border-white/10 bg-white/5 hover:bg-white/8"
@@ -36,16 +36,16 @@ function TournamentCard({ t }: { t: any }) {
               </span>
             )}
           </div>
-          <h3 className="text-xl font-bold tracking-tight text-white">{t.title}</h3>
+          <h3 className="text-base sm:text-xl font-bold tracking-tight text-white">{t.title}</h3>
           {t.description && (
             <p className="mt-1 text-sm text-[var(--text-muted)]">{t.description}</p>
           )}
         </div>
 
         {/* Prize pool badge */}
-        <div className="rounded-[1rem] border border-[var(--teal)]/20 bg-[var(--teal)]/10 px-4 py-3 text-center">
+        <div className="rounded-[1rem] border border-[var(--teal)]/20 bg-[var(--teal)]/10 px-3 py-2 sm:px-4 sm:py-3 text-center">
           <div className="text-xs uppercase tracking-wider text-[var(--text-muted)]">Prize Pool</div>
-          <div className="mt-1 text-2xl font-black text-[var(--teal)]">
+          <div className="mt-1 text-xl sm:text-2xl font-black text-[var(--teal)]">
             ${t.prizePoolUsdc.toFixed(0)}
           </div>
           <div className="text-[10px] text-[var(--text-muted)]">USDC</div>
@@ -68,7 +68,7 @@ function TournamentCard({ t }: { t: any }) {
       </div>
 
       {/* Dates */}
-      <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-[var(--text-muted)]">
+      <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-[var(--text-muted)]">
         {t.enrollmentOpensAt && (
           <span>Enrollment: {new Date(t.enrollmentOpensAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
         )}
@@ -80,8 +80,8 @@ function TournamentCard({ t }: { t: any }) {
 
       {/* Winner if settled */}
       {isSettled && t.winnerId && (
-        <div className="mt-4 rounded-[1rem] border border-green-500/20 bg-green-500/5 p-3">
-          <div className="flex items-center gap-2 text-sm text-green-400">
+        <div className="mt-4 rounded-[1rem] border border-green-500/20 bg-green-500/5 p-2.5 sm:p-3">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-green-400">
             <span>🏆</span>
             <span>Winner: agent #{t.winnerId.slice(0, 8)}</span>
             <span className="text-[var(--text-muted)]">· Prize: ${t.winnerPrizeUsdc.toFixed(0)} USDC</span>
@@ -94,7 +94,7 @@ function TournamentCard({ t }: { t: any }) {
         <div className="mt-5">
           <Link
             href={`/tournaments/${t.id}/enroll`}
-            className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition active:scale-95 ${
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm font-semibold transition active:scale-95 ${
               spotsLeft === 0
                 ? "border border-white/10 text-[var(--text-muted)] cursor-not-allowed"
                 : isLive
@@ -131,7 +131,7 @@ export default async function TournamentsPage() {
 
   return (
     <SiteChrome activeHref="/tournaments">
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <SectionIntro
           eyebrow="Structured Events"
           title="Tournaments"
@@ -186,8 +186,8 @@ export default async function TournamentsPage() {
         )}
 
         {/* How it works */}
-        <div className="mt-12 rounded-[1.6rem] border border-white/10 bg-white/5 p-8">
-          <h3 className="text-lg font-bold text-white mb-6">How tournaments work</h3>
+        <div className="mt-12 rounded-[1.6rem] border border-white/10 bg-white/5 p-5 sm:p-8">
+          <h3 className="text-base sm:text-lg font-bold text-white mb-6">How tournaments work</h3>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
               {
@@ -206,7 +206,7 @@ export default async function TournamentsPage() {
                 desc: "90% of the prize pool goes to the winner. 10% platform fee. Payouts in USDC.",
               },
             ].map(({ emoji, title, desc }) => (
-              <div key={title} className="rounded-[1.2rem] border border-white/10 bg-white/5 p-5">
+              <div key={title} className="rounded-[1.2rem] border border-white/10 bg-white/5 p-4 sm:p-5">
                 <div className="text-2xl mb-3">{emoji}</div>
                 <div className="font-semibold text-white mb-1">{title}</div>
                 <p className="text-sm text-[var(--text-muted)]">{desc}</p>

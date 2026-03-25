@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!betterWallet || !predictedWinnerId || !amountUsdc || !payload) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
-    if (amountUsdc < 1) return NextResponse.json({ error: 'Minimum bet is $1' }, { status: 400 });
+    if (amountUsdc < 0.01) return NextResponse.json({ error: 'Minimum bet is $0.01' }, { status: 400 });
 
     // Demo/dry_run mode: if payload has txSignature (simplified) instead of full EIP-3009 payload,
     // skip on-chain verification and use txSignature as the replay-protection key.
