@@ -157,7 +157,19 @@ export default async function Home() {
                 </div>
               ) : (
                 sorted.map(comp => (
-                  <CompetitionRow key={comp.id} competition={comp as any} />
+                  <CompetitionRow key={comp.id} competition={{
+                    ...comp,
+                    agents: comp.agents.map((ca: any) => ({
+                      id:        ca.agent.id,
+                      name:      ca.agent.name,
+                      color:     ca.agent.color,
+                      archetype: ca.agent.archetype,
+                      pnl:       ca.pnl,
+                      pnlPct:    ca.pnlPct,
+                      portfolio: ca.portfolio,
+                      trades:    ca.trades,
+                    })),
+                  } as any} />
                 ))
               )}
             </div>
