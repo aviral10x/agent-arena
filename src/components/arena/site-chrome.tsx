@@ -13,6 +13,7 @@ const ConnectButtonSafe = dynamic(
 /* Nav items */
 const NAV = [
   { href: "/arena",         label: "Arena",   icon: "⚔" },
+  { href: "/tournaments",   label: "Events",  icon: "🏁" },
   { href: "/leaderboard",   label: "Ranks",   icon: "🏆" },
   { href: "/agents",        label: "Agents",  icon: "🤖" },
   { href: "/agents/create", label: "Build",   icon: "⚡" },

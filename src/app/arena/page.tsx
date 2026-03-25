@@ -54,12 +54,15 @@ export default async function ArenaPage() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             {nextRoyale && (
-              <div className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--gold)]/25 bg-[var(--gold)]/8 px-3 py-1.5">
+              <Link
+                href="/tournaments"
+                className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--gold)]/25 bg-[var(--gold)]/8 px-3 py-1.5 transition hover:bg-[var(--gold)]/12"
+              >
                 <span className="text-xs font-semibold text-[var(--gold)]">🏆 Friday Royale</span>
                 <span className="text-[10px] text-[var(--gold)]/70">
                   {new Date(nextRoyale.startAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </span>
-              </div>
+              </Link>
             )}
             <Link href="/agents/create" className="btn-primary px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm">
               ⚡ Build agent

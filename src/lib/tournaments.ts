@@ -84,7 +84,13 @@ export async function enrollAgent(
 ): Promise<{ ok: boolean; error?: string }> {
   const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId } });
   if (!tournament) return { ok: false, error: 'Tournament not found' };
-  if (!['upcoming', 'enrolling'].includes(tournament.status)) {
+  const now = new Date();
+  if (now < tournament.enrollmentOpensAt) {
+    return { ok: false, error: 'Enrollment is not open yet' };
+  }
+
+  const status = tournament.status === 'upcoming' ? 'enrolling' : tournament.status;
+  if (!['upcoming', 'enrolling'].includes(status)) {
     return { ok: false, error: `Tournament is ${tournament.status}` };
   }
   if (tournament.currentAgents >= tournament.maxAgents) {

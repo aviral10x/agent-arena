@@ -16,6 +16,16 @@ function TournamentCard({ t }: { t: any }) {
   const isSettled   = t.status === "settled";
   const spotsLeft   = t.maxAgents - t.currentAgents;
   const rake        = Math.round(t.rake * 100);
+  const enrollmentOpen = t.enrollmentOpensAt ? new Date(t.enrollmentOpensAt) <= new Date() : true;
+  const canEnroll = !isLive && !isSettled && enrollmentOpen && spotsLeft > 0;
+  const ctaHref = isLive ? "/arena" : canEnroll ? `/tournaments/${t.id}/enroll` : undefined;
+  const ctaLabel = isLive
+    ? "Watch live →"
+    : spotsLeft === 0
+      ? "Full"
+      : enrollmentOpen
+        ? "Enroll →"
+        : "Opens soon";
 
   return (
     <div className={`rounded-[1.4rem] border p-4 sm:rounded-[1.6rem] sm:p-6 transition ${
@@ -92,18 +102,22 @@ function TournamentCard({ t }: { t: any }) {
       {/* CTA */}
       {!isSettled && (
         <div className="mt-5">
-          <Link
-            href={`/tournaments/${t.id}/enroll`}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm font-semibold transition active:scale-95 ${
-              spotsLeft === 0
-                ? "border border-white/10 text-[var(--text-muted)] cursor-not-allowed"
-                : isLive
-                ? "bg-[var(--teal)] text-black hover:opacity-90"
-                : "border border-[var(--teal)]/30 text-[var(--teal)] hover:bg-[var(--teal)]/10"
-            }`}
-          >
-            {spotsLeft === 0 ? "Full" : isLive ? "Enter now" : "Enroll →"}
-          </Link>
+          {ctaHref ? (
+            <Link
+              href={ctaHref}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm font-semibold transition active:scale-95 ${
+                isLive
+                  ? "bg-[var(--teal)] text-black hover:opacity-90"
+                  : "border border-[var(--teal)]/30 text-[var(--teal)] hover:bg-[var(--teal)]/10"
+              }`}
+            >
+              {ctaLabel}
+            </Link>
+          ) : (
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-[var(--text-muted)] sm:px-5 sm:py-2.5 sm:text-sm">
+              {ctaLabel}
+            </div>
+          )}
         </div>
       )}
     </div>
