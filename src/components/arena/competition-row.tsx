@@ -90,24 +90,18 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
         </div>
 
         {/* ── Agent A ── */}
-        <div className="flex min-w-0 w-[100px] flex-shrink-0 items-center gap-2 sm:w-[150px] lg:w-[180px]">
+        <div className="flex w-[110px] flex-shrink-0 items-center gap-1.5 sm:w-[160px] lg:w-[190px]">
           {a ? (
             <>
-              <div className="h-5 w-5 flex-shrink-0 rounded-full sm:h-6 sm:w-6"
+              <div className="h-5 w-5 shrink-0 rounded-full"
                 style={{ background: a.color, boxShadow: isLive ? `0 0 8px ${a.color}80` : "none" }} />
-              <div className="min-w-0 flex-1">
-                {/* Name — always visible */}
-                <div className="truncate text-xs font-semibold text-white sm:text-sm">
-                  {a.name}
-                  {isSettled && winner?.id === a.id && (
-                    <span className="ml-1 text-[var(--gold)]">🏆</span>
-                  )}
+              <div className="min-w-0">
+                <div className="truncate text-[11px] font-bold text-white sm:text-[13px]">
+                  {a.name}{isSettled && winner?.id === a.id && <span className="ml-0.5 text-[var(--gold)]">🏆</span>}
                 </div>
-                {/* PnL or archetype */}
                 {isLive || isSettled
                   ? <PnlBadge value={pnlVal(a)} size="xs" />
-                  : <div className="truncate text-[9px] text-[var(--text-muted)]">{a.archetype}</div>
-                }
+                  : <div className="truncate text-[9px] text-[var(--text-muted)]">{a.archetype}</div>}
               </div>
             </>
           ) : <span className="text-[10px] text-[var(--text-muted)]">—</span>}
@@ -152,22 +146,18 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
         </div>
 
         {/* ── Agent B ── */}
-        <div className="flex min-w-0 w-[100px] flex-shrink-0 items-center justify-end gap-2 sm:w-[150px] lg:w-[180px]">
+        <div className="flex w-[110px] flex-shrink-0 items-center justify-end gap-1.5 sm:w-[160px] lg:w-[190px]">
           {b ? (
             <>
-              <div className="min-w-0 flex-1 text-right">
-                <div className="truncate text-xs font-semibold text-white sm:text-sm">
-                  {isSettled && winner?.id === b.id && (
-                    <span className="mr-1 text-[var(--gold)]">🏆</span>
-                  )}
-                  {b.name}
+              <div className="min-w-0 text-right">
+                <div className="truncate text-[11px] font-bold text-white sm:text-[13px]">
+                  {isSettled && winner?.id === b.id && <span className="mr-0.5 text-[var(--gold)]">🏆</span>}{b.name}
                 </div>
                 {isLive || isSettled
                   ? <PnlBadge value={pnlVal(b)} size="xs" />
-                  : <div className="truncate text-[9px] text-[var(--text-muted)]">{b.archetype}</div>
-                }
+                  : <div className="truncate text-[9px] text-[var(--text-muted)]">{b.archetype}</div>}
               </div>
-              <div className="h-5 w-5 flex-shrink-0 rounded-full sm:h-6 sm:w-6"
+              <div className="h-5 w-5 shrink-0 rounded-full"
                 style={{ background: b.color, boxShadow: isLive ? `0 0 8px ${b.color}80` : "none" }} />
             </>
           ) : (
