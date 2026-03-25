@@ -97,20 +97,69 @@ export async function POST(
     return NextResponse.json({ error: 'Game state is corrupted' }, { status: 500 });
   }
 
-  if (!gameState.trainerCommands) {
-    gameState.trainerCommands = {};
-  }
+  if (!gameState.trainerCommands) gameState.trainerCommands = {};
   gameState.trainerCommands[agentId] = command.trim();
 
+  // ── Groq: pre-interpret command into structured ShotDecision ──────────────
+  // This means the trainer's command IS the agent's next move — zero extra latency on tick
+  const groqKey = process.env.GROQ_API_KEY;
+  let interpreted = false;
+
+  if (groqKey && command.trim().length > 2) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const Groq = require('groq');
+      const groq = new Groq({ apiKey: groqKey });
+      const sport = gameState.sport ?? 'badminton';
+
+      const completion = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: `You interpret ${sport} trainer commands into shot decisions. Respond ONLY with JSON: { "action": "SMASH"|"DROP"|"CLEAR"|"DRIVE"|"LOB"|"BLOCK"|"SPECIAL", "targetZone": 1-9, "specialMove": null, "rationale": "one sentence" }`,
+          },
+          {
+            role: 'user',
+            content: `Trainer said: "${command.trim()}"\n\nInterpret into the best ${sport} shot.`,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 80,
+        response_format: { type: 'json_object' },
+      });
+
+      const raw = completion.choices[0]?.message?.content ?? '{}';
+      const parsed = JSON.parse(raw);
+      const validActions = ['SERVE','SMASH','DROP','CLEAR','DRIVE','LOB','BLOCK','SPECIAL'];
+
+      if (validActions.includes(parsed.action)) {
+        if (!gameState.preComputedDecisions) gameState.preComputedDecisions = {};
+        gameState.preComputedDecisions[agentId] = {
+          action:      parsed.action,
+          targetZone:  Math.max(1, Math.min(9, Number(parsed.targetZone) || 5)),
+          specialMove: parsed.specialMove ?? null,
+          rationale:   `🎯 TRAINER: ${command.trim().slice(0, 60)} → ${parsed.rationale ?? parsed.action}`,
+        };
+        interpreted = true;
+        console.log(`[trainer-cmd] Groq interpreted "${command.trim().slice(0,40)}" → ${parsed.action} zone ${parsed.targetZone}`);
+      }
+    } catch (err: any) {
+      // Fall back to raw text injection — still works, agent reads it as text
+      console.warn(`[trainer-cmd] Groq interpretation failed: ${err.message?.slice(0, 60)}`);
+    }
+  }
+
   await prisma.competition.update({
-    where: { id: id },
+    where: { id },
     data: { gameState: JSON.stringify(gameState) },
   });
 
-  console.log(`[trainer-cmd] ${agent.name} in ${id}: "${command.trim().slice(0, 60)}"`);
+  console.log(`[trainer-cmd] ${agent.name} in ${id}: "${command.trim().slice(0, 60)}" (interpreted: ${interpreted})`);
 
   return NextResponse.json({
-    success: true,
-    message: `Command sent to ${agent.name}`,
+    success:    true,
+    message:    `Command sent to ${agent.name}`,
+    interpreted,
   });
 }

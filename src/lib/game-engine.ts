@@ -27,7 +27,7 @@ export type GameState = {
 export type ShotDecision = {
   action: SportAction;
   targetZone: number; // 1–9 grid (1=back-left, 5=center, 9=front-right)
-  specialMove?: string;
+  specialMove?: string | null;
   rationale: string;
 };
 

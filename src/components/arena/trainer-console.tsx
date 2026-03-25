@@ -1,65 +1,90 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAccount } from 'wagmi';
 
 interface TrainerConsoleProps {
   competitionId: string;
   agentId:       string;
   agentName:     string;
-  agentOwner:    string; // wallet address that owns this agent
+  agentOwner:    string;
 }
 
-type Status = 'idle' | 'sending' | 'sent' | 'error';
+type Status = 'idle' | 'listening' | 'processing' | 'sent' | 'error';
 
 const QUICK_COMMANDS = [
-  'Attack the net — he keeps going deep',
-  'Switch to defensive — protect your lead',
-  'Go cross-court, he\'s leaning down the line',
-  'Use your special move now!',
-  'SMASH everything — finish the rally fast',
+  'Attack the net — cross-court drop shot',
+  'Go defensive, clear everything deep',
+  'SMASH every high shuttle — go hard',
+  'Use your special move NOW!',
+  'Drive flat to the backhand corner',
 ];
 
 export function TrainerConsole({ competitionId, agentId, agentName, agentOwner }: TrainerConsoleProps) {
-  const { address } = useAccount();
-  const [mounted, setMounted]   = useState(false);
-  const [command, setCommand]   = useState('');
-  const [status, setStatus]     = useState<Status>('idle');
-  const [history, setHistory]   = useState<{ command: string; time: string }[]>([]);
-  const [showQuick, setShowQuick] = useState(false);
+  const { address }   = useAccount();
+  const [mounted, setMounted]       = useState(false);
+  const [command, setCommand]       = useState('');
+  const [status, setStatus]         = useState<Status>('idle');
+  const [history, setHistory]       = useState<{ command: string; time: string }[]>([]);
+  const [showQuick, setShowQuick]   = useState(false);
+  const [voiceOK, setVoiceOK]       = useState(false);
+  const recognitionRef = useRef<any>(null);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    setVoiceOK(!!(
+      typeof window !== 'undefined' &&
+      ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    ));
+  }, []);
 
-  // Wait for client mount (wagmi needs hydration), then gate by wallet ownership
-  if (!mounted || !address || address.toLowerCase() !== agentOwner.toLowerCase()) {
-    return null;
-  }
+  if (!mounted || !address || address.toLowerCase() !== agentOwner.toLowerCase()) return null;
 
+  // ── Voice ─────────────────────────────────────────────────────────────────────
+  const startListening = () => {
+    if (!voiceOK) return;
+    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    const rec = new SR();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+    rec.onstart  = () => setStatus('listening');
+    rec.onresult = (e: any) => {
+      const t = e.results[0][0].transcript;
+      setCommand(t);
+      setStatus('idle');
+    };
+    rec.onerror = () => setStatus('idle');
+    rec.onend   = () => { if (status === 'listening') setStatus('idle'); };
+    recognitionRef.current = rec;
+    rec.start();
+  };
+
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    setStatus('idle');
+  };
+
+  // ── Send ──────────────────────────────────────────────────────────────────────
   const sendCommand = async (cmd?: string) => {
     const text = (cmd ?? command).trim();
-    if (!text || status === 'sending') return;
-
-    setStatus('sending');
+    if (!text || status === 'processing') return;
+    setStatus('processing');
     setShowQuick(false);
 
     try {
       const res = await fetch(`/api/competitions/${competitionId}/command`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ agentId, ownerWallet: address, command: text }),
+        body: JSON.stringify({ agentId, ownerWallet: address, command: text }),
       });
-
+      const time = new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       if (res.ok) {
-        setHistory(h => [
-          { command: text, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) },
-          ...h.slice(0, 4),
-        ]);
+        setHistory(h => [{ command: text, time }, ...h.slice(0, 4)]);
         setCommand('');
         setStatus('sent');
-        setTimeout(() => setStatus('idle'), 2000);
+        setTimeout(() => setStatus('idle'), 2500);
       } else {
-        const err = await res.json().catch(() => ({}));
-        console.error('[trainer-console] Error:', err);
         setStatus('error');
         setTimeout(() => setStatus('idle'), 3000);
       }
@@ -69,44 +94,46 @@ export function TrainerConsole({ competitionId, agentId, agentName, agentOwner }
     }
   };
 
-  const btnLabel =
-    status === 'sending' ? '…'
-    : status === 'sent'  ? '✓'
-    : status === 'error' ? '!'
-    : '→';
+  const isListening  = status === 'listening';
+  const isProcessing = status === 'processing';
 
-  const btnClass =
-    status === 'sent'  ? 'bg-green-500 text-white'
-    : status === 'error' ? 'bg-red-500 text-white'
-    : 'bg-yellow-400 text-black hover:bg-yellow-300';
+  const statusDot = isListening  ? 'bg-red-400 animate-pulse'
+                  : isProcessing ? 'bg-yellow-400 animate-pulse'
+                  : status === 'sent'  ? 'bg-green-400'
+                  : 'bg-yellow-400/50';
+
+  const sendBtnCls = status === 'sent'  ? 'bg-green-500 text-white'
+                   : status === 'error' ? 'bg-red-500 text-white'
+                   : 'bg-yellow-400 text-black hover:bg-yellow-300';
 
   return (
-    <div className="rounded-xl border border-yellow-400/20 bg-yellow-400/5 p-4 space-y-3">
+    <div className="rounded-xl border border-yellow-400/20 bg-gradient-to-b from-yellow-400/8 to-transparent p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-yellow-400 text-sm">🎯</span>
-          <span className="text-sm font-semibold text-yellow-400">Trainer Console</span>
+          <div className={`w-2 h-2 rounded-full ${statusDot}`} />
+          <span className="text-sm font-bold text-yellow-400">🎯 Trainer</span>
           <span className="text-xs text-white/40">→ {agentName}</span>
         </div>
         <button
           onClick={() => setShowQuick(v => !v)}
-          className="text-xs text-white/30 hover:text-white/60 transition-colors"
+          className="text-[10px] text-white/30 hover:text-yellow-400/60 transition-colors uppercase tracking-wider"
         >
-          {showQuick ? 'hide quick' : 'quick ▾'}
+          {showQuick ? 'hide ↑' : 'quick ↓'}
         </button>
       </div>
 
-      {/* Quick commands */}
+      {/* Quick command chips */}
       {showQuick && (
         <div className="flex flex-wrap gap-1.5">
           {QUICK_COMMANDS.map((qc, i) => (
             <button
               key={i}
               onClick={() => sendCommand(qc)}
-              className="text-xs px-2 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white hover:border-yellow-400/30 transition-all"
+              disabled={isProcessing}
+              className="text-xs px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white/55 hover:text-yellow-300 hover:border-yellow-400/30 transition-all disabled:opacity-40"
             >
-              {qc.slice(0, 30)}{qc.length > 30 ? '…' : ''}
+              {qc.length > 30 ? qc.slice(0, 30) + '…' : qc}
             </button>
           ))}
         </div>
@@ -114,38 +141,57 @@ export function TrainerConsole({ competitionId, agentId, agentName, agentOwner }
 
       {/* Command history */}
       {history.length > 0 && (
-        <div className="space-y-1 max-h-24 overflow-y-auto">
+        <div className="space-y-1 max-h-[72px] overflow-y-auto">
           {history.map((h, i) => (
-            <div key={i} className="text-xs font-mono text-white/40 flex gap-2">
+            <div key={i} className="flex gap-2 text-xs font-mono text-white/40">
               <span className="text-white/20 shrink-0">{h.time}</span>
+              <span className="text-yellow-400/60 shrink-0">→</span>
               <span className="truncate">"{h.command}"</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Input */}
-      <div className="flex gap-2">
+      {/* Input row */}
+      <div className="flex gap-2 items-center">
+        {/* Voice button */}
+        {voiceOK && (
+          <button
+            onClick={isListening ? stopListening : startListening}
+            disabled={isProcessing}
+            title={isListening ? 'Stop' : 'Voice command'}
+            className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-base transition-all ${
+              isListening
+                ? 'bg-red-500/80 text-white animate-pulse'
+                : 'bg-white/8 text-white/50 hover:bg-white/15 hover:text-white'
+            } disabled:opacity-40`}
+          >
+            {isListening ? '⏹' : '🎙️'}
+          </button>
+        )}
+
         <input
           type="text"
           value={command}
           onChange={e => setCommand(e.target.value.slice(0, 200))}
           onKeyDown={e => { if (e.key === 'Enter') sendCommand(); }}
-          placeholder={`Command ${agentName}…`}
-          disabled={status === 'sending'}
-          className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/25 focus:outline-none focus:border-yellow-400/50 disabled:opacity-50"
+          placeholder={isListening ? 'Listening…' : `Command ${agentName}…`}
+          disabled={isProcessing || isListening}
+          className="flex-1 min-w-0 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-yellow-400/40 disabled:opacity-50"
         />
+
         <button
           onClick={() => sendCommand()}
-          disabled={!command.trim() || status === 'sending'}
-          className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-40 ${btnClass}`}
+          disabled={!command.trim() || isProcessing || isListening}
+          className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold transition-all disabled:opacity-40 ${sendBtnCls}`}
         >
-          {btnLabel}
+          {isProcessing ? <span className="animate-spin">⟳</span> : status === 'sent' ? '✓' : '→'}
         </button>
       </div>
 
-      <p className="text-xs text-white/25">
-        Commands inject into your agent's next AI decision. Rate limited: 1 per 5s.
+      <p className="text-[10px] text-white/20">
+        {voiceOK ? '🎙️ Voice · ' : ''}
+        Groq-interpreted · Injects next move · 1/5s
       </p>
     </div>
   );

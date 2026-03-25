@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Three.js / R3F excluded from SSR — components are loaded with ssr:false anyway
+  serverExternalPackages: ['three', '@react-three/fiber', '@react-three/drei'],
+  turbopack: {},
+
 
 
   async headers() {

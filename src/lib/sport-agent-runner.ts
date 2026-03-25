@@ -3,8 +3,6 @@
  * Replaces executeAgentTurn for competition.type === "sport"
  */
 
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import type { Agent } from '@prisma/client';
 import type { GameState, SportAction, ShotDecision } from './game-engine';
@@ -71,22 +69,67 @@ Tactical guidelines:
 - SPECIAL costs 20 momentum — use only when momentum > 60
 - Choose shot based on your play style, current momentum, and score situation`;
 
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn('[sport-agent] No OPENAI_API_KEY — using mock decision');
+  const groqKey  = process.env.GROQ_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+
+  if (!groqKey && !openaiKey) {
+    console.warn('[sport-agent] No LLM key — using mock decision');
     return generateMockShotDecision(agent, gameState, specialMovesArr);
   }
 
-  try {
-    const { object } = await generateObject({
-      model:  openai('gpt-4o-mini'),
-      schema: ShotDecisionSchema,
-      prompt,
-    });
-    return object;
-  } catch (err) {
-    console.error(`[sport-agent] LLM failed for ${agent.name}:`, err);
-    return generateMockShotDecision(agent, gameState, specialMovesArr);
+  // ── Groq (800 tok/s — preferred for real-time sport) ────────────────────────
+  if (groqKey) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const Groq = require('groq');
+      const groq = new Groq({ apiKey: groqKey });
+      const completion = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a ${gameState.sport} AI agent making shot decisions. Respond ONLY with valid JSON: { "action": "SMASH"|"DROP"|"CLEAR"|"DRIVE"|"LOB"|"BLOCK"|"SERVE"|"SPECIAL", "targetZone": 1-9, "specialMove": null, "rationale": "one sentence" }`,
+          },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 120,
+        response_format: { type: 'json_object' },
+      });
+
+      const raw = completion.choices[0]?.message?.content ?? '{}';
+      const parsed = JSON.parse(raw);
+      const validActions = ['SERVE','SMASH','DROP','CLEAR','DRIVE','LOB','BLOCK','SPECIAL'];
+      if (validActions.includes(parsed.action)) {
+        return {
+          action:      parsed.action as SportAction,
+          targetZone:  Math.max(1, Math.min(9, Number(parsed.targetZone) || 5)),
+          specialMove: parsed.specialMove ?? null,
+          rationale:   parsed.rationale ?? 'Tactical decision.',
+        };
+      }
+    } catch (err: any) {
+      console.warn(`[sport-agent] Groq failed for ${agent.name}: ${err.message?.slice(0, 60)} — trying OpenAI`);
+    }
   }
+
+  // ── OpenAI fallback ──────────────────────────────────────────────────────────
+  if (openaiKey) {
+    try {
+      const { generateObject } = await import('ai');
+      const { openai } = await import('@ai-sdk/openai');
+      const { object } = await generateObject({
+        model:  openai('gpt-4o-mini'),
+        schema: ShotDecisionSchema,
+        prompt,
+      });
+      return object;
+    } catch (err: any) {
+      console.warn(`[sport-agent] OpenAI fallback failed for ${agent.name}: ${err.message?.slice(0, 60)}`);
+    }
+  }
+
+  return generateMockShotDecision(agent, gameState, specialMovesArr);
 }
 
 // ── Mock fallback (no API key or LLM failure) ──────────────────────────────────

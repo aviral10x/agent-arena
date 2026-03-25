@@ -255,10 +255,21 @@ export async function runSportCompetitionTick(competitionId: string) {
       return [{ settled: true }];
     }
 
-    // Get AI shot decisions for both agents (catch per-agent so one failure doesn't kill tick)
+    // Get AI shot decisions for both agents
     const decisions: Record<string, any> = {};
+    const preComputed = (gameState as any).preComputedDecisions ?? {};
+
     for (const ca of competition.agents) {
       const agent = ca.agent as any;
+
+      // Trainer pre-computed decision takes priority — uses it once then clears
+      if (preComputed[agent.id]) {
+        decisions[agent.id] = preComputed[agent.id];
+        delete preComputed[agent.id];
+        console.log(`[sport-tick] Using trainer decision for ${agent.name}: ${decisions[agent.id].action}`);
+        continue;
+      }
+
       const sportAgent: SportAgent = {
         ...agent,
         speed:        agent.speed        ?? 7,
@@ -276,17 +287,19 @@ export async function runSportCompetitionTick(competitionId: string) {
           opponentCa?.agent.name ?? 'Opponent'
         );
       } catch (err: any) {
-        console.warn(`[sport-tick] LLM failed for ${agent.name}, using mock: ${err.message?.slice(0, 80)}`);
-        // Import mock inline to avoid circular — just use a simple fallback
+        console.warn(`[sport-tick] LLM failed for ${agent.name}: ${err.message?.slice(0, 80)}`);
         const actions = ['SMASH', 'DROP', 'CLEAR', 'DRIVE', 'LOB'];
         decisions[agent.id] = {
           action: actions[Math.floor(Math.random() * actions.length)],
           targetZone: Math.floor(Math.random() * 9) + 1,
           specialMove: null,
-          rationale: 'Tactical fallback decision.',
+          rationale: 'Tactical fallback.',
         };
       }
     }
+
+    // Persist cleared pre-computed decisions back to game state
+    (gameState as any).preComputedDecisions = preComputed;
 
     // Build agentStats for rally resolver
     const agentStats = Object.fromEntries(

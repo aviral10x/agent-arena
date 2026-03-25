@@ -1,96 +1,116 @@
 /**
- * Global tick scheduler — automatically runs competition ticks for all live matches.
- * 
- * Runs as a singleton in the Next.js server process. 
- * Ticks every TICK_INTERVAL_MS (default 30s) for each live competition.
- * Self-recovers from errors and prevents duplicate schedulers.
+ * Global tick scheduler — runs competition ticks for all live matches.
+ *
+ * Two independent intervals:
+ * - Trading:  TICK_INTERVAL_MS       (default 30s) — slow, market data driven
+ * - Sport:    SPORT_TICK_INTERVAL_MS (default 4s)  — fast, real-time matches
+ *
+ * Each type has its own overlap guard so they never block each other.
  */
 
 import { prisma } from './db';
 import { runCompetitionTick, runSportCompetitionTick } from './orchestrator';
 
-const TICK_INTERVAL_MS = parseInt(process.env.TICK_INTERVAL_MS ?? '30000'); // 30s default
-const MAX_CONCURRENT_TICKS = 3; // Don't overwhelm the server
+const TRADING_TICK_MS     = parseInt(process.env.TICK_INTERVAL_MS       ?? '30000');
+const SPORT_TICK_MS       = parseInt(process.env.SPORT_TICK_INTERVAL_MS  ?? '4000');
+const MAX_CONCURRENT_TICKS = 3;
 
-// Module-level singleton — survives hot reloads in dev
-const globalForScheduler = globalThis as typeof globalThis & {
-  __tickScheduler?: ReturnType<typeof setInterval> | null;
-  __tickRunning?: boolean;
+// Module-level singleton (survives hot reloads in dev)
+const g = globalThis as typeof globalThis & {
+  __tickScheduler?:      ReturnType<typeof setInterval> | null;
+  __sportTickScheduler?: ReturnType<typeof setInterval> | null;
+  __tradingTickRunning?: boolean;
+  __sportTickRunning?:   boolean;
 };
 
-async function tickAllLive() {
-  // Guard against overlapping runs
-  if (globalForScheduler.__tickRunning) {
-    console.log('[tick-scheduler] Previous tick cycle still running, skipping');
+async function tickByType(type: 'trading' | 'sport') {
+  const runningKey = type === 'sport' ? '__sportTickRunning' : '__tradingTickRunning';
+
+  if (g[runningKey]) {
+    // previous cycle still running — skip silently
     return;
   }
-
-  globalForScheduler.__tickRunning = true;
+  g[runningKey] = true;
 
   try {
     const liveComps = await prisma.competition.findMany({
-      where: { status: 'live' },
-      select: { id: true, title: true, startedAt: true, durationSeconds: true, type: true },
+      where: { status: 'live', type },
+      select: { id: true, title: true, type: true },
     });
 
     if (liveComps.length === 0) return;
 
-    console.log(`[tick-scheduler] Ticking ${liveComps.length} live competition(s)`);
-
-    // Process in batches to avoid overwhelming the server
     for (let i = 0; i < liveComps.length; i += MAX_CONCURRENT_TICKS) {
       const batch = liveComps.slice(i, i + MAX_CONCURRENT_TICKS);
       await Promise.allSettled(
         batch.map(async (comp) => {
           try {
-            // Route to sport engine or trading engine based on competition type
-            const isSport = (comp as any).type === 'sport';
+            const isSport = type === 'sport';
             const results = isSport
               ? await runSportCompetitionTick(comp.id)
               : await runCompetitionTick(comp.id);
-            const actions = results.filter((r: any) => r.action && r.action !== 'HOLD');
-            if (actions.length > 0) {
-              console.log(`[tick-scheduler] ${comp.title} (${isSport ? 'sport' : 'trading'}): ${actions.length} event(s)`);
+
+            if (isSport) {
+              const r = results[0];
+              if (r && (r as any).sport) {
+                const desc = (r as any).result?.description;
+                if (desc) console.log(`[sport] ${comp.title}: ${desc.slice(0, 70)}`);
+              }
+            } else {
+              const actions = results.filter((r: any) => r.action && r.action !== 'HOLD');
+              if (actions.length > 0) {
+                console.log(`[trading] ${comp.title}: ${actions.length} trade(s)`);
+              }
             }
           } catch (err: any) {
-            // Don't crash the scheduler on individual tick failures
-            if (err.message?.includes('not live') || err.message?.includes('settled')) {
-              // Competition ended between our query and tick — expected race condition
-              return;
-            }
-            console.error(`[tick-scheduler] Tick failed for ${comp.id}:`, err.message?.slice(0, 120));
+            if (err.message?.includes('not live') || err.message?.includes('settled')) return;
+            console.error(`[tick] ${type} ${comp.id}: ${err.message?.slice(0, 100)}`);
           }
         })
       );
     }
   } catch (err) {
-    console.error('[tick-scheduler] Cycle error:', err);
+    console.error(`[tick-scheduler] ${type} cycle error:`, err);
   } finally {
-    globalForScheduler.__tickRunning = false;
+    g[runningKey] = false;
   }
 }
 
 export function startTickScheduler() {
-  // Prevent duplicate schedulers (important in dev with hot reload)
-  if (globalForScheduler.__tickScheduler) {
+  if (g.__tickScheduler && g.__sportTickScheduler) {
     console.log('[tick-scheduler] Already running');
     return;
   }
 
-  console.log(`[tick-scheduler] Starting — interval ${TICK_INTERVAL_MS}ms`);
+  console.log(`[tick-scheduler] Starting — trading: ${TRADING_TICK_MS}ms | sport: ${SPORT_TICK_MS}ms`);
 
-  // Run immediately on start, then on interval
-  tickAllLive().catch(() => {});
+  // Run both immediately
+  tickByType('trading').catch(() => {});
+  tickByType('sport').catch(() => {});
 
-  globalForScheduler.__tickScheduler = setInterval(() => {
-    tickAllLive().catch(() => {});
-  }, TICK_INTERVAL_MS);
+  // Trading interval (slow)
+  if (!g.__tickScheduler) {
+    g.__tickScheduler = setInterval(() => {
+      tickByType('trading').catch(() => {});
+    }, TRADING_TICK_MS);
+  }
+
+  // Sport interval (fast)
+  if (!g.__sportTickScheduler) {
+    g.__sportTickScheduler = setInterval(() => {
+      tickByType('sport').catch(() => {});
+    }, SPORT_TICK_MS);
+  }
 }
 
 export function stopTickScheduler() {
-  if (globalForScheduler.__tickScheduler) {
-    clearInterval(globalForScheduler.__tickScheduler);
-    globalForScheduler.__tickScheduler = null;
-    console.log('[tick-scheduler] Stopped');
+  if (g.__tickScheduler) {
+    clearInterval(g.__tickScheduler);
+    g.__tickScheduler = null;
   }
+  if (g.__sportTickScheduler) {
+    clearInterval(g.__sportTickScheduler);
+    g.__sportTickScheduler = null;
+  }
+  console.log('[tick-scheduler] Stopped');
 }
