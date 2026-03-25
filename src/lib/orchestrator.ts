@@ -255,7 +255,7 @@ export async function runSportCompetitionTick(competitionId: string) {
       return [{ settled: true }];
     }
 
-    // Get AI shot decisions for both agents
+    // Get AI shot decisions for both agents (catch per-agent so one failure doesn't kill tick)
     const decisions: Record<string, any> = {};
     for (const ca of competition.agents) {
       const agent = ca.agent as any;
@@ -268,12 +268,24 @@ export async function runSportCompetitionTick(competitionId: string) {
         specialMoves: agent.specialMoves ?? '[]',
       };
       const opponentCa = competition.agents.find(a => a.agentId !== agent.id);
-      decisions[agent.id] = await executeSportAgentTurn(
-        sportAgent,
-        gameState,
-        opponentCa?.agentId ?? '',
-        opponentCa?.agent.name ?? 'Opponent'
-      );
+      try {
+        decisions[agent.id] = await executeSportAgentTurn(
+          sportAgent,
+          gameState,
+          opponentCa?.agentId ?? '',
+          opponentCa?.agent.name ?? 'Opponent'
+        );
+      } catch (err: any) {
+        console.warn(`[sport-tick] LLM failed for ${agent.name}, using mock: ${err.message?.slice(0, 80)}`);
+        // Import mock inline to avoid circular — just use a simple fallback
+        const actions = ['SMASH', 'DROP', 'CLEAR', 'DRIVE', 'LOB'];
+        decisions[agent.id] = {
+          action: actions[Math.floor(Math.random() * actions.length)],
+          targetZone: Math.floor(Math.random() * 9) + 1,
+          specialMove: null,
+          rationale: 'Tactical fallback decision.',
+        };
+      }
     }
 
     // Build agentStats for rally resolver

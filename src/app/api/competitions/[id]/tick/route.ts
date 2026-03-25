@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { runCompetitionTick } from '@/lib/orchestrator';
+import { runCompetitionTick, runSportCompetitionTick } from '@/lib/orchestrator';
+import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +19,12 @@ export async function POST(
 
   try {
     const { id } = await params;
-    const results = await runCompetitionTick(id);
-    return NextResponse.json({ success: true, results });
+    const comp = await prisma.competition.findUnique({ where: { id }, select: { type: true } });
+    const isSport = (comp as any)?.type === 'sport';
+    const results = isSport
+      ? await runSportCompetitionTick(id)
+      : await runCompetitionTick(id);
+    return NextResponse.json({ success: true, results, type: isSport ? 'sport' : 'trading' });
   } catch (error: any) {
     console.error('Failed to run competition tick:', error);
     return NextResponse.json({ error: error.message || 'Tick failed' }, { status: 500 });

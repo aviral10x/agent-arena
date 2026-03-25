@@ -15,7 +15,7 @@ export const ShotDecisionSchema = z.object({
   targetZone: z.number().min(1).max(9).describe(
     'Target zone 1–9 (1=back-left, 2=back-center, 3=back-right, 4=mid-left, 5=center, 6=mid-right, 7=front-left, 8=front-center, 9=front-right)'
   ),
-  specialMove: z.string().optional().describe('Name of special move if action is SPECIAL'),
+  specialMove: z.string().nullable().describe('Name of special move if action is SPECIAL, otherwise null'),
   rationale: z.string().describe('One-sentence tactical reasoning.'),
 });
 
