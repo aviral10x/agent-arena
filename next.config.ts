@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Tell Turbopack/bundler NOT to bundle these — use them as native Node.js modules at runtime
+  serverExternalPackages: ['@libsql/client', '@prisma/adapter-libsql'],
 
   async headers() {
     return [
