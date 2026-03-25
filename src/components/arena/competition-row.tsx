@@ -14,6 +14,7 @@ interface RowCompetition {
   entryFee: string; prizePool: string; agents: Agent[];
   winnerId?: string | null; volumeUsd?: number;
   bettingOpen?: boolean; totalBetUsdc?: number;
+  createdAt?: string | null;
 }
 
 function pnlVal(a: Agent) { return (a as any).pnlPct ?? a.pnl ?? 0; }
@@ -58,6 +59,74 @@ function RowTimer({
       durationSeconds={c.durationSeconds}
       compact
     />
+  );
+}
+
+function SettledDetails({ c }: { c: RowCompetition }) {
+  const [a, b] = c.agents;
+  const winner = c.agents.find(ag => ag.id === c.winnerId);
+  const loser  = c.agents.find(ag => ag.id !== c.winnerId && ag.id);
+  const totalTrades = (a?.trades ?? 0) + (b?.trades ?? 0);
+  const vol = c.volumeUsd && c.volumeUsd > 0
+    ? (c.volumeUsd >= 1000 ? `$${(c.volumeUsd / 1000).toFixed(1)}k` : `$${c.volumeUsd.toFixed(0)}`)
+    : null;
+  const betPool = c.totalBetUsdc && c.totalBetUsdc > 0
+    ? `$${c.totalBetUsdc.toFixed(2)}`
+    : null;
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/[0.05] pt-2">
+      {/* Title */}
+      <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[160px] sm:max-w-xs">
+        {c.title}
+      </span>
+
+      <span className="text-white/20 hidden sm:inline">·</span>
+
+      {/* Winner highlight */}
+      {winner && (
+        <span className="flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)]">
+          🏆 {winner.name}
+          <span className="font-mono text-[var(--green)]">
+            {pnlVal(winner) >= 0 ? '+' : ''}{pnlVal(winner).toFixed(1)}%
+          </span>
+        </span>
+      )}
+
+      {/* Loser */}
+      {loser && (
+        <span className="hidden items-center gap-1 text-[10px] text-[var(--text-muted)] sm:flex">
+          vs {loser.name}
+          <span className="font-mono" style={{ color: pnlVal(loser) >= 0 ? 'var(--green)' : 'var(--red)' }}>
+            {pnlVal(loser) >= 0 ? '+' : ''}{pnlVal(loser).toFixed(1)}%
+          </span>
+        </span>
+      )}
+
+      <span className="text-white/20 hidden sm:inline">·</span>
+
+      {/* Stats pills */}
+      <div className="flex items-center gap-2">
+        {totalTrades > 0 && (
+          <span className="text-[9px] text-[var(--text-muted)]">
+            {totalTrades} trades
+          </span>
+        )}
+        {vol && (
+          <span className="text-[9px] font-mono text-[var(--teal)]">{vol} vol</span>
+        )}
+        {betPool && (
+          <span className="flex items-center gap-0.5 text-[9px] text-[var(--text-muted)]">
+            <span className="text-[var(--gold)]">💰</span>{betPool} bet
+          </span>
+        )}
+        {c.mode && (
+          <span className="rounded-full border border-white/10 px-1.5 py-0.5 text-[8px] uppercase tracking-widest text-[var(--text-muted)]">
+            {c.mode}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -211,6 +280,9 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
       <div className="mt-1.5 flex items-center justify-end gap-1 sm:hidden">
         <RowTimer c={c} isLive={isLive} isOpen={isOpen} isSettled={isSettled} />
       </div>
+
+      {/* ── Settled detail strip ── */}
+      {isSettled && <SettledDetails c={c} />}
     </Link>
   );
 }
