@@ -31,12 +31,12 @@ export function LiveLeaderboard({ agents }: { agents: AgentStanding[] }) {
 
             {/* Top row: rank + name + pnl */}
             <div className="flex items-center gap-3">
-              <div className="font-mono text-base text-[var(--text-muted)] w-6 shrink-0 tabular-nums">
+              <div className="font-mono text-sm text-[var(--text-muted)] w-5 shrink-0 tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-white">{agent.name}</div>
-                <div className="truncate text-xs text-[var(--text-secondary)]">{agent.strategy}</div>
+                <div className="text-sm font-bold text-white">{agent.name}</div>
+                <div className="truncate text-[10px] text-[var(--text-secondary)]">{(agent as any).archetype ?? agent.strategy}</div>
               </div>
               <div className="shrink-0 text-right">
                 <div className="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">PnL</div>
