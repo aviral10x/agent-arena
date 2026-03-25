@@ -18,6 +18,7 @@ interface BettingAgent {
   id: string;
   name: string;
   color: string;
+  ownerWallet?: string | null; // wallet that owns this agent
 }
 
 interface BettingPanelProps {
@@ -184,6 +185,15 @@ export function BettingPanel({
   const winnerAgent = agents.find((a) => a.id === winnerId);
   const userWon = placedBet && winnerId && placedBet.agentId === winnerId;
 
+  // ── Player detection ──────────────────────────────────────────────────────
+  // If connected wallet owns one of the competing agents → spectator betting is hidden,
+  // only the odds chart is shown (Polymarket-style — see everything, bet nothing)
+  const isPlayer = isConnected && address &&
+    agents.some(a => a.ownerWallet?.toLowerCase() === address.toLowerCase());
+  const playerAgent = isPlayer
+    ? agents.find(a => a.ownerWallet?.toLowerCase() === address?.toLowerCase())
+    : null;
+
   // ── Claim flow ────────────────────────────────────────────────────────────
   const [claimable, setClaimable] = useState<{ id: string; payout: number; competitionTitle: string }[]>([]);
   const [claiming, setClaiming] = useState(false);
@@ -219,6 +229,100 @@ export function BettingPanel({
     finally { setClaiming(false); }
   }, [address]);
 
+  // ── Polymarket-style odds chart (shown to everyone) ──────────────────────
+  const OddsChart = () => (
+    <div className="space-y-3">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--text-muted)]">
+          Odds
+        </span>
+        {totalBet > 0 && (
+          <span className="text-[10px] font-mono text-[var(--teal)]">
+            ${totalBet.toFixed(2)} pool
+          </span>
+        )}
+      </div>
+
+      {/* Bar chart — one row per agent */}
+      {agents.slice(0, 2).map((agent) => {
+        const { pct, impliedOdds } = getOdds(agent.id);
+        return (
+          <div key={agent.id} className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: agent.color }} />
+                <span className="truncate text-white font-medium">{agent.name}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {impliedOdds && impliedOdds !== 'N/Ax' && (
+                  <span className="text-[10px] text-[var(--text-muted)]">{impliedOdds} payout</span>
+                )}
+                <span className="font-mono font-bold" style={{ color: agent.color }}>{pct}%</span>
+              </div>
+            </div>
+            {/* Progress bar */}
+            <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${pct}%`, background: agent.color, opacity: 0.85 }}
+              />
+            </div>
+          </div>
+        );
+      })}
+
+      {/* No bets yet */}
+      {totalBet === 0 && (
+        <p className="text-center text-[10px] text-[var(--text-muted)]">
+          No bets placed yet — odds show 50/50
+        </p>
+      )}
+    </div>
+  );
+
+  // ── Player view — odds only, no bet form ─────────────────────────────────
+  if (isPlayer) {
+    return (
+      <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-4 sm:p-5 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
+              Market Sentiment
+            </div>
+            <div className="mt-1 text-sm font-semibold text-white">
+              You're competing — spectators are betting on this match
+            </div>
+          </div>
+          {playerAgent && (
+            <div className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold"
+              style={{ borderColor: `${playerAgent.color}40`, color: playerAgent.color, background: `${playerAgent.color}12` }}>
+              Playing as {playerAgent.name}
+            </div>
+          )}
+        </div>
+
+        {/* Odds chart */}
+        <OddsChart />
+
+        {/* Info banner */}
+        <div className="rounded-[1rem] border border-[var(--gold)]/20 bg-[var(--gold)]/5 px-3 py-2.5 text-xs text-[var(--gold)]">
+          ⚡ Players can't bet on their own match — stay focused on winning.
+          Spectators are watching and wagering.
+        </div>
+
+        {/* Pool total */}
+        {totalBet > 0 && (
+          <div className="text-center text-[11px] text-[var(--text-muted)]">
+            <span className="text-white font-semibold">${totalBet.toFixed(2)} USDC</span> wagered by spectators
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Spectator view — full betting UI ─────────────────────────────────────
   return (
     <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-4 sm:p-5 space-y-4">
       {/* Header */}
@@ -308,10 +412,13 @@ export function BettingPanel({
         </div>
       )}
 
+      {/* Always show odds chart for spectators */}
+      <OddsChart />
+
       {/* Active betting UI */}
       {!isSettled && (
         <>
-          {/* Agent selection cards */}
+          {/* Agent selection cards — pick who to bet on */}
           <div className="grid grid-cols-2 gap-3">
             {agents.slice(0, 2).map((agent) => {
               const { pct, impliedOdds } = getOdds(agent.id);
@@ -326,17 +433,21 @@ export function BettingPanel({
                   } ${!bettingOpen || placedBet ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                   style={isSelected ? { borderColor: agent.color, background: `${agent.color}12` } : undefined}
                 >
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2.5">
                     <div
                       className="h-3 w-3 rounded-full flex-shrink-0"
                       style={{ background: agent.color, boxShadow: isSelected ? `0 0 8px ${agent.color}` : "none" }}
                     />
                     <span className="text-xs font-semibold text-white truncate">{agent.name}</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-black" style={{ color: agent.color }}>{pct}%</div>
-                  {impliedOdds && (
-                    <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{impliedOdds} payout</div>
-                  )}
+                  {/* Payout multiplier — key info for bettor */}
+                  <div className="text-[10px] text-[var(--text-muted)] mb-1">Potential payout</div>
+                  <div className="text-base sm:text-lg font-black" style={{ color: agent.color }}>
+                    {impliedOdds && impliedOdds !== 'N/Ax' ? impliedOdds : '—'}
+                  </div>
+                  <div className={`mt-2 text-[9px] font-semibold uppercase tracking-widest ${isSelected ? 'text-white' : 'text-[var(--text-muted)]'}`}>
+                    {isSelected ? '✓ Selected' : 'Bet on this'}
+                  </div>
                 </button>
               );
             })}

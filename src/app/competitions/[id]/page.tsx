@@ -181,7 +181,10 @@ export default async function CompetitionPage(props: PageProps) {
             {/* Phase 3: Spectator Betting */}
             <BettingPanelClient
               competitionId={compRecord.id}
-              agents={competition.agents.map((a: any) => ({ id: a.id, name: a.name, color: a.color }))}
+              agents={competition.agents.map((a: any) => ({
+                id: a.id, name: a.name, color: a.color,
+                ownerWallet: a.owner ?? null,  // agent owner wallet — used to block betting
+              }))}
               bettingOpen={(compRecord as any).bettingOpen ?? false}
               totalBetUsdc={(compRecord as any).totalBetUsdc ?? 0}
               winnerId={compRecord.winnerId ?? null}
