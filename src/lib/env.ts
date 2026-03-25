@@ -16,7 +16,6 @@ interface EnvConfig {
 }
 
 const REQUIRED = [
-  'DATABASE_URL',
   'OPENAI_API_KEY',
   'CRON_SECRET',
 ] as const;
@@ -35,7 +34,14 @@ function validateEnv(): Partial<EnvConfig> {
     }
   }
 
-  if (missing.length > 0 && process.env.NODE_ENV === 'production') {
+  // Require either DATABASE_URL (local SQLite) or TURSO_DATABASE_URL (cloud)
+  if (!process.env.DATABASE_URL && !process.env.TURSO_DATABASE_URL) {
+    missing.push('DATABASE_URL (or TURSO_DATABASE_URL)');
+  }
+
+  // NEXT_PHASE is set during `next build` — skip hard failure at build time
+  const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+  if (missing.length > 0 && process.env.NODE_ENV === 'production' && !isBuildPhase) {
     throw new Error(
       `[env] Missing required environment variables:\n${missing.map((k) => `  - ${k}`).join('\n')}\n\nCheck your .env file or deployment config.`
     );
