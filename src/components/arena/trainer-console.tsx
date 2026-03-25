@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 
 interface TrainerConsoleProps {
@@ -22,13 +22,16 @@ const QUICK_COMMANDS = [
 
 export function TrainerConsole({ competitionId, agentId, agentName, agentOwner }: TrainerConsoleProps) {
   const { address } = useAccount();
+  const [mounted, setMounted]   = useState(false);
   const [command, setCommand]   = useState('');
   const [status, setStatus]     = useState<Status>('idle');
   const [history, setHistory]   = useState<{ command: string; time: string }[]>([]);
   const [showQuick, setShowQuick] = useState(false);
 
-  // Only render for the agent owner
-  if (!address || address.toLowerCase() !== agentOwner.toLowerCase()) {
+  useEffect(() => { setMounted(true); }, []);
+
+  // Wait for client mount (wagmi needs hydration), then gate by wallet ownership
+  if (!mounted || !address || address.toLowerCase() !== agentOwner.toLowerCase()) {
     return null;
   }
 

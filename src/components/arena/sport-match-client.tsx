@@ -1,11 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { CourtCanvas } from './court-canvas';
 import { SportScoreboard } from './sport-scoreboard';
-import { TrainerConsole } from './trainer-console';
 import { BettingPanelClient } from './betting-panel-client';
 import type { GameState } from '@/lib/game-engine';
+
+// TrainerConsole uses useAccount() — must be loaded client-side only (no SSR)
+const TrainerConsole = dynamic(
+  () => import('./trainer-console').then(m => ({ default: m.TrainerConsole })),
+  { ssr: false }
+);
 
 interface Agent {
   id:    string;
