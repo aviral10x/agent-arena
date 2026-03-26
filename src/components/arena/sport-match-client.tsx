@@ -6,21 +6,7 @@ import { SportScoreboard } from './sport-scoreboard';
 import { BettingPanelClient } from './betting-panel-client';
 import type { GameState } from '@/lib/game-engine';
 
-// Three.js + wagmi components must be client-side only (no SSR)
-const CourtCanvas = dynamic(
-  () => import('./court-canvas').then(m => ({ default: m.CourtCanvas })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full rounded-xl bg-[#060d1a] border border-white/10 flex items-center justify-center" style={{ aspectRatio: '4/5', minHeight: 300 }}>
-        <div className="flex flex-col items-center gap-3 text-white/30">
-          <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-          <span className="text-xs">Loading 3D court…</span>
-        </div>
-      </div>
-    ),
-  }
-);
+import { CourtCanvas } from './court-canvas';
 
 const TrainerConsole = dynamic(
   () => import('./trainer-console').then(m => ({ default: m.TrainerConsole })),

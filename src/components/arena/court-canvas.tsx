@@ -1,260 +1,13 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Text, Billboard } from '@react-three/drei';
-import * as THREE from 'three';
+import { useRef, useEffect, useCallback } from 'react';
 import type { GameState } from '@/lib/game-engine';
 
-// ── Court geometry constants (badminton scaled down) ──────────────────────────
-const COURT_W = 6.1;
-const COURT_L = 13.4;
-const NET_H   = 0.15;
+/**
+ * Premium 2D court canvas — works everywhere (no WebGL required)
+ * Smooth interpolated animations, glow effects, particle bursts
+ */
 
-function mapX(x: number) { return (x / 100 - 0.5) * COURT_W; }
-function mapZ(y: number) { return (y / 100 - 0.5) * COURT_L; }
-
-// ── Court surface + lines ──────────────────────────────────────────────────────
-function Court() {
-  const lineSegments: [[number,number,number],[number,number,number]][] = [
-    [[-COURT_W/2, 0.01, -COURT_L/2], [ COURT_W/2, 0.01, -COURT_L/2]],
-    [[-COURT_W/2, 0.01,  COURT_L/2], [ COURT_W/2, 0.01,  COURT_L/2]],
-    [[-COURT_W/2, 0.01, -COURT_L/2], [-COURT_W/2, 0.01,  COURT_L/2]],
-    [[ COURT_W/2, 0.01, -COURT_L/2], [ COURT_W/2, 0.01,  COURT_L/2]],
-    [[0, 0.01, -COURT_L/4], [0, 0.01, COURT_L/4]],
-    [[-COURT_W/2, 0.01, -COURT_L/4], [COURT_W/2, 0.01, -COURT_L/4]],
-    [[-COURT_W/2, 0.01,  COURT_L/4], [COURT_W/2, 0.01,  COURT_L/4]],
-  ];
-
-  return (
-    <group>
-      {/* Court surface */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[COURT_W, COURT_L]} />
-        <meshStandardMaterial color="#0a1f3a" roughness={0.9} />
-      </mesh>
-
-      {/* Court lines */}
-      {lineSegments.map(([start, end], i) => {
-        const mid: [number,number,number] = [
-          (start[0]+end[0])/2,
-          (start[1]+end[1])/2+0.005,
-          (start[2]+end[2])/2,
-        ];
-        const dx = end[0]-start[0], dz = end[2]-start[2];
-        const len = Math.sqrt(dx*dx+dz*dz);
-        const angle = Math.atan2(dx, dz);
-        return (
-          <mesh key={i} position={mid} rotation={[0, angle, 0]}>
-            <boxGeometry args={[0.04, 0.01, len]} />
-            <meshStandardMaterial color="#1e5ba8" emissive="#1e5ba8" emissiveIntensity={0.4} />
-          </mesh>
-        );
-      })}
-
-      {/* Net posts */}
-      {([-COURT_W/2, COURT_W/2] as number[]).map((x, i) => (
-        <mesh key={i} position={[x, NET_H/2, 0]}>
-          <cylinderGeometry args={[0.03, 0.03, NET_H, 8]} />
-          <meshStandardMaterial color="#4a9eff" emissive="#4a9eff" emissiveIntensity={0.8} />
-        </mesh>
-      ))}
-
-      {/* Net */}
-      <mesh position={[0, NET_H/2, 0]}>
-        <boxGeometry args={[COURT_W, NET_H, 0.02]} />
-        <meshStandardMaterial
-          color="#4a9eff" emissive="#4a9eff" emissiveIntensity={0.5}
-          transparent opacity={0.55} wireframe
-        />
-      </mesh>
-
-      {/* Net floor glow */}
-      <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0]}>
-        <planeGeometry args={[COURT_W, 0.4]} />
-        <meshStandardMaterial color="#4a9eff" emissive="#4a9eff" emissiveIntensity={1} transparent opacity={0.1} />
-      </mesh>
-
-      {/* Dark floor outside court */}
-      <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, -0.01, 0]}>
-        <planeGeometry args={[COURT_W * 2.5, COURT_L * 1.6]} />
-        <meshStandardMaterial color="#040b18" roughness={1} />
-      </mesh>
-    </group>
-  );
-}
-
-// ── Agent ──────────────────────────────────────────────────────────────────────
-interface AgentMeshProps {
-  agentId: string;
-  position: { x: number; y: number };
-  color: string;
-  name: string;
-  momentum: number;
-  isServing: boolean;
-}
-
-function AgentMesh({ position, color, name, momentum, isServing }: AgentMeshProps) {
-  const meshRef    = useRef<THREE.Mesh>(null);
-  const glowRef    = useRef<THREE.Mesh>(null);
-  const ringRef    = useRef<THREE.Mesh>(null);
-  const targetPos  = useRef(new THREE.Vector3(mapX(position.x), 0.2, mapZ(position.y)));
-
-  useFrame((_, delta) => {
-    if (!meshRef.current) return;
-    targetPos.current.set(mapX(position.x), 0.2, mapZ(position.y));
-    meshRef.current.position.lerp(targetPos.current, Math.min(1, delta * 6));
-    // Bob
-    meshRef.current.position.y = 0.2 + Math.sin(Date.now() * 0.004) * 0.04;
-
-    if (glowRef.current) {
-      glowRef.current.position.copy(meshRef.current.position);
-      const pulse = 1 + (momentum / 100) * 0.4 + Math.sin(Date.now() * 0.003) * 0.08;
-      glowRef.current.scale.setScalar(pulse);
-    }
-    if (ringRef.current) {
-      ringRef.current.position.x = meshRef.current.position.x;
-      ringRef.current.position.z = meshRef.current.position.z;
-      ringRef.current.rotation.z += delta * 1.5;
-    }
-  });
-
-  const isHot = momentum > 65;
-
-  return (
-    <group>
-      {/* Outer glow */}
-      <mesh ref={glowRef} position={[mapX(position.x), 0.2, mapZ(position.y)]}>
-        <sphereGeometry args={[0.38, 12, 12]} />
-        <meshStandardMaterial
-          color={color} emissive={color}
-          emissiveIntensity={isHot ? 0.9 : 0.3}
-          transparent opacity={isHot ? 0.18 : 0.1}
-        />
-      </mesh>
-
-      {/* Agent capsule body */}
-      <mesh ref={meshRef} position={[mapX(position.x), 0.2, mapZ(position.y)]} castShadow>
-        <capsuleGeometry args={[0.14, 0.22, 8, 16]} />
-        <meshStandardMaterial
-          color={color} emissive={color}
-          emissiveIntensity={isHot ? 0.7 : 0.25}
-          roughness={0.2} metalness={0.5}
-        />
-      </mesh>
-
-      {/* Shadow dot */}
-      <mesh rotation={[-Math.PI/2, 0, 0]} position={[mapX(position.x), 0.002, mapZ(position.y)]}>
-        <circleGeometry args={[0.22, 16]} />
-        <meshStandardMaterial color="#000" transparent opacity={0.35} />
-      </mesh>
-
-      {/* Serving ring */}
-      {isServing && (
-        <mesh ref={ringRef} rotation={[-Math.PI/2, 0, 0]} position={[mapX(position.x), 0.008, mapZ(position.y)]}>
-          <ringGeometry args={[0.3, 0.42, 32]} />
-          <meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={1.5} transparent opacity={0.85} />
-        </mesh>
-      )}
-
-      {/* Name label */}
-      <Billboard position={[mapX(position.x), 0.72, mapZ(position.y)]}>
-        <Text
-          fontSize={0.2} color={color} anchorX="center" anchorY="bottom"
-          outlineWidth={0.025} outlineColor="#000000"
-        >
-          {name.slice(0, 10)}
-        </Text>
-      </Billboard>
-    </group>
-  );
-}
-
-// ── Shuttle ────────────────────────────────────────────────────────────────────
-const ACTION_HEIGHTS: Record<string, number> = {
-  SMASH: 0.08, LOB: 1.4, CLEAR: 1.1, DROP: 0.18,
-  DRIVE: 0.35, BLOCK: 0.18, SERVE: 0.55, SPECIAL: 0.9,
-};
-
-function Shuttle({ position, lastAction }: { position: { x: number; y: number }; lastAction: string }) {
-  const ref       = useRef<THREE.Mesh>(null);
-  const trailRef  = useRef<THREE.Mesh>(null);
-  const targetPos = useRef(new THREE.Vector3());
-  const height    = ACTION_HEIGHTS[lastAction] ?? 0.5;
-
-  useFrame((_, delta) => {
-    if (!ref.current) return;
-    targetPos.current.set(mapX(position.x), height, mapZ(position.y));
-    ref.current.position.lerp(targetPos.current, Math.min(1, delta * 10));
-    ref.current.rotation.y += delta * 4;
-    if (trailRef.current) {
-      trailRef.current.position.copy(ref.current.position);
-    }
-  });
-
-  return (
-    <group>
-      {/* Trail glow */}
-      <mesh ref={trailRef} position={[mapX(position.x), height, mapZ(position.y)]}>
-        <sphereGeometry args={[0.14, 8, 8]} />
-        <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={0.4} transparent opacity={0.15} />
-      </mesh>
-      {/* Shuttle */}
-      <mesh ref={ref} position={[mapX(position.x), height, mapZ(position.y)]}>
-        <sphereGeometry args={[0.065, 14, 14]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1.5} />
-      </mesh>
-    </group>
-  );
-}
-
-// ── Action burst effect ────────────────────────────────────────────────────────
-const ACTION_COLORS_3D: Record<string, string> = {
-  SMASH: '#ef4444', DROP: '#8b5cf6', CLEAR: '#3b82f6',
-  DRIVE: '#f59e0b', LOB: '#10b981', BLOCK: '#6b7280',
-  SERVE: '#ffffff', SPECIAL: '#fbbf24',
-};
-
-function ActionBurst({ action, position }: { action: string; position: { x: number; y: number } }) {
-  const ref   = useRef<THREE.Mesh>(null);
-  const alive = useRef(true);
-
-  useFrame(() => {
-    if (!ref.current || !alive.current) return;
-    ref.current.scale.multiplyScalar(1.06);
-    const mat = ref.current.material as THREE.MeshStandardMaterial;
-    mat.opacity *= 0.88;
-    if (mat.opacity < 0.02) alive.current = false;
-  });
-
-  const color = ACTION_COLORS_3D[action] ?? '#ffffff';
-  const height = ACTION_HEIGHTS[action] ?? 0.5;
-
-  return (
-    <mesh ref={ref} position={[mapX(position.x), height, mapZ(position.y)]}>
-      <sphereGeometry args={[0.3, 10, 10]} />
-      <meshStandardMaterial
-        color={color} emissive={color} emissiveIntensity={3}
-        transparent opacity={0.7}
-      />
-    </mesh>
-  );
-}
-
-// ── Scene lighting ─────────────────────────────────────────────────────────────
-function Lights() {
-  return (
-    <>
-      <ambientLight intensity={0.25} />
-      <pointLight position={[0, 9, 0]} intensity={2.5} color="#ffffff" castShadow shadow-mapSize={512} />
-      <pointLight position={[-3, 5, -7]} intensity={1.0} color="#4a9eff" />
-      <pointLight position={[ 3, 5,  7]} intensity={1.0} color="#4a9eff" />
-      <hemisphereLight args={['#0d1f3c', '#040b18', 0.4]} />
-    </>
-  );
-}
-
-// ── Main exported component ────────────────────────────────────────────────────
 interface CourtCanvasProps {
   gameState:   GameState;
   agentNames:  Record<string, string>;
@@ -262,66 +15,303 @@ interface CourtCanvasProps {
   className?:  string;
 }
 
+// Smooth interpolation state
+interface AnimState {
+  agents: Record<string, { x: number; y: number; targetX: number; targetY: number }>;
+  shuttle: { x: number; y: number; targetX: number; targetY: number };
+  particles: { x: number; y: number; vx: number; vy: number; life: number; color: string }[];
+  lastAction: string;
+  flashAlpha: number;
+}
+
+const ACTION_COLORS: Record<string, string> = {
+  SMASH:   '#ef4444', DROP:  '#a855f7', CLEAR:  '#3b82f6',
+  DRIVE:   '#f59e0b', LOB:   '#10b981', BLOCK:  '#6b7280',
+  SERVE:   '#f0f0f0', SPECIAL: '#fbbf24',
+};
+
+const ACTION_EMOJI: Record<string, string> = {
+  SMASH: '💥', DROP: '🎯', CLEAR: '↩️', DRIVE: '⚡',
+  LOB: '🌙', BLOCK: '🛡️', SERVE: '🏸', SPECIAL: '✨',
+};
+
 export function CourtCanvas({ gameState, agentNames, agentColors, className }: CourtCanvasProps) {
-  const [burstKey, setBurstKey]         = useState(0);
-  const [lastAction, setLastAction]     = useState('');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef   = useRef<AnimState | null>(null);
+  const frameRef  = useRef<number>(0);
 
-  useEffect(() => {
-    if (gameState.lastAction && gameState.lastAction !== lastAction) {
-      setBurstKey(k => k + 1);
-      setLastAction(gameState.lastAction);
+  // Initialize animation state
+  const getOrCreateAnim = useCallback((): AnimState => {
+    if (!animRef.current) {
+      const agents: AnimState['agents'] = {};
+      for (const [id, pos] of Object.entries(gameState.agentPositions)) {
+        agents[id] = { x: pos.x, y: pos.y, targetX: pos.x, targetY: pos.y };
+      }
+      animRef.current = {
+        agents,
+        shuttle: {
+          x: gameState.shuttlePosition.x, y: gameState.shuttlePosition.y,
+          targetX: gameState.shuttlePosition.x, targetY: gameState.shuttlePosition.y,
+        },
+        particles: [],
+        lastAction: '',
+        flashAlpha: 0,
+      };
     }
-  }, [gameState.lastAction]);
+    return animRef.current;
+  }, []);
 
-  const agentIds = Object.keys(gameState.agentPositions);
+  // Update targets when game state changes
+  useEffect(() => {
+    const anim = getOrCreateAnim();
+    for (const [id, pos] of Object.entries(gameState.agentPositions)) {
+      if (anim.agents[id]) {
+        anim.agents[id].targetX = pos.x;
+        anim.agents[id].targetY = pos.y;
+      } else {
+        anim.agents[id] = { x: pos.x, y: pos.y, targetX: pos.x, targetY: pos.y };
+      }
+    }
+    anim.shuttle.targetX = gameState.shuttlePosition.x;
+    anim.shuttle.targetY = gameState.shuttlePosition.y;
+
+    // Spawn particles on action change
+    if (gameState.lastAction !== anim.lastAction && gameState.lastAction !== 'SERVE') {
+      anim.flashAlpha = 1;
+      const color = ACTION_COLORS[gameState.lastAction] ?? '#fff';
+      for (let i = 0; i < 8; i++) {
+        const angle = (Math.PI * 2 / 8) * i + Math.random() * 0.5;
+        anim.particles.push({
+          x: gameState.shuttlePosition.x, y: gameState.shuttlePosition.y,
+          vx: Math.cos(angle) * (1.5 + Math.random()), vy: Math.sin(angle) * (1.5 + Math.random()),
+          life: 1, color,
+        });
+      }
+      anim.lastAction = gameState.lastAction;
+    }
+  }, [gameState, getOrCreateAnim]);
+
+  // Animation loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let running = true;
+
+    function draw() {
+      if (!running || !ctx || !canvas) return;
+      const W = canvas.width;
+      const H = canvas.height;
+      const anim = getOrCreateAnim();
+
+      // Lerp positions
+      const lerp = 0.12;
+      for (const a of Object.values(anim.agents)) {
+        a.x += (a.targetX - a.x) * lerp;
+        a.y += (a.targetY - a.y) * lerp;
+      }
+      anim.shuttle.x += (anim.shuttle.targetX - anim.shuttle.x) * lerp * 1.5;
+      anim.shuttle.y += (anim.shuttle.targetY - anim.shuttle.y) * lerp * 1.5;
+
+      // Coordinate mapping
+      const cx = (pct: number) => W * 0.08 + (pct / 100) * W * 0.84;
+      const cy = (pct: number) => H * 0.04 + (pct / 100) * H * 0.92;
+
+      // ── Background ──────────────────────────────────────────────────────
+      ctx.fillStyle = '#060d1a';
+      ctx.fillRect(0, 0, W, H);
+
+      // Court surface gradient
+      const courtGrad = ctx.createLinearGradient(0, H * 0.04, 0, H * 0.96);
+      courtGrad.addColorStop(0, '#0d1a2e');
+      courtGrad.addColorStop(0.5, '#0a1628');
+      courtGrad.addColorStop(1, '#0d1a2e');
+      ctx.fillStyle = courtGrad;
+      ctx.fillRect(W * 0.08, H * 0.04, W * 0.84, H * 0.92);
+
+      // Court lines
+      ctx.strokeStyle = '#1a3050';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(W * 0.08, H * 0.04, W * 0.84, H * 0.92);
+
+      // Service lines
+      ctx.strokeStyle = '#142540';
+      ctx.lineWidth = 1;
+      [[0.33, false], [0.67, false], [0.5, true]].forEach(([frac, isCenterLine]) => {
+        ctx.beginPath();
+        if (isCenterLine) {
+          ctx.moveTo(cx(50), H * 0.04 + H * 0.92 * 0.25);
+          ctx.lineTo(cx(50), H * 0.04 + H * 0.92 * 0.75);
+        } else {
+          ctx.moveTo(W * 0.08, H * 0.04 + H * 0.92 * (frac as number));
+          ctx.lineTo(W * 0.92, H * 0.04 + H * 0.92 * (frac as number));
+        }
+        ctx.stroke();
+      });
+
+      // ── Net (glowing) ────────────────────────────────────────────────────
+      const netY = H * 0.04 + H * 0.92 * 0.5;
+      // Net glow
+      ctx.shadowColor = '#4a9eff';
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = '#4a9eff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.06, netY);
+      ctx.lineTo(W * 0.94, netY);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      // Net posts
+      ctx.fillStyle = '#4a9eff';
+      ctx.fillRect(W * 0.06 - 3, netY - 8, 6, 16);
+      ctx.fillRect(W * 0.94 - 3, netY - 8, 6, 16);
+
+      // ── Particles ────────────────────────────────────────────────────────
+      anim.particles = anim.particles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.03;
+        if (p.life <= 0) return false;
+        ctx.globalAlpha = p.life * 0.7;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(cx(p.x), cy(p.y), 3 * p.life, 0, Math.PI * 2);
+        ctx.fill();
+        return true;
+      });
+      ctx.globalAlpha = 1;
+
+      // ── Shuttle trail + shuttle ───────────────────────────────────────────
+      const sx = cx(anim.shuttle.x);
+      const sy = cy(anim.shuttle.y);
+      // Trail
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath();
+      ctx.arc(sx, sy, 12, 0, Math.PI * 2);
+      ctx.fill();
+      // Shuttle
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // ── Agents ────────────────────────────────────────────────────────────
+      const agentIds = Object.keys(gameState.agentPositions);
+      for (const id of agentIds) {
+        const a = anim.agents[id];
+        if (!a) continue;
+        const px = cx(a.x);
+        const py = cy(a.y);
+        const color = agentColors[id] ?? '#4a9eff';
+        const name  = agentNames[id] ?? id;
+        const mom   = gameState.momentum[id] ?? 50;
+        const isHot = mom > 60;
+        const isServing = gameState.servingAgentId === id;
+
+        // Momentum glow ring
+        if (isHot) {
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 18;
+        }
+        ctx.strokeStyle = color + (isHot ? 'aa' : '44');
+        ctx.lineWidth = isHot ? 3 : 2;
+        ctx.beginPath();
+        ctx.arc(px, py, 18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Agent body
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(px, py, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath();
+        ctx.arc(px - 3, py - 3, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Serving indicator
+        if (isServing) {
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(px, py, 22, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Name
+        ctx.fillStyle = color;
+        ctx.font = 'bold 10px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(name.slice(0, 10), px, py - 24);
+
+        // Momentum mini-bar
+        const barW = 30;
+        ctx.fillStyle = '#0d1a2e';
+        ctx.fillRect(px - barW / 2, py - 34, barW, 3);
+        ctx.fillStyle = mom > 60 ? '#22c55e' : mom < 40 ? '#ef4444' : color;
+        ctx.fillRect(px - barW / 2, py - 34, barW * (mom / 100), 3);
+      }
+
+      // ── Action flash overlay ──────────────────────────────────────────────
+      if (anim.flashAlpha > 0) {
+        anim.flashAlpha *= 0.92;
+        const fColor = ACTION_COLORS[gameState.lastAction] ?? '#fff';
+        ctx.globalAlpha = anim.flashAlpha * 0.3;
+        ctx.fillStyle = fColor;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 40 * (1 + (1 - anim.flashAlpha) * 2), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      // ── Action badge (top) ────────────────────────────────────────────────
+      if (gameState.lastAction) {
+        const emoji = ACTION_EMOJI[gameState.lastAction] ?? '•';
+        const label = `${emoji} ${gameState.lastAction}`;
+        ctx.font = 'bold 11px system-ui, sans-serif';
+        const tw = ctx.measureText(label).width + 16;
+        const bx = W / 2 - tw / 2;
+        const fColor = ACTION_COLORS[gameState.lastAction] ?? '#fff';
+
+        ctx.fillStyle = fColor + '18';
+        ctx.strokeStyle = fColor + '44';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(bx, 4, tw, 20, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = fColor;
+        ctx.textAlign = 'center';
+        ctx.fillText(label, W / 2, 18);
+      }
+
+      ctx.textAlign = 'left';
+      frameRef.current = requestAnimationFrame(draw);
+    }
+
+    frameRef.current = requestAnimationFrame(draw);
+    return () => {
+      running = false;
+      cancelAnimationFrame(frameRef.current);
+    };
+  }, [gameState, agentNames, agentColors, getOrCreateAnim]);
 
   return (
-    <div
-      className={`w-full rounded-xl overflow-hidden border border-white/10 bg-[#060d1a] ${className ?? ''}`}
-      style={{ aspectRatio: '4/5', minHeight: 300 }}
-    >
-      <Canvas
-        shadows
-        camera={{ position: [0, 8, 11], fov: 50 }}
-        gl={{ antialias: true, alpha: false }}
-        dpr={[1, 2]}
-      >
-        <Lights />
-        <Court />
-
-        {agentIds.map(id => (
-          <AgentMesh
-            key={id}
-            agentId={id}
-            position={gameState.agentPositions[id] ?? { x: 50, y: 50 }}
-            color={agentColors[id] ?? '#4a9eff'}
-            name={agentNames[id] ?? id}
-            momentum={gameState.momentum[id] ?? 50}
-            isServing={gameState.servingAgentId === id}
-          />
-        ))}
-
-        <Shuttle
-          position={gameState.shuttlePosition}
-          lastAction={gameState.lastAction}
-        />
-
-        {gameState.lastAction && gameState.lastAction !== 'SERVE' && (
-          <ActionBurst
-            key={burstKey}
-            action={gameState.lastAction}
-            position={gameState.shuttlePosition}
-          />
-        )}
-
-        <OrbitControls
-          enablePan={false}
-          minDistance={7}
-          maxDistance={20}
-          maxPolarAngle={Math.PI / 2.1}
-          target={[0, 0, 0]}
-        />
-      </Canvas>
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={380}
+      height={480}
+      className={`rounded-xl border border-white/10 w-full max-w-[380px] ${className ?? ''}`}
+      style={{ aspectRatio: '380/480' }}
+    />
   );
 }
