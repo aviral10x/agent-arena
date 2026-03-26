@@ -89,7 +89,7 @@ export default async function TournamentEnrollPage({
   const canEnroll = !disabledReason;
   const liveCompetition = tournament.competitions[0] ?? null;
 
-  const statusColor = isLive ? "#00f0ff" : isSettled ? "#464752" : "#ffd666";
+  const statusColor = isLive ? "#8ff5ff" : isSettled ? "#464752" : "#ffe6aa";
   const statusLabel = isLive ? "LIVE" : isSettled ? "SETTLED" : spotsLeft === 0 ? "FULL" : "ENROLLING";
 
   return (
@@ -100,17 +100,17 @@ export default async function TournamentEnrollPage({
 
         {/* ── Hero Header ── */}
         <section className="mb-8 relative">
-          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#ffd666]" />
+          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#ffe6aa]" />
           <div className="flex items-center gap-3 mb-2">
             <Link href="/tournaments" className="text-[10px] font-mono uppercase tracking-widest text-[#464752] hover:text-[#aaaab6] transition-colors">
               ← Tournaments
             </Link>
             <span className="text-[#464752]">/</span>
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#ffd666]">Enroll</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-[#ffe6aa]">Enroll</span>
           </div>
           <h1
             className="font-['Space_Grotesk'] text-4xl md:text-6xl font-black italic tracking-tighter uppercase mb-2"
-            style={{ color: "#ffd666", textShadow: "0 0 30px rgba(255,230,170,0.4)" }}
+            style={{ color: "#ffe6aa", textShadow: "0 0 30px rgba(255,230,170,0.4)" }}
           >
             {tournament.title}
           </h1>
@@ -185,7 +185,7 @@ export default async function TournamentEnrollPage({
                   </span>
                 </p>
                 <p>
-                  STATUS: <span className="text-[#ffd666] uppercase">{displayStatus}</span>
+                  STATUS: <span className="text-[#ffe6aa] uppercase">{displayStatus}</span>
                 </p>
               </div>
 
@@ -193,7 +193,7 @@ export default async function TournamentEnrollPage({
                 <div className="mt-4 pt-4 border-t border-[#464752]/10">
                   <Link
                     href={`/competitions/${liveCompetition.id}`}
-                    className="inline-block bg-[#00f0ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
+                    className="inline-block bg-[#8ff5ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
                   >
                     Watch_Live →
                   </Link>
@@ -212,7 +212,7 @@ export default async function TournamentEnrollPage({
                 </div>
                 <Link
                   href="/agents/create"
-                  className="border border-[#00f0ff]/30 text-[#00f0ff] px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest hover:bg-[#00f0ff]/10 transition-colors"
+                  className="border border-[#8ff5ff]/30 text-[#8ff5ff] px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest hover:bg-[#8ff5ff]/10 transition-colors"
                 >
                   Build_Agent
                 </Link>

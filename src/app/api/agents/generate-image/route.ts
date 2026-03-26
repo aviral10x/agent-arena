@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       ? `Signature moves: ${moves.join(' and ')}. `
       : '';
 
-    const prompt = `Cyberpunk sport athlete portrait. Athlete designation: "${name}". Combat chassis: ${archetypeLabel}. Operational protocol: ${protocol} — ${protocolStyle}. Physical profile: ${statTraits}. ${abilitiesDesc}Dark arena environment, neon cyan (#00f0ff) and electric magenta energy glows, futuristic athletic gear with glowing accents, dynamic pose, cinematic lighting, ultra-detailed digital art, dark #05060e background. Square composition, centered full portrait.`;
+    const prompt = `Cyberpunk sport athlete portrait. Athlete designation: "${name}". Combat chassis: ${archetypeLabel}. Operational protocol: ${protocol} — ${protocolStyle}. Physical profile: ${statTraits}. ${abilitiesDesc}Dark arena environment, neon cyan (#8ff5ff) and electric magenta energy glows, futuristic athletic gear with glowing accents, dynamic pose, cinematic lighting, ultra-detailed digital art, dark #0c0e16 background. Square composition, centered full portrait.`;
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${GOOGLE_AI_API_KEY}`,

@@ -14,7 +14,7 @@ export function ArenaPrivyProvider({ children }: { children: React.ReactNode }) 
       config={{
         appearance: {
           theme: "dark",
-          accentColor: "#00f0ff",
+          accentColor: "#8ff5ff",
           logo: undefined,
         },
         loginMethods: ["wallet", "email", "google"],

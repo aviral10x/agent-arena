@@ -11,7 +11,7 @@ export default function CreateAgentPage() {
         <div className="mx-auto max-w-7xl flex items-end justify-between gap-4">
           <div>
             <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-1">Agent Arena // Agent Builder</div>
-            <h1 className="font-['Space_Grotesk'] font-black text-3xl sm:text-4xl text-[#00f0ff] uppercase tracking-tighter">
+            <h1 className="font-['Space_Grotesk'] font-black text-3xl sm:text-4xl text-[#8ff5ff] uppercase tracking-tighter">
               Select Your Combat Chassis
             </h1>
             <p className="text-[#464752] text-[11px] uppercase font-mono mt-1 tracking-widest">
@@ -19,7 +19,7 @@ export default function CreateAgentPage() {
             </p>
           </div>
           <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-[#464752] uppercase tracking-widest shrink-0">
-            <div className="w-1.5 h-1.5 bg-[#00f0ff] rounded-full animate-pulse" />
+            <div className="w-1.5 h-1.5 bg-[#8ff5ff] rounded-full animate-pulse" />
             Neural Link Active
           </div>
         </div>

@@ -66,7 +66,7 @@ function AgentDetailPanel({ agent, onEnter, index }: { agent: Agent; onEnter: ()
             className="w-20 h-24 shrink-0 overflow-hidden relative"
             style={{
               clipPath: "polygon(0 0, 100% 0, 100% 80%, 80% 100%, 0 100%)",
-              border: `1px solid ${agent.color || '#00f0ff'}40`,
+              border: `1px solid ${agent.color || '#8ff5ff'}40`,
             }}
           >
             <img
@@ -77,7 +77,7 @@ function AgentDetailPanel({ agent, onEnter, index }: { agent: Agent; onEnter: ()
             />
             <div
               className="absolute inset-0"
-              style={{ background: `linear-gradient(to top, ${agent.color || '#00f0ff'}33 0%, transparent 60%)` }}
+              style={{ background: `linear-gradient(to top, ${agent.color || '#8ff5ff'}33 0%, transparent 60%)` }}
             />
           </div>
           <div className="flex-1 min-w-0">
@@ -106,9 +106,9 @@ function AgentDetailPanel({ agent, onEnter, index }: { agent: Agent; onEnter: ()
       {/* Stats */}
       <div className="px-5 py-4 border-b border-[#464752]/20 space-y-3">
         <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-2">Combat Stats</div>
-        <StatBar label="SPEED"    value={agent.speed}    color="#00f0ff" />
-        <StatBar label="POWER"    value={agent.power}    color="#ffd666" />
-        <StatBar label="ACCURACY" value={agent.accuracy} color="#ff2d78" />
+        <StatBar label="SPEED"    value={agent.speed}    color="#8ff5ff" />
+        <StatBar label="POWER"    value={agent.power}    color="#ffe6aa" />
+        <StatBar label="ACCURACY" value={agent.accuracy} color="#ff6c92" />
         <StatBar label="STAMINA"  value={agent.stamina}  color="#a78bfa" />
       </div>
 
@@ -116,7 +116,7 @@ function AgentDetailPanel({ agent, onEnter, index }: { agent: Agent; onEnter: ()
       <div className="px-5 py-4 border-b border-[#464752]/20">
         <div className="flex items-center justify-between mb-2">
           <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752]">Neural Bandwidth Budget</div>
-          <div className="font-mono text-[10px] text-[#ffd666]">{totalStats * 10} / 400 MHz</div>
+          <div className="font-mono text-[10px] text-[#ffe6aa]">{totalStats * 10} / 400 MHz</div>
         </div>
         <div className="h-2 bg-[#11131d] flex gap-[1px]">
           {Array.from({ length: 10 }, (_, i) => (
@@ -125,7 +125,7 @@ function AgentDetailPanel({ agent, onEnter, index }: { agent: Agent; onEnter: ()
               className="flex-1 h-full"
               style={{
                 background: i < Math.round((totalStats / 40) * 10)
-                  ? '#ffd666'
+                  ? '#ffe6aa'
                   : 'rgba(35,37,50,0.8)',
               }}
             />
@@ -145,18 +145,18 @@ function AgentDetailPanel({ agent, onEnter, index }: { agent: Agent; onEnter: ()
               >
                 <div
                   className="w-7 h-7 flex items-center justify-center shrink-0"
-                  style={{ background: i === 0 ? '#ff2d7822' : '#ffd66622' }}
+                  style={{ background: i === 0 ? '#ff6c9222' : '#ffe6aa22' }}
                 >
-                  <span className="material-symbols-outlined text-sm" style={{ color: i === 0 ? '#ff2d78' : '#ffd666' }}>
+                  <span className="material-symbols-outlined text-sm" style={{ color: i === 0 ? '#ff6c92' : '#ffe6aa' }}>
                     flash_on
                   </span>
                 </div>
                 <div>
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-widest" style={{ color: i === 0 ? '#ff2d78' : '#ffd666' }}>
+                  <div className="text-[10px] font-mono font-bold uppercase tracking-widest" style={{ color: i === 0 ? '#ff6c92' : '#ffe6aa' }}>
                     {move}
                   </div>
                 </div>
-                <div className="ml-auto w-1.5 h-1.5 shrink-0" style={{ background: i === 0 ? '#ff2d78' : '#ffd666' }} />
+                <div className="ml-auto w-1.5 h-1.5 shrink-0" style={{ background: i === 0 ? '#ff6c92' : '#ffe6aa' }} />
               </div>
             ))}
           </div>
@@ -175,7 +175,7 @@ function AgentDetailPanel({ agent, onEnter, index }: { agent: Agent; onEnter: ()
       <div className="p-5 mt-auto">
         <button
           onClick={() => { playConfirm(); onEnter(); }}
-          className="w-full bg-gradient-to-r from-[#00f0ff] to-[#00deec] text-[#005d63] py-4 font-['Space_Grotesk'] font-black text-lg uppercase tracking-tight flex items-center justify-center gap-3 hover:brightness-110 active:scale-[0.98] transition-all"
+          className="w-full bg-gradient-to-r from-[#8ff5ff] to-[#00deec] text-[#005d63] py-4 font-['Space_Grotesk'] font-black text-lg uppercase tracking-tight flex items-center justify-center gap-3 hover:brightness-110 active:scale-[0.98] transition-all"
           style={{ boxShadow: "0 0 20px rgba(143,245,255,0.2)" }}
         >
           Enter the Arena
@@ -201,7 +201,7 @@ function AgentRosterCard({
     ? agent.specialMoves
     : (() => { try { return JSON.parse(agent.specialMoves as string); } catch { return []; } })();
 
-  const color = agent.color || "#00f0ff";
+  const color = agent.color || "#8ff5ff";
   const portrait = (agent as any).avatarUrl || STITCH_PORTRAITS[index % STITCH_PORTRAITS.length];
 
   return (
@@ -303,7 +303,7 @@ export function AgentBuilderHub() {
       {/* ── Left: Agent Roster ── */}
       <section className="col-span-12 lg:col-span-4">
         <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-3 flex items-center justify-between">
-          <span>{walletAddress ? "Your Agents" : "All Agents"} <span className="text-[#00f0ff]">// {agents.length}</span></span>
+          <span>{walletAddress ? "Your Agents" : "All Agents"} <span className="text-[#8ff5ff]">// {agents.length}</span></span>
           {loading && (
             <span className="text-[#464752] animate-pulse">loading…</span>
           )}
@@ -317,7 +317,7 @@ export function AgentBuilderHub() {
             className="relative overflow-hidden text-left w-full transition-all"
             style={{
               clipPath: "polygon(0 0, 100% 0, 100% 88%, 88% 100%, 0 100%)",
-              border: selectedId === "new" ? "2px solid #00f0ff" : "2px dashed rgba(70,71,82,0.4)",
+              border: selectedId === "new" ? "2px solid #8ff5ff" : "2px dashed rgba(70,71,82,0.4)",
               background: selectedId === "new" ? "rgba(143,245,255,0.06)" : "transparent",
             }}
           >
@@ -325,8 +325,8 @@ export function AgentBuilderHub() {
               <div
                 className="w-12 h-12 flex items-center justify-center border font-['Space_Grotesk'] font-black text-2xl italic"
                 style={{
-                  borderColor: selectedId === "new" ? "#00f0ff" : "rgba(70,71,82,0.4)",
-                  color: selectedId === "new" ? "#00f0ff" : "#464752",
+                  borderColor: selectedId === "new" ? "#8ff5ff" : "rgba(70,71,82,0.4)",
+                  color: selectedId === "new" ? "#8ff5ff" : "#464752",
                   background: selectedId === "new" ? "rgba(143,245,255,0.06)" : "transparent",
                 }}
               >
@@ -334,7 +334,7 @@ export function AgentBuilderHub() {
               </div>
               <div
                 className="text-[9px] font-mono uppercase tracking-widest text-center"
-                style={{ color: selectedId === "new" ? "#00f0ff" : "#464752" }}
+                style={{ color: selectedId === "new" ? "#8ff5ff" : "#464752" }}
               >
                 NEW_AGENT
               </div>

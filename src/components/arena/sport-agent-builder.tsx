@@ -281,13 +281,13 @@ export function SportAgentBuilder() {
 
   if (submitted) {
     return (
-      <div className="bg-[#171924] border border-[#00f0ff]/20 p-8 text-center">
+      <div className="bg-[#171924] border border-[#8ff5ff]/20 p-8 text-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center border-2 border-[#00f0ff]">
-            <span className="material-symbols-outlined text-[#00f0ff] text-4xl">check_circle</span>
+          <div className="flex h-16 w-16 items-center justify-center border-2 border-[#8ff5ff]">
+            <span className="material-symbols-outlined text-[#8ff5ff] text-4xl">check_circle</span>
           </div>
           <div>
-            <div className="font-['Space_Grotesk'] text-2xl font-black text-[#00f0ff] uppercase tracking-tight italic">
+            <div className="font-['Space_Grotesk'] text-2xl font-black text-[#8ff5ff] uppercase tracking-tight italic">
               {form.name} INITIALIZED
             </div>
             <p className="mt-2 text-sm font-mono text-[#aaaab6]">
@@ -298,7 +298,7 @@ export function SportAgentBuilder() {
             {form.specialMoves.map((move) => (
               <span
                 key={move}
-                className="border border-[#00f0ff]/40 bg-[#00f0ff]/10 px-3 py-1 text-xs uppercase tracking-widest text-[#00f0ff] font-mono"
+                className="border border-[#8ff5ff]/40 bg-[#8ff5ff]/10 px-3 py-1 text-xs uppercase tracking-widest text-[#8ff5ff] font-mono"
               >
                 {move}
               </span>
@@ -310,11 +310,11 @@ export function SportAgentBuilder() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-[#171924] border border-[#00f0ff]/20 p-6 space-y-6 shadow-[inset_0_1px_0_0_rgba(143,245,255,0.15)]">
+    <form onSubmit={handleSubmit} className="bg-[#171924] border border-[#8ff5ff]/20 p-6 space-y-6 shadow-[inset_0_1px_0_0_rgba(143,245,255,0.15)]">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#464752]/20 pb-4">
         <div>
-          <span className="bg-[#00f0ff] text-[#005d63] px-3 py-0.5 text-[10px] font-mono font-bold uppercase">
+          <span className="bg-[#8ff5ff] text-[#005d63] px-3 py-0.5 text-[10px] font-mono font-bold uppercase">
             {form.archetype.toUpperCase()}
           </span>
           <h2 className="font-['Space_Grotesk'] text-4xl font-black text-[#eeecfa] tracking-tighter uppercase mt-2 italic leading-none">
@@ -322,7 +322,7 @@ export function SportAgentBuilder() {
           </h2>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-['Space_Grotesk'] font-bold text-[#ffd666]">
+          <div className="text-2xl font-['Space_Grotesk'] font-bold text-[#ffe6aa]">
             {STAT_BUDGET - remainingPoints} <span className="text-xs uppercase opacity-60">/ {STAT_BUDGET} pts</span>
           </div>
           <div className="text-[10px] text-[#aaaab6] font-mono mt-1 uppercase">BUDGET_USED</div>
@@ -330,7 +330,7 @@ export function SportAgentBuilder() {
       </div>
 
       {/* Name */}
-      <div className="bg-[#11131d] border-b border-[#00f0ff]/40 px-0 py-2">
+      <div className="bg-[#11131d] border-b border-[#8ff5ff]/40 px-0 py-2">
         <label htmlFor="agent-name" className="text-[10px] uppercase tracking-widest text-[#464752] font-mono block mb-1">
           Agent Designation
         </label>
@@ -341,7 +341,7 @@ export function SportAgentBuilder() {
           onChange={(e) => updateField("name", e.target.value)}
           placeholder="e.g. STRIKER_X, PHANTOM_V2, APEX_01…"
           maxLength={40}
-          className="w-full bg-transparent text-[#00f0ff] font-mono text-sm outline-none placeholder:text-[#464752] uppercase tracking-widest"
+          className="w-full bg-transparent text-[#8ff5ff] font-mono text-sm outline-none placeholder:text-[#464752] uppercase tracking-widest"
         />
       </div>
 
@@ -357,8 +357,8 @@ export function SportAgentBuilder() {
               className="p-3 text-left transition-all border"
               style={{
                 background: form.archetype === arch ? 'rgba(143,245,255,0.1)' : 'transparent',
-                borderColor: form.archetype === arch ? '#00f0ff' : 'rgba(70,71,82,0.3)',
-                color: form.archetype === arch ? '#00f0ff' : '#aaaab6',
+                borderColor: form.archetype === arch ? '#8ff5ff' : 'rgba(70,71,82,0.3)',
+                color: form.archetype === arch ? '#8ff5ff' : '#aaaab6',
               }}
             >
               <div className="text-[10px] font-mono uppercase font-bold">{arch}</div>
@@ -373,9 +373,9 @@ export function SportAgentBuilder() {
         <div className="grid grid-cols-3 gap-3">
           {PLAYING_STYLES.map((style) => {
             const colors = {
-              Aggressive: { active: '#ff2d78', border: '#ff2d78' },
-              Moderate:   { active: '#ffd666', border: '#ffd666' },
-              Defensive:  { active: '#00f0ff', border: '#00f0ff' },
+              Aggressive: { active: '#ff6c92', border: '#ff6c92' },
+              Moderate:   { active: '#ffe6aa', border: '#ffe6aa' },
+              Defensive:  { active: '#8ff5ff', border: '#8ff5ff' },
             };
             const c = colors[style];
             const selected = form.playingStyle === style;
@@ -404,20 +404,20 @@ export function SportAgentBuilder() {
           <div className="text-[10px] uppercase tracking-widest text-[#464752] font-mono">Neural Bandwidth Budget</div>
           <div
             className="font-mono text-[10px] font-bold"
-            style={{ color: remainingPoints === 0 ? '#00ff87' : remainingPoints < 0 ? '#ff716c' : '#ffd666' }}
+            style={{ color: remainingPoints === 0 ? '#00ff87' : remainingPoints < 0 ? '#ff716c' : '#ffe6aa' }}
           >
             {remainingPoints} pts remaining
           </div>
         </div>
         {/* Budget bar (Stitch segmented style) */}
-        <div className="bg-[#ffd666]/20 h-2 flex gap-[1px] mb-6">
+        <div className="bg-[#ffe6aa]/20 h-2 flex gap-[1px] mb-6">
           {Array.from({ length: 10 }, (_, i) => (
             <div
               key={i}
               className="flex-1 h-full"
               style={{
                 background: i < Math.round((STAT_BUDGET - remainingPoints) / STAT_BUDGET * 10)
-                  ? '#ffd666'
+                  ? '#ffe6aa'
                   : 'rgba(35,37,50,0.8)',
               }}
             />
@@ -425,9 +425,9 @@ export function SportAgentBuilder() {
         </div>
         <div className="space-y-6">
           {([
-            { key: "speed" as const,    label: "Speed",    color: "#00f0ff" },
-            { key: "power" as const,    label: "Power",    color: "#ffd666" },
-            { key: "stamina" as const,  label: "Stamina",  color: "#ff2d78" },
+            { key: "speed" as const,    label: "Speed",    color: "#8ff5ff" },
+            { key: "power" as const,    label: "Power",    color: "#ffe6aa" },
+            { key: "stamina" as const,  label: "Stamina",  color: "#ff6c92" },
             { key: "accuracy" as const, label: "Accuracy", color: "#a78bfa" },
           ] as const).map(({ key, label, color }) => (
             <div key={key}>
@@ -474,7 +474,7 @@ export function SportAgentBuilder() {
           {SPECIAL_MOVES.map((move) => {
             const selected = form.specialMoves.includes(move);
             const disabled = !selected && form.specialMoves.length >= 2;
-            const color = selected ? '#ffd666' : '#ff2d78';
+            const color = selected ? '#ffe6aa' : '#ff6c92';
             const imgB64 = moveImages[move];
             const imgLoading = generatingMoves.has(move);
             return (
@@ -541,7 +541,7 @@ export function SportAgentBuilder() {
       </div>
 
       {/* Play style description */}
-      <div className="bg-[#11131d] p-4 border-l-2 border-[#00f0ff]/30">
+      <div className="bg-[#11131d] p-4 border-l-2 border-[#8ff5ff]/30">
         <label htmlFor="play-style" className="text-[10px] uppercase tracking-widest text-[#464752] font-mono block mb-2">
           Tactical Profile (optional)
         </label>
@@ -567,7 +567,7 @@ export function SportAgentBuilder() {
             type="button"
             onClick={generateImage}
             disabled={generatingImage}
-            className="flex items-center gap-2 px-4 py-2 border border-[#00f0ff]/40 text-[#00f0ff] font-mono text-[11px] uppercase tracking-widest transition-all hover:bg-[#00f0ff]/10 hover:border-[#00f0ff]/80 disabled:opacity-40"
+            className="flex items-center gap-2 px-4 py-2 border border-[#8ff5ff]/40 text-[#8ff5ff] font-mono text-[11px] uppercase tracking-widest transition-all hover:bg-[#8ff5ff]/10 hover:border-[#8ff5ff]/80 disabled:opacity-40"
           >
             {generatingImage ? (
               <>
@@ -595,18 +595,18 @@ export function SportAgentBuilder() {
               <img
                 src={`data:image/png;base64,${avatarBase64}`}
                 alt={`${form.name} portrait`}
-                className="w-24 h-24 object-cover border border-[#00f0ff]/30"
+                className="w-24 h-24 object-cover border border-[#8ff5ff]/30"
                 style={{ imageRendering: "auto" }}
               />
-              <div className="absolute inset-0 border border-[#00f0ff]/20 pointer-events-none" />
+              <div className="absolute inset-0 border border-[#8ff5ff]/20 pointer-events-none" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] font-mono text-[#00f0ff] uppercase tracking-widest mb-1">Portrait Locked</div>
+              <div className="text-[10px] font-mono text-[#8ff5ff] uppercase tracking-widest mb-1">Portrait Locked</div>
               <div className="text-xs text-[#aaaab6] font-mono leading-relaxed">
                 {form.name || "AGENT"} · {form.archetype}
               </div>
               <div className="mt-2 flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 bg-[#00f0ff] rounded-full" />
+                <div className="w-1.5 h-1.5 bg-[#8ff5ff] rounded-full" />
                 <span className="text-[9px] font-mono text-[#464752] uppercase tracking-widest">Will be saved with agent</span>
               </div>
             </div>
@@ -635,7 +635,7 @@ export function SportAgentBuilder() {
       <button
         type="submit"
         disabled={submitting || remainingPoints < 0}
-        className="w-full bg-gradient-to-r from-[#ffd666] to-[#efc859] text-[#493800] py-4 font-['Space_Grotesk'] font-black text-xl uppercase tracking-tighter flex items-center justify-center gap-4 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(255,230,170,0.3)] disabled:opacity-50"
+        className="w-full bg-gradient-to-r from-[#ffe6aa] to-[#efc859] text-[#493800] py-4 font-['Space_Grotesk'] font-black text-xl uppercase tracking-tighter flex items-center justify-center gap-4 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(255,230,170,0.3)] disabled:opacity-50"
       >
         {submitting ? (
           <>
