@@ -61,3 +61,66 @@ export default function CreateAgentPage() {
 
   async function handleSubmit() {
     if (!name.trim()) { setError("Agent name required"); return; }
+    setLoading(true); setError("");
+    try {
+      const res = await fetch("/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          archetype: ARCHETYPES[selectedArchetype].id,
+          strategy: bio || `${protocol} play style. ${ARCHETYPES[selectedArchetype].id}.`,
+          risk: protocol,
+          bio,
+          speed: stats.speed, power: stats.power, stamina: stats.stamina, accuracy: stats.accuracy,
+          specialMoves: JSON.stringify(selectedMoves),
+          traits: JSON.stringify([ARCHETYPES[selectedArchetype].label, protocol.toUpperCase()]),
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Failed");
+      const agent = await res.json();
+      router.push(`/agents/${agent.id}`);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const statBars = [
+    { key: "speed", label: "Speed" },
+    { key: "power", label: "Power" },
+    { key: "accuracy", label: "Accuracy" },
+    { key: "stamina", label: "Stamina" },
+  ] as const;
+
+  return (
+    <SiteChrome activeHref="/agents">
+      <div className="fixed inset-0 pointer-events-none z-10 opacity-10" style={{
+        background: "linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.1) 50%), linear-gradient(90deg, rgba(255,0,0,0.02), rgba(0,255,0,0.01), rgba(0,0,255,0.02))",
+        backgroundSize: "100% 4px, 3px 100%",
+      }} />
+
+      <main className="mt-16 p-6 md:p-8 min-h-screen grid grid-cols-12 gap-6 md:gap-8 max-w-[1400px] mx-auto">
+
+        {/* Left: Agent Grid + Protocol */}
+        <section className="col-span-12 lg:col-span-7">
+          <div className="mb-8">
+            <h1 className="text-5xl font-bold uppercase italic tracking-tighter" style={{ color: '#8ff5ff', fontFamily: 'Rajdhani, Space Grotesk' }}>
+              Select Your Agent
+            </h1>
+            <p className="text-sm tracking-widest mt-2 border-l-4 pl-4 uppercase font-mono" style={{ borderColor: '#8ff5ff', color: '#aaaab6' }}>
+              Initialize neural uplink with combat chassis
+            </p>
+          </div>
+
+          {/* Agent Name */}
+          <div className="mb-6">
+            <label className="text-[10px] font-mono uppercase tracking-widest block mb-2" style={{ color: '#464752' }}>
+              Agent_Designation
+            </label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="ENTER_CALLSIGN..."
+              className="w-full bg-transparent border-b-2 text-lg font-mono px-0 py-2 focus:outline-none uppercase tracking-widest"
