@@ -34,21 +34,20 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
 
       {/* ── Top nav ─────────────────────────────────────────────────────── */}
       <header
-        className="sticky top-0 z-40 backdrop-blur-xl"
+        className="sticky top-0 z-40 bg-[#0c0e16]/80 backdrop-blur-xl shadow-[0_0_15px_rgba(143,245,255,0.1)]"
         style={{
-          background: 'rgba(5, 6, 14, 0.92)',
-          borderBottom: '1px solid rgba(0, 240, 255, 0.08)',
+          borderBottom: '1px solid rgba(143, 245, 255, 0.08)',
         }}
       >
         <div className="mx-auto flex h-12 max-w-7xl items-center gap-3 px-4 sm:h-14 sm:gap-4 sm:px-6">
 
-          {/* Logo — Task 9 */}
+          {/* Logo — ARENA_OS italic font-black */}
           <Link href="/" className="flex items-center gap-2 shrink-0 mr-2 sm:gap-2.5 sm:mr-4">
             <div
               className="flex h-7 w-7 items-center justify-center rounded-lg sm:h-8 sm:w-8"
               style={{
-                border: '1px solid rgba(0,240,255,0.25)',
-                background: 'rgba(0,240,255,0.10)',
+                border: '1px solid rgba(143,245,255,0.25)',
+                background: 'rgba(143,245,255,0.10)',
               }}
             >
               <svg viewBox="0 0 40 40" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" style={{ color: 'var(--neon-cyan)' }}>
@@ -56,10 +55,8 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
                 <circle cx="20" cy="23" r="3" fill="currentColor"/>
               </svg>
             </div>
-            <span className="hidden xs:block" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.05em', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--neon-cyan)' }}>AGENT</span>
-              <span style={{ color: 'var(--white-crisp)' }}>_</span>
-              <span style={{ color: 'var(--neon-magenta)' }}>ARENA</span>
+            <span className="hidden xs:block text-2xl font-black italic tracking-tighter" style={{ color: 'var(--neon-cyan)', fontFamily: 'var(--font-body)' }}>
+              ARENA_OS
             </span>
           </Link>
 
@@ -73,35 +70,16 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
                   key={item.href}
                   href={item.href}
                   className={cx(
-                    "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors lg:px-3 lg:text-sm",
+                    "flex items-center gap-1.5 px-2.5 py-1.5 text-sm transition-all uppercase tracking-widest",
                     isBuild
-                      ? ""
+                      ? "bg-[#8ff5ff] text-[#005d63] px-4 py-1.5 font-bold uppercase tracking-widest text-xs hover:skew-x-[-6deg] hover:bg-[#8ff5ff]/10 hover:text-[#8ff5ff]"
                       : on
-                        ? ""
-                        : "hover:bg-white/5"
+                        ? "text-[#8ff5ff] border-b-2 border-[#8ff5ff] pb-1 shadow-[0_4px_10px_-2px_rgba(143,245,255,0.5)]"
+                        : "text-[#464752] hover:text-[#8ff5ff]/70 hover:skew-x-[-6deg] hover:bg-[#8ff5ff]/10"
                   )}
                   style={{
-                    fontFamily: 'var(--font-body)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.12em',
-                    fontWeight: 600,
-                    ...(isBuild ? {
-                      border: '1px solid rgba(0,240,255,0.4)',
-                      borderRadius: '999px',
-                      color: 'var(--neon-cyan)',
-                      boxShadow: '0 0 12px rgba(0,240,255,0.15)',
-                      padding: '4px 14px',
-                    } : on ? {
-                      color: 'var(--neon-cyan)',
-                      background: 'rgba(0,240,255,0.08)',
-                      borderRadius: '8px',
-                      textShadow: '0 0 12px rgba(0,240,255,0.5)',
-                      textDecoration: 'underline',
-                      textDecorationColor: 'rgba(0,240,255,0.4)',
-                      textUnderlineOffset: '4px',
-                    } : {
-                      color: 'var(--text-secondary)',
-                    }),
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontWeight: isBuild ? 700 : 600,
                   }}
                 >
                   <span className="text-xs">{item.icon}</span>
@@ -145,7 +123,7 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
             <button
               onClick={() => setMenuOpen(v => !v)}
               className="flex h-8 w-8 items-center justify-center rounded-lg md:hidden"
-              style={{ border: '1px solid rgba(0,240,255,0.2)', color: 'var(--white-crisp)' }}
+              style={{ border: '1px solid rgba(143,245,255,0.2)', color: 'var(--white-crisp)' }}
               aria-label="Menu"
             >
               {menuOpen
@@ -168,8 +146,8 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
           <div
             className="border-t px-4 py-2 md:hidden"
             style={{
-              borderColor: 'rgba(0,240,255,0.08)',
-              background: 'rgba(5, 6, 14, 0.98)',
+              borderColor: 'rgba(143,245,255,0.08)',
+              background: 'rgba(12, 14, 22, 0.98)',
             }}
           >
             <nav className="flex flex-col gap-0.5">
@@ -179,17 +157,15 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors"
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all uppercase tracking-widest"
                     style={{
-                      fontFamily: 'var(--font-body)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.1em',
+                      fontFamily: "'Space Grotesk', sans-serif",
                       ...(on ? {
-                        background: 'rgba(0,240,255,0.08)',
-                        color: 'var(--neon-cyan)',
-                        borderLeft: '2px solid var(--neon-cyan)',
+                        background: 'rgba(143,245,255,0.08)',
+                        color: '#8ff5ff',
+                        borderLeft: '2px solid #8ff5ff',
                       } : {
-                        color: 'var(--text-secondary)',
+                        color: '#464752',
                       }),
                     }}
                   >
@@ -214,16 +190,14 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-1 flex-col items-center gap-0.5 py-1 transition-colors"
+              className="flex flex-1 flex-col items-center gap-0.5 py-1 transition-all"
             >
               <span className="text-base leading-none sm:text-lg">{item.icon}</span>
               <span
-                className="text-[9px] font-semibold transition-colors sm:text-[10px]"
+                className="text-[9px] font-semibold transition-colors sm:text-[10px] uppercase tracking-widest"
                 style={{
-                  fontFamily: 'var(--font-body)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: on ? 'var(--neon-cyan)' : 'var(--text-muted)',
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  color: on ? '#8ff5ff' : '#464752',
                 }}
               >
                 {item.label}
@@ -232,8 +206,8 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
                 <div
                   className="mt-0.5 h-0.5 w-3.5 rounded-full sm:w-4"
                   style={{
-                    background: 'var(--neon-cyan)',
-                    boxShadow: '0 0 6px var(--neon-cyan)',
+                    background: '#8ff5ff',
+                    boxShadow: '0 0 6px #8ff5ff',
                   }}
                 />
               )}

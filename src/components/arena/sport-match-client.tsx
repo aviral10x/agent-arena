@@ -57,7 +57,7 @@ const ACTION_EMOJI: Record<string, string> = {
 const ACTION_COLORS: Record<string, string> = {
   SMASH:   '#ff2d78',   // neon-magenta
   DROP:    '#c084fc',   // purple
-  CLEAR:   '#00f0ff',   // neon-cyan
+  CLEAR:   '#8ff5ff',   // neon-cyan
   DRIVE:   '#ffd666',   // amber/gold
   LOB:     '#00ff87',   // neon-green
   BLOCK:   '#9ca3af',
@@ -471,15 +471,15 @@ export function SportMatchClient({
                 fontSize: '5rem',
                 fontWeight: 700,
                 animation: mounted ? 'score-blast 0.5s ease-out' : 'none',
-                color: a1color,
-                textShadow: `0 0 20px ${a1color}, 0 0 40px ${a1color}66`,
+                color: '#8ff5ff',
+                textShadow: '0 0 30px #8ff5ff88, 0 0 60px #8ff5ff44',
               }}
             >
               {a1score}
             </div>
             <div className="flex flex-col items-center gap-1">
               {/* Vertical neon cyan separator */}
-              <div style={{ width: '2px', height: '48px', background: 'var(--neon-cyan)', boxShadow: '0 0 8px var(--neon-cyan), 0 0 16px rgba(0,240,255,0.4)', borderRadius: '1px' }} />
+              <div style={{ width: '2px', height: '48px', background: '#8ff5ff', boxShadow: '0 0 8px #8ff5ff, 0 0 16px rgba(143,245,255,0.4)', borderRadius: '1px' }} />
               {score && score.sets.length > 1 && (
                 <div className="flex flex-col items-center gap-0.5">
                   {score.sets.slice(0, gameState?.currentSet).map((s, i) => (
@@ -496,8 +496,8 @@ export function SportMatchClient({
                 fontSize: '5rem',
                 fontWeight: 700,
                 animation: mounted ? 'score-blast 0.5s ease-out' : 'none',
-                color: a2color,
-                textShadow: `0 0 20px ${a2color}, 0 0 40px ${a2color}66`,
+                color: '#8ff5ff',
+                textShadow: '0 0 30px #8ff5ff88, 0 0 60px #8ff5ff44',
               }}
             >
               {a2score}
@@ -537,15 +537,14 @@ export function SportMatchClient({
           {([
             { agent: a1, m: m1, label: a1name, color: a1color },
             { agent: a2, m: m2, label: a2name, color: a2color },
-          ] as { agent: Agent | undefined; m: number; label: string; color: string }[]).map(({ m, label, color }) => {
-            const barColor = m > 65 ? 'var(--neon-green)' : m < 35 ? 'var(--neon-red)' : color;
+          ] as { agent: Agent | undefined; m: number; label: string; color: string }[]).map(({ m, label }) => {
             return (
               <div key={label} className="flex items-center gap-2">
                 <span className="text-[9px] uppercase tracking-widest w-12 truncate shrink-0" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.3)' }}>{label}</span>
-                <div className="flex-1 overflow-hidden rounded-full" style={{ height: '4px', background: 'rgba(255,255,255,0.08)' }}>
+                <div className="flex-1 overflow-hidden rounded-full" style={{ height: '2px', background: 'rgba(255,255,255,0.08)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${m}%`, background: barColor, boxShadow: `0 0 6px ${barColor}`, animation: 'momentum-fire 2s ease-in-out infinite' }}
+                    style={{ width: `${m}%`, background: '#8ff5ff', boxShadow: '0 0 10px #8ff5ff', animation: 'momentum-fire 2s ease-in-out infinite' }}
                   />
                 </div>
                 <span className="text-[9px] tabular-nums w-6 text-right" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.3)' }}>{Math.round(m)}</span>
@@ -570,15 +569,14 @@ export function SportMatchClient({
               className="flex items-center gap-1.5 text-[10px] font-black tracking-widest px-2 py-0.5 rounded-full"
               style={{
                 fontFamily: 'var(--font-mono)',
-                color: 'var(--neon-green)',
-                background: 'rgba(0,255,135,0.12)',
-                border: '1px solid rgba(0,255,135,0.2)',
+                background: '#8ff5ff',
+                color: '#005d63',
                 animation: 'live-breathe 2s infinite',
               }}
             >
               <span className="relative">
-                <span className="w-1.5 h-1.5 rounded-full block" style={{ background: 'var(--neon-green)' }} />
-                <span className="absolute inset-0 rounded-full" style={{ background: 'var(--neon-green)', animation: 'live-ping 1.5s ease-in-out infinite' }} />
+                <span className="w-1.5 h-1.5 rounded-full block" style={{ background: '#005d63' }} />
+                <span className="absolute inset-0 rounded-full" style={{ background: '#005d63', animation: 'live-ping 1.5s ease-in-out infinite' }} />
               </span>
               LIVE
             </span>

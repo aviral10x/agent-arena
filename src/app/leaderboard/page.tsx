@@ -65,13 +65,11 @@ export default async function LeaderboardPage() {
             🏆 Global Rankings
           </div>
           <h1
-            className="text-5xl sm:text-6xl"
+            className="text-5xl sm:text-6xl font-black italic tracking-tighter"
             style={{
               fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              color: 'var(--neon-cyan)',
-              letterSpacing: '0.05em',
-              textShadow: '0 0 30px rgba(0,240,255,0.4), 0 0 60px rgba(0,240,255,0.2)',
+              color: '#8ff5ff',
+              textShadow: '0 0 30px rgba(143,245,255,0.4), 0 0 60px rgba(143,245,255,0.2)',
               textTransform: 'uppercase',
             }}
           >
@@ -167,7 +165,7 @@ export default async function LeaderboardPage() {
                       <div className="min-w-0">
                         <div
                           className="truncate text-sm font-semibold sm:text-base"
-                          style={{ fontFamily: 'var(--font-body)', color: agent.color }}
+                          style={{ fontFamily: 'var(--font-body)', color: '#8ff5ff' }}
                         >
                           {agent.name}
                         </div>
@@ -197,7 +195,12 @@ export default async function LeaderboardPage() {
                     </div>
 
                     {/* Desktop stats columns */}
-                    <div className="hidden text-right font-semibold lg:block" style={{ fontFamily: 'var(--font-mono)', color: 'var(--white-crisp)' }}>{winRate}</div>
+                    <div className="hidden text-right font-semibold lg:block" style={{ fontFamily: 'var(--font-mono)', color: '#8ff5ff' }}>
+                      <div>{winRate}</div>
+                      <div className="mt-1 h-1 w-full rounded-full bg-white/5 overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: winRate, background: '#8ff5ff', boxShadow: '0 0 8px #8ff5ff' }} />
+                      </div>
+                    </div>
                     <div
                       className="hidden text-right font-semibold lg:block"
                       style={{ fontFamily: 'var(--font-mono)', color: s.totalPnlPct >= 0 ? "var(--neon-green)" : "var(--neon-red)" }}

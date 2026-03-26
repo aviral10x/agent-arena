@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Bebas+Neue&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Bebas+Neue&display=swap');
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -8,37 +8,37 @@
 ───────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Backgrounds */
-  --bg-void: #05060e;
-  --bg-arena: #0a0b14;
-  --bg-surface: #10111c;
-  --bg-raised: #171829;
+  /* Backgrounds — Stitch exact */
+  --bg-void: #0c0e16;
+  --bg-arena: #0c0e16;
+  --bg-surface: #11131d;
+  --bg-raised: #1d1f2b;
   /* Backward compat aliases */
   --bg: var(--bg-arena);
-  --bg-soft: #0d0e18;
+  --bg-soft: #0f111a;
   --bg-card: var(--bg-surface);
 
   /* Panels */
-  --panel-bg: rgba(10, 11, 20, 0.85);
-  --panel-border: rgba(255, 255, 255, 0.06);
-  --panel-glow: rgba(0, 240, 255, 0.03);
+  --panel-bg: rgba(17, 19, 29, 0.85);
+  --panel-border: rgba(143, 245, 255, 0.08);
+  --panel-glow: rgba(143, 245, 255, 0.03);
   /* Legacy compat */
   --panel: var(--panel-bg);
-  --panel-strong: rgba(10, 10, 16, 0.97);
+  --panel-strong: rgba(12, 14, 22, 0.97);
   --panel-border-strong: rgba(255, 255, 255, 0.14);
 
-  /* Neon accents */
-  --neon-cyan: #00f0ff;
-  --neon-magenta: #ff2d78;
+  /* Neon accents — Stitch exact */
+  --neon-cyan: #8ff5ff;
+  --neon-magenta: #ff6c92;
   --neon-green: #00ff87;
   --neon-red: #ff3a50;
   --gold-trophy: #ffd666;
   /* Backward compat */
   --teal: var(--neon-cyan);
-  --teal-soft: rgba(0, 240, 255, 0.14);
-  --teal-glow: rgba(0, 240, 255, 0.30);
+  --teal-soft: rgba(143, 245, 255, 0.14);
+  --teal-glow: rgba(143, 245, 255, 0.30);
   --cyan: var(--neon-cyan);
-  --cyan-soft: rgba(0, 240, 255, 0.14);
+  --cyan-soft: rgba(143, 245, 255, 0.14);
   --green: var(--neon-green);
   --green-dim: #00cc6a;
   --green-soft: rgba(0, 255, 135, 0.12);
@@ -48,17 +48,17 @@
   --gold: var(--gold-trophy);
   --gold-soft: rgba(255, 214, 102, 0.14);
 
-  /* Text */
+  /* Text — Stitch exact */
   --white-crisp: #e8f0ff;
-  --grey-data: #8892a8;
-  --grey-ghost: #3a4060;
-  --text-primary: var(--white-crisp);
-  --text-secondary: #b8c4d8;
-  --text-muted: var(--grey-data);
+  --grey-data: #464752;
+  --grey-ghost: #2a2c38;
+  --text-primary: #e8f0ff;
+  --text-secondary: #9ba8c4;
+  --text-muted: #464752;
 
-  /* Fonts */
-  --font-display: 'Rajdhani', 'Exo 2', sans-serif;
-  --font-body: 'Chakra Petch', 'Barlow', sans-serif;
+  /* Fonts — Stitch exact */
+  --font-display: 'Space Grotesk', 'Rajdhani', sans-serif;
+  --font-body: 'Space Grotesk', 'Chakra Petch', sans-serif;
   --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
   --font-drama: 'Bebas Neue', 'Anton', sans-serif;
   /* Legacy */
@@ -67,11 +67,11 @@
 
   /* Shadows */
   --shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 24px rgba(0, 240, 255, 0.15);
+  --shadow-glow: 0 0 24px rgba(143, 245, 255, 0.15);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.40);
   --shadow: var(--shadow-panel);
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.60);
-  --shadow-teal: 0 0 24px rgba(0, 240, 255, 0.20);
+  --shadow-teal: 0 0 24px rgba(143, 245, 255, 0.20);
 
   /* Easing */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -106,13 +106,13 @@ body {
   color: var(--text-primary);
   font-family: var(--font-body), sans-serif;
   background-image:
-    radial-gradient(ellipse 120% 60% at 50% -20%, rgba(0, 240, 255, 0.04) 0%, transparent 70%);
+    radial-gradient(ellipse 120% 60% at 50% -20%, rgba(143, 245, 255, 0.04) 0%, transparent 70%);
 }
 
 a { color: inherit; text-decoration: none; }
 
 ::selection {
-  background: rgba(0, 240, 255, 0.25);
+  background: rgba(143, 245, 255, 0.25);
   color: white;
 }
 
@@ -127,17 +127,17 @@ a { color: inherit; text-decoration: none; }
 
 /* Neon glow on hover for interactive panels */
 .arena-panel-hover:hover {
-  border-color: rgba(0, 240, 255, 0.2);
-  box-shadow: var(--shadow-panel), 0 0 20px rgba(0, 240, 255, 0.08);
+  border-color: rgba(143, 245, 255, 0.2);
+  box-shadow: var(--shadow-panel), 0 0 20px rgba(143, 245, 255, 0.08);
 }
 
 /* Glass card */
 .glass-panel, .glass-panel-strong {
-  background: rgba(10, 11, 20, 0.85);
+  background: rgba(17, 19, 29, 0.85);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
-  box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.03), 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px rgba(143, 245, 255, 0.03), 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* Standard card — used everywhere */
@@ -156,16 +156,28 @@ a { color: inherit; text-decoration: none; }
 /* ── Grid background (very subtle) ── */
 .arena-grid {
   background-image:
-    linear-gradient(rgba(0, 240, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(rgba(143, 245, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 245, 255, 0.02) 1px, transparent 1px);
   background-size: 64px 64px;
+}
+
+/* ── Scanline overlay (Stitch Agent Builder) ── */
+.scanline-overlay {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 1px,
+    rgba(0, 0, 0, 0.15) 1px,
+    rgba(0, 0, 0, 0.15) 2px
+  );
+  pointer-events: none;
 }
 
 /* ── Typography ── */
 .text-balance { text-wrap: balance; }
 
 .text-gradient {
-  background: linear-gradient(135deg, var(--neon-cyan) 0%, #ffffff 45%, var(--neon-magenta) 100%);
+  background: linear-gradient(135deg, #8ff5ff 0%, #ffffff 45%, #ff6c92 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -200,11 +212,11 @@ a { color: inherit; text-decoration: none; }
 /* ── Neon glow button ── */
 .btn-primary {
   background: var(--neon-cyan);
-  color: #000;
+  color: #005d63;
   font-weight: 700;
   border-radius: 999px;
   transition: opacity 0.15s, transform 0.15s;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.30);
+  box-shadow: 0 0 20px rgba(143, 245, 255, 0.30);
 }
 .btn-primary:hover { opacity: 0.90; transform: translateY(-1px); }
 .btn-primary:active { transform: scale(0.97); }
@@ -245,7 +257,7 @@ a { color: inherit; text-decoration: none; }
 .signal-line::after {
   content: "";
   position: absolute; inset: 0;
-  background: linear-gradient(110deg, transparent 0%, rgba(0,240,255,0.04) 50%, transparent 100%);
+  background: linear-gradient(110deg, transparent 0%, rgba(143,245,255,0.04) 50%, transparent 100%);
   transform: translateX(-140%);
   animation: sweep 10s linear infinite;
 }
@@ -260,7 +272,7 @@ a { color: inherit; text-decoration: none; }
   cursor: pointer;
 }
 .row-hover:hover {
-  background: rgba(0, 240, 255, 0.03);
+  background: rgba(143, 245, 255, 0.03);
 }
 
 /* ── Animations ── */
@@ -287,20 +299,20 @@ a { color: inherit; text-decoration: none; }
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-void); }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 240, 255, 0.15);
+  background: rgba(143, 245, 255, 0.15);
   border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.25); }
+::-webkit-scrollbar-thumb:hover { background: rgba(143, 245, 255, 0.25); }
 
 /* ── Mobile bottom nav ── */
 .bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   z-index: 50;
-  background: rgba(5, 6, 14, 0.96);
+  background: rgba(12, 14, 22, 0.96);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(0, 240, 255, 0.08);
+  border-top: 1px solid rgba(143, 245, 255, 0.08);
   display: flex;
   padding: 6px 0 max(10px, env(safe-area-inset-bottom));
 }
@@ -338,8 +350,8 @@ p { text-wrap: pretty; }
 /* ── Overlay grid (hero sections) ── */
 .arena-overlay-grid {
   background-image:
-    linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(143, 245, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 245, 255, 0.04) 1px, transparent 1px);
   background-size: 80px 80px;
   mask-image: linear-gradient(180deg, rgba(0,0,0,0.8), transparent 90%);
 }
@@ -385,8 +397,8 @@ p { text-wrap: pretty; }
 
 /* ── Neo-Tokyo keyframe animations ── */
 @keyframes neon-pulse {
-  0%, 100% { box-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan); }
-  50% { box-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan); }
+  0%, 100% { box-shadow: 0 0 5px #8ff5ff, 0 0 10px #8ff5ff; }
+  50% { box-shadow: 0 0 20px #8ff5ff, 0 0 40px #8ff5ff; }
 }
 @keyframes live-ping {
   0% { transform: scale(1); opacity: 1; }

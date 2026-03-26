@@ -29,11 +29,11 @@ function sportEmoji(sport: string | undefined) {
   return "🏸";
 }
 
-function ScoreBadge({ agent, isSport, size = "sm" }: { agent: Agent; isSport: boolean; size?: "xs" | "sm" }) {
+function ScoreBadge({ agent, isSport, size = "sm", isLeading = false }: { agent: Agent; isSport: boolean; size?: "xs" | "sm"; isLeading?: boolean }) {
   const cls = size === "xs" ? "text-[10px] sm:text-[12px]" : "text-sm sm:text-base";
   if (isSport) {
     return (
-      <span className={`font-bold tabular-nums ${cls}`} style={{ fontFamily: 'var(--font-mono)', color: agent.color }}>
+      <span className={`font-bold tabular-nums ${cls}`} style={{ fontFamily: 'var(--font-mono)', color: isLeading ? '#8ff5ff' : agent.color }}>
         {(agent as any).score ?? 0} pts
       </span>
     );
@@ -120,17 +120,17 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
       href={`/competitions/${c.id}`}
       className="group block rounded-2xl px-3 py-3 transition sm:px-4 relative overflow-hidden"
       style={{
-        background: 'var(--bg-surface)',
-        border: isLive && isSport ? '1px solid rgba(0,240,255,0.08)' : '1px solid rgba(0,240,255,0.06)',
-        borderLeft: isLive && isSport ? '2px solid var(--neon-cyan)' : undefined,
+        background: '#11131d',
+        border: isLive && isSport ? '1px solid rgba(143,245,255,0.1)' : '1px solid rgba(143,245,255,0.1)',
+        borderLeft: isLive && isSport ? '2px solid #8ff5ff' : undefined,
         transition: 'border-color 0.2s, box-shadow 0.2s',
       }}
       onMouseEnter={e => {
-        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,240,255,0.2)';
-        (e.currentTarget as HTMLElement).style.boxShadow = '0 0 16px rgba(0,240,255,0.06)';
+        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(143,245,255,0.2)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '0 0 15px rgba(143,245,255,0.08)';
       }}
       onMouseLeave={e => {
-        (e.currentTarget as HTMLElement).style.borderColor = isLive && isSport ? 'rgba(0,240,255,0.08)' : 'rgba(0,240,255,0.06)';
+        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(143,245,255,0.1)';
         (e.currentTarget as HTMLElement).style.boxShadow = '';
       }}
     >
@@ -174,7 +174,7 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
                   {a.name}{isSettled && winner?.id === a.id && <span className="ml-0.5" style={{ color: 'var(--gold-trophy)' }}>🏆</span>}
                 </div>
                 {isLive || isSettled
-                  ? <ScoreBadge agent={a} isSport={isSport} size="xs" />
+                  ? <ScoreBadge agent={a} isSport={isSport} size="xs" isLeading={scoreA >= scoreB} />
                   : <div className="truncate text-[9px]" style={{ color: 'var(--text-muted)' }}>{a.archetype}</div>}
               </div>
             </>
@@ -231,7 +231,7 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
                   {isSettled && winner?.id === b.id && <span className="mr-0.5" style={{ color: 'var(--gold-trophy)' }}>🏆</span>}{b.name}
                 </div>
                 {isLive || isSettled
-                  ? <ScoreBadge agent={b} isSport={isSport} size="xs" />
+                  ? <ScoreBadge agent={b} isSport={isSport} size="xs" isLeading={scoreB > scoreA} />
                   : <div className="truncate text-[9px]" style={{ color: 'var(--text-muted)' }}>{b.archetype}</div>}
               </div>
               <div className="h-5 w-5 shrink-0 rounded-full"

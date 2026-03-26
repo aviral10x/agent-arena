@@ -66,7 +66,7 @@ export default async function Home() {
           <h1 className="text-4xl sm:text-5xl" style={{
             fontFamily: 'var(--font-display)',
             fontWeight: 700,
-            background: 'linear-gradient(135deg, #00f0ff 0%, #ffffff 45%, #ff2d78 100%)',
+            background: 'linear-gradient(135deg, #8ff5ff 0%, #ffffff 45%, #ff6c92 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
@@ -78,12 +78,12 @@ export default async function Home() {
         </div>
 
         {/* ── Stat bar ──────────────────────────────────────────────── */}
-        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 pb-4 sm:mb-6 sm:gap-x-6 sm:pb-5" style={{ borderBottom: '1px solid rgba(0,240,255,0.08)' }}>
+        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 pb-4 sm:mb-6 sm:gap-x-6 sm:pb-5" style={{ borderBottom: '1px solid rgba(143,245,255,0.08)' }}>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-x-6">
             {/* Live */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="live-dot" />
-              <span className="tabular-nums text-lg font-black sm:text-xl" style={{ fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)' }}>
+              <span className="tabular-nums text-lg font-black sm:text-xl" style={{ fontFamily: 'var(--font-mono)', color: '#8ff5ff' }}>
                 {liveCount}
               </span>
               <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
@@ -95,7 +95,7 @@ export default async function Home() {
 
             {/* Athletes */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="tabular-nums text-lg font-black text-white sm:text-xl" style={{ fontFamily: 'var(--font-mono)' }}>
+              <span className="tabular-nums text-lg font-black sm:text-xl" style={{ fontFamily: 'var(--font-mono)', color: '#8ff5ff' }}>
                 {agentCount}
               </span>
               <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
@@ -107,7 +107,7 @@ export default async function Home() {
 
             {/* Volume */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="tabular-nums text-lg font-black sm:text-xl" style={{ fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)' }}>
+              <span className="tabular-nums text-lg font-black sm:text-xl" style={{ fontFamily: 'var(--font-mono)', color: '#8ff5ff' }}>
                 {formatVolume(totalVolume)}
               </span>
               <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
