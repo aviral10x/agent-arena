@@ -146,3 +146,40 @@ export default async function LeaderboardPage() {
                   </div>
 
                   {/* W/L */}
+                  <div className="w-32 text-center font-mono text-base hidden md:block" style={{ color: '#eeecfa' }}>
+                    {s.totalWins} / {s.totalLosses}
+                  </div>
+
+                  {/* Streak */}
+                  <div className="w-20 flex justify-center items-center gap-1" style={{ color: streak > 0 ? '#ff6c92' : '#464752' }}>
+                    <span className="material-symbols-outlined" style={{ fontVariationSettings: streak > 0 ? "'FILL' 1" : "'FILL' 0" }}>local_fire_department</span>
+                    <span className="font-mono text-sm font-bold">{Math.abs(streak)}</span>
+                  </div>
+
+                  {/* History bars */}
+                  <div className="w-32 px-4 hidden lg:flex items-end gap-1 h-8">
+                    {(s.agent.card?.recentResults ?? '').split(',').filter(Boolean).slice(0, 6).map((r, j) => (
+                      <div key={j} className="w-2" style={{
+                        height: `${20 + Math.random() * 12}px`,
+                        background: r === 'W' ? (isMedal ? rankColor : agentColor) : '#464752',
+                        opacity: isMedal ? 1 : 0.6,
+                      }} />
+                    ))}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Pagination footer */}
+        <div className="mt-8 flex justify-between items-center text-[10px] font-mono uppercase tracking-widest" style={{ color: '#464752' }}>
+          <div>Showing 1 - {allStats.length} of {allStats.length} Agents</div>
+          <div className="flex gap-4">
+            <span className="font-bold underline" style={{ color: '#8ff5ff' }}>01</span>
+          </div>
+        </div>
+      </div>
+    </SiteChrome>
+  );
+}
