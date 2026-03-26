@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useSignTypedData, useAccount } from "wagmi";
 import { getAgentAvatar } from "@/lib/agent-avatars";
 import { SFX_MAP } from "@/lib/sfx";
 import { SportCourtCanvas } from "@/components/arena/sport-court-canvas";
@@ -194,11 +193,9 @@ export function LiveMatchClient({
   const [betSubmitting, setBetSubmitting] = useState(false);
   const [betDone, setBetDone]       = useState(false);
 
-  // Privy wallet + wagmi for inline betting with x402
+  // Privy wallet for inline betting with x402
   const { user, login: privyLogin, ready: privyReady } = usePrivy();
   const { wallets } = useWallets();
-  const { signTypedDataAsync } = useSignTypedData();
-  const { address: wagmiAddr } = useAccount();
   const betWallet = user?.wallet?.address
     ?? wallets.find(w => w.walletClientType !== 'privy')?.address
     ?? wallets[0]?.address
@@ -697,35 +694,42 @@ export function LiveMatchClient({
                   setBetSubmitting(true);
                   setBetPayStep(null);
 
-                  const USDC_ADDR = '0x74b7f16337b8972027f6196a17a631ac6de26d22' as const;
-                  const ARENA_RECV = (process.env.NEXT_PUBLIC_ARENA_WALLET ?? '0x991442af55370b91930c5617b472b0e468e97bb2') as `0x${string}`;
-                  const signerAddr = wagmiAddr ?? betWallet;
+                  const USDC_ADDR = '0x74b7f16337b8972027f6196a17a631ac6de26d22';
+                  const ARENA_RECV = process.env.NEXT_PUBLIC_ARENA_WALLET ?? '0x991442af55370b91930c5617b472b0e468e97bb2';
                   let payload: any = null;
 
-                  // Sign x402 payment
-                  if (signerAddr) {
+                  // Sign x402 payment via Privy embedded wallet
+                  if (betWallet) {
                     try {
                       setBetPayStep('signing');
-                      const amountMicro = BigInt(Math.round(betAmount * 1_000_000));
-                      const nonce = `0x${crypto.randomUUID().replace(/-/g, '')}` as `0x${string}`;
-                      const validBefore = BigInt(Math.floor(Date.now() / 1000) + 300);
+                      const embeddedWallet = wallets.find(w => w.walletClientType === 'privy') ?? wallets[0];
+                      if (embeddedWallet) {
+                        const provider = await embeddedWallet.getEthereumProvider();
+                        const amountMicro = Math.round(betAmount * 1_000_000);
+                        const nonce = `0x${crypto.randomUUID().replace(/-/g, '')}`;
+                        const validBefore = Math.floor(Date.now() / 1000) + 300;
 
-                      const signature = await signTypedDataAsync({
-                        domain: { name: 'USD Coin', version: '2', chainId: 196, verifyingContract: USDC_ADDR },
-                        types: {
-                          TransferWithAuthorization: [
-                            { name: 'from', type: 'address' }, { name: 'to', type: 'address' },
-                            { name: 'value', type: 'uint256' }, { name: 'validAfter', type: 'uint256' },
-                            { name: 'validBefore', type: 'uint256' }, { name: 'nonce', type: 'bytes32' },
-                          ],
-                        } as const,
-                        primaryType: 'TransferWithAuthorization',
-                        message: { from: signerAddr as `0x${string}`, to: ARENA_RECV, value: amountMicro, validAfter: BigInt(0), validBefore, nonce },
-                      });
+                        const typedData = {
+                          types: {
+                            EIP712Domain: [
+                              { name: 'name', type: 'string' }, { name: 'version', type: 'string' },
+                              { name: 'chainId', type: 'uint256' }, { name: 'verifyingContract', type: 'address' },
+                            ],
+                            TransferWithAuthorization: [
+                              { name: 'from', type: 'address' }, { name: 'to', type: 'address' },
+                              { name: 'value', type: 'uint256' }, { name: 'validAfter', type: 'uint256' },
+                              { name: 'validBefore', type: 'uint256' }, { name: 'nonce', type: 'bytes32' },
+                            ],
+                          },
+                          primaryType: 'TransferWithAuthorization',
+                          domain: { name: 'USD Coin', version: '2', chainId: 196, verifyingContract: USDC_ADDR },
+                          message: { from: betWallet, to: ARENA_RECV, value: String(amountMicro), validAfter: '0', validBefore: String(validBefore), nonce },
+                        };
 
-                      payload = { signature, from: signerAddr, to: ARENA_RECV, value: amountMicro.toString(), validAfter: '0', validBefore: validBefore.toString(), nonce };
+                        const signature = await provider.request({ method: 'eth_signTypedData_v4', params: [betWallet, JSON.stringify(typedData)] });
+                        payload = { signature, from: betWallet, to: ARENA_RECV, value: String(amountMicro), validAfter: '0', validBefore: String(validBefore), nonce };
+                      }
                     } catch {
-                      // User rejected → demo fallback
                       payload = null;
                     }
                   }
