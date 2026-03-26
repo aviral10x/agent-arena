@@ -86,6 +86,7 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
   const isOpen    = c.status === "open";
   const isSettled = c.status === "settled";
   const isSport   = (c as any).type === "sport";
+  const sport     = (c as any).sport as string | undefined;
 
   const winner  = c.agents.find(ag => ag.id === c.winnerId);
   const loser   = c.agents.find(ag => ag.id !== c.winnerId);
@@ -109,20 +110,40 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
   const vol         = c.volumeUsd && c.volumeUsd > 0 ? formatVol(c.volumeUsd) : null;
   const betPool     = c.totalBetUsdc && c.totalBetUsdc > 0 ? `$${c.totalBetUsdc.toFixed(2)}` : null;
 
+  // Score ratio for the bottom bar (sport only)
+  const totalScore = scoreA + scoreB;
+  const aRatioPct  = totalScore > 0 ? Math.round((scoreA / totalScore) * 100) : 50;
+  const bRatioPct  = 100 - aRatioPct;
+
   return (
     <Link
       href={`/competitions/${c.id}`}
-      className="group block rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] px-3 py-3 transition row-hover hover:border-white/[0.12] sm:px-4"
+      className={`group block rounded-2xl border bg-[var(--bg-card)] px-3 py-3 transition row-hover hover:border-white/[0.12] sm:px-4 relative overflow-hidden ${
+        isLive && isSport ? "border-l-2 border-teal-400 border-white/[0.06]" : "border-white/[0.06]"
+      }`}
     >
       {/* ── MAIN ROW ─────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 sm:gap-3">
 
-        {/* Status dot */}
-        <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center">
-          {isLive ? <div className="live-dot" /> :
-           isOpen ? <div className="h-2 w-2 rounded-full bg-[var(--gold)]" /> :
-                    <div className="h-2 w-2 rounded-full bg-white/20" />}
+        {/* Status dot / sport emoji */}
+        <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">
+          {isSport ? (
+            <span className="text-base leading-none">{sportEmoji(sport)}</span>
+          ) : isLive ? (
+            <div className="live-dot" />
+          ) : isOpen ? (
+            <div className="h-2 w-2 rounded-full bg-[var(--gold)]" />
+          ) : (
+            <div className="h-2 w-2 rounded-full bg-white/20" />
+          )}
         </div>
+        {/* Pulsing teal dot for live sport rows */}
+        {isLive && isSport && (
+          <div
+            className="h-2 w-2 rounded-full bg-teal-400 shrink-0 animate-pulse"
+            style={{ boxShadow: '0 0 6px rgba(45,212,191,0.7)' }}
+          />
+        )}
 
         {/* ── Agent A ── */}
         <div className="flex w-[110px] flex-shrink-0 items-center gap-1.5 sm:w-[160px] lg:w-[190px]">
@@ -297,6 +318,20 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
               {c.mode}
             </span>
           </div>
+        </div>
+      )}
+
+      {/* ── Score ratio bar (sport only, live or settled) ── */}
+      {isSport && a && b && (isLive || isSettled) && totalScore > 0 && (
+        <div className="mt-2 flex h-1 overflow-hidden rounded-full">
+          <div
+            className="h-full transition-all duration-700"
+            style={{ width: `${aRatioPct}%`, background: a.color, opacity: 0.8 }}
+          />
+          <div
+            className="h-full transition-all duration-700"
+            style={{ width: `${bRatioPct}%`, background: b.color, opacity: 0.8 }}
+          />
         </div>
       )}
     </Link>

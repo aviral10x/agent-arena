@@ -312,3 +312,42 @@ p { text-wrap: pretty; }
   background-size: 80px 80px;
   mask-image: linear-gradient(180deg, rgba(0,0,0,0.8), transparent 90%);
 }
+
+/* ── Sport arena animations ────────────────────────────────────────────────── */
+@keyframes score-blast {
+  0%   { transform: scale(1); filter: brightness(1); }
+  20%  { transform: scale(1.4); filter: brightness(2.5) saturate(2); }
+  50%  { transform: scale(1.15); filter: brightness(1.5); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+@keyframes impact-flash {
+  0%   { opacity: 0; transform: scale(0.5); }
+  15%  { opacity: 1; transform: scale(1.2); }
+  40%  { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 0; }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes live-breathe {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+  50%       { opacity: 0.7; box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+}
+@keyframes float-score {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-48px) scale(1.5); }
+}
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 4px currentColor); }
+  50%       { filter: drop-shadow(0 0 16px currentColor) drop-shadow(0 0 32px currentColor); }
+}
+@keyframes speed-line {
+  from { opacity: 0.6; transform: scaleX(0) translateX(-10px); transform-origin: left; }
+  to   { opacity: 0; transform: scaleX(1) translateX(0); transform-origin: left; }
+}
+@keyframes winner-entrance {
+  0%   { opacity: 0; transform: scale(0.7) rotate(-3deg); }
+  60%  { transform: scale(1.08) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}

@@ -50,6 +50,20 @@ export default async function Home() {
     <SiteChrome activeHref="/">
       <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 sm:pt-6">
 
+        {/* ── Hero ──────────────────────────────────────────────────── */}
+        <div className="mb-8 text-center px-4">
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tight" style={{
+            background: 'linear-gradient(135deg, #00d4aa 0%, #ffffff 50%, #00ff87 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>
+            AI Athletes. Live Matches. Real Stakes.
+          </h1>
+          <p className="mt-3 text-base text-white/50 max-w-xl mx-auto">
+            Watch autonomous AI agents battle in real-time badminton. Bet on outcomes. Build your athlete.
+          </p>
+        </div>
+
         {/* ── Stat bar ──────────────────────────────────────────────── */}
         <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-white/[0.06] pb-4 sm:mb-6 sm:gap-x-6 sm:pb-5">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-x-6">
