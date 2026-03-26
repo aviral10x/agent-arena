@@ -39,10 +39,10 @@ import {
   type Hash,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { xLayer } from 'wagmi/chains';
+import { xLayerTestnet as xLayer } from 'wagmi/chains';
 function decryptPrivateKey(k: string): `0x${string}` { return k as `0x${string}`; }
 
-const RPC = process.env.XLAYER_RPC_URL ?? 'https://rpc.xlayer.tech';
+const RPC = process.env.XLAYER_RPC_URL ?? 'https://xlayertestrpc.okx.com';
 export const publicClient = createPublicClient({ chain: xLayer, transport: http(RPC) });
 
 // ── Token registry (all verified on-chain) ────────────────────────────────────

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteChrome } from "@/components/arena/site-chrome";
-import { ButtonLink, SectionIntro, StatusPill, Surface } from "@/components/arena/ui";
 import { TournamentEnrollClient } from "@/components/arena/tournament-enroll-client";
 import { prisma } from "@/lib/db";
 
@@ -19,7 +18,7 @@ export async function generateMetadata({
   });
 
   return {
-    title: tournament ? `Enroll · ${tournament.title}` : "Enroll · Agent Arena",
+    title: tournament ? `Enroll · ${tournament.title} · ARENA_OS` : "Enroll · ARENA_OS",
   };
 }
 
@@ -42,12 +41,7 @@ export default async function TournamentEnrollPage({
         orderBy: { enrolledAt: "asc" },
         include: {
           agent: {
-            select: {
-              id: true,
-              name: true,
-              color: true,
-              archetype: true,
-            },
+            select: { id: true, name: true, color: true, archetype: true },
           },
         },
       },
@@ -63,13 +57,8 @@ export default async function TournamentEnrollPage({
     where: enrolledAgentIds.length > 0 ? { id: { notIn: enrolledAgentIds } } : undefined,
     orderBy: { createdAt: "desc" },
     select: {
-      id: true,
-      name: true,
-      archetype: true,
-      color: true,
-      bio: true,
-      risk: true,
-      winRate: true,
+      id: true, name: true, archetype: true, color: true,
+      bio: true, risk: true, winRate: true,
     },
     take: 24,
   });
@@ -89,10 +78,7 @@ export default async function TournamentEnrollPage({
     disabledReason = "This bracket is already live. Watch it from the arena instead.";
   } else if (!enrollmentOpen) {
     disabledReason = `Enrollment opens on ${new Date(tournament.enrollmentOpensAt).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
     })}.`;
   } else if (spotsLeft === 0) {
     disabledReason = "All slots are already filled.";
@@ -103,17 +89,40 @@ export default async function TournamentEnrollPage({
   const canEnroll = !disabledReason;
   const liveCompetition = tournament.competitions[0] ?? null;
 
+  const statusColor = isLive ? "#8ff5ff" : isSettled ? "#464752" : "#ffe6aa";
+  const statusLabel = isLive ? "LIVE" : isSettled ? "SETTLED" : spotsLeft === 0 ? "FULL" : "ENROLLING";
+
   return (
     <SiteChrome activeHref="/tournaments">
-      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <SectionIntro
-          eyebrow="Tournament Entry"
-          title={tournament.title}
-          description="Lock in one of your agents, sign the X Layer testnet USDC authorization, and let the bracket spin up automatically once the slots fill."
-        />
+      <div className="scanline fixed inset-0 z-10 opacity-10 pointer-events-none" />
+
+      <main className="pt-4 pb-24 px-4 md:px-8 max-w-[1600px] mx-auto min-h-screen">
+
+        {/* ── Hero Header ── */}
+        <section className="mb-8 relative">
+          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#ffe6aa]" />
+          <div className="flex items-center gap-3 mb-2">
+            <Link href="/tournaments" className="text-[10px] font-mono uppercase tracking-widest text-[#464752] hover:text-[#aaaab6] transition-colors">
+              ← Tournaments
+            </Link>
+            <span className="text-[#464752]">/</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-[#ffe6aa]">Enroll</span>
+          </div>
+          <h1
+            className="font-['Space_Grotesk'] text-4xl md:text-6xl font-black italic tracking-tighter uppercase mb-2"
+            style={{ color: "#ffe6aa", textShadow: "0 0 30px rgba(255,230,170,0.4)" }}
+          >
+            {tournament.title}
+          </h1>
+          <p className="font-mono text-xs text-[#464752]">
+            Lock in one of your agents and enter the bracket. Match starts when all slots fill.
+          </p>
+        </section>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,420px)]">
-          <div className="space-y-6">
+
+          {/* ── Left: enrollment form ── */}
+          <div>
             <TournamentEnrollClient
               tournament={{
                 id: tournament.id,
@@ -128,128 +137,120 @@ export default async function TournamentEnrollPage({
             />
           </div>
 
-          <div className="space-y-6">
-            <Surface className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                    Tournament state
-                  </div>
-                  <h2 className="mt-2 text-lg font-semibold text-white">Bracket snapshot</h2>
-                </div>
-                <StatusPill
-                  status={isLive ? "live" : isSettled ? "settled" : "open"}
-                />
+          {/* ── Right: bracket snapshot + entrants ── */}
+          <div className="space-y-4">
+
+            {/* Bracket snapshot */}
+            <div className="bg-[#171924] border border-[#464752]/20 border-l-2 p-5" style={{ borderLeftColor: statusColor }}>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752]">Bracket_Snapshot</div>
+                <span
+                  className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 border"
+                  style={{ color: statusColor, borderColor: `${statusColor}40`, background: `${statusColor}18` }}
+                >
+                  {isLive && <span className="inline-block w-1.5 h-1.5 rounded-full animate-ping mr-1.5 align-middle" style={{ background: statusColor }} />}
+                  {statusLabel}
+                </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 mb-5">
                 {[
-                  { label: "Entry fee", value: `$${tournament.entryFeeUsdc.toFixed(2)}` },
-                  { label: "Prize pool", value: `$${tournament.prizePoolUsdc.toFixed(2)}` },
-                  { label: "Filled slots", value: `${tournament.currentAgents}/${tournament.maxAgents}` },
-                  { label: "Spots left", value: `${spotsLeft}` },
+                  { label: "Entry_Fee",    value: `$${tournament.entryFeeUsdc.toFixed(2)}` },
+                  { label: "Prize_Pool",   value: `$${tournament.prizePoolUsdc.toFixed(2)}` },
+                  { label: "Filled_Slots", value: `${tournament.currentAgents}/${tournament.maxAgents}` },
+                  { label: "Spots_Left",   value: `${spotsLeft}` },
                 ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-[1rem] border border-white/10 bg-white/5 p-3"
-                  >
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                      {item.label}
-                    </div>
-                    <div className="mt-1 text-sm font-semibold text-white">{item.value}</div>
+                  <div key={item.label} className="bg-[#11131d] border border-[#464752]/20 p-3">
+                    <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752]">{item.label}</div>
+                    <div className="mt-1 text-sm font-bold font-mono text-[#eeecfa]">{item.value}</div>
                   </div>
                 ))}
               </div>
 
-              <div className="space-y-2 text-sm leading-6 text-[var(--text-secondary)]">
+              <div className="space-y-2 text-xs font-mono text-[#aaaab6] border-t border-[#464752]/10 pt-4">
                 <p>
-                  Enrollment opens{" "}
-                  <span className="text-white">
+                  ENROLL_OPENS:{" "}
+                  <span className="text-[#eeecfa]">
                     {new Date(tournament.enrollmentOpensAt).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                     })}
                   </span>
-                  .
                 </p>
                 <p>
-                  Start time{" "}
-                  <span className="text-white">
+                  START:{" "}
+                  <span className="text-[#eeecfa]">
                     {new Date(tournament.startAt).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                     })}
                   </span>
-                  .
                 </p>
                 <p>
-                  Status resolves as <span className="text-white">{displayStatus}</span> once the
-                  enrollment window is open.
+                  STATUS: <span className="text-[#ffe6aa] uppercase">{displayStatus}</span>
                 </p>
               </div>
 
               {liveCompetition && (
-                <Link
-                  href={`/competitions/${liveCompetition.id}`}
-                  className="inline-flex items-center justify-center rounded-full border border-[var(--teal)]/30 px-5 py-2.5 text-sm font-semibold text-[var(--teal)] transition hover:bg-[var(--teal)]/10"
-                >
-                  Open live competition
-                </Link>
-              )}
-            </Surface>
-
-            <Surface className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                    Entrants
-                  </div>
-                  <h2 className="mt-2 text-lg font-semibold text-white">
-                    {tournament.slots.length} locked in
-                  </h2>
+                <div className="mt-4 pt-4 border-t border-[#464752]/10">
+                  <Link
+                    href={`/competitions/${liveCompetition.id}`}
+                    className="inline-block bg-[#8ff5ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
+                  >
+                    Watch_Live →
+                  </Link>
                 </div>
-                <ButtonLink href="/agents/create" variant="ghost">
-                  Build agent
-                </ButtonLink>
+              )}
+            </div>
+
+            {/* Entrants */}
+            <div className="bg-[#171924] border border-[#464752]/20 p-5">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752]">Entrants</div>
+                  <div className="font-['Space_Grotesk'] font-black text-sm text-[#eeecfa] uppercase mt-1">
+                    {tournament.slots.length} Locked_In
+                  </div>
+                </div>
+                <Link
+                  href="/agents/create"
+                  className="border border-[#8ff5ff]/30 text-[#8ff5ff] px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest hover:bg-[#8ff5ff]/10 transition-colors"
+                >
+                  Build_Agent
+                </Link>
               </div>
 
               {tournament.slots.length === 0 ? (
-                <div className="rounded-[1rem] border border-dashed border-white/10 px-4 py-5 text-sm text-[var(--text-secondary)]">
+                <div className="border border-dashed border-[#464752]/30 px-4 py-5 text-xs font-mono text-[#464752]">
                   No entrants yet. The first bot in gets pole position.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {tournament.slots.map((slot) => (
                     <div
                       key={slot.id}
-                      className="rounded-[1rem] border border-white/10 bg-white/5 p-3"
+                      className="flex items-center gap-3 bg-[#11131d] border border-[#464752]/10 px-3 py-2.5"
                     >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: slot.agent.color }}
-                        />
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-white">
-                            {slot.agent.name}
-                          </div>
-                          <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            {slot.agent.archetype}
-                          </div>
+                      <div
+                        className="h-7 w-7 shrink-0 flex items-center justify-center font-['Bebas_Neue'] text-xs"
+                        style={{ background: `${slot.agent.color}22`, border: `1px solid ${slot.agent.color}66`, color: slot.agent.color }}
+                      >
+                        {slot.agent.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate font-mono text-xs font-bold text-[#eeecfa] uppercase">
+                          {slot.agent.name}
+                        </div>
+                        <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752]">
+                          {slot.agent.archetype}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </Surface>
+            </div>
           </div>
         </div>
-      </section>
+      </main>
     </SiteChrome>
   );
 }

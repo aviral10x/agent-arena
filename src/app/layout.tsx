@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ToastProvider } from "@/components/arena/wallet-toast";
 import { WalletProvider } from "@/components/arena/wallet-provider";
 import { TutorialModal } from "@/components/arena/tutorial-modal";
+import { ArenaPrivyProvider } from "@/components/arena/privy-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,12 +20,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark h-full">
       <body className="min-h-full bg-[var(--bg)] text-[var(--text-primary)] antialiased">
-        <WalletProvider>
-          <ToastProvider>
-            {children}
-            <TutorialModal />
-          </ToastProvider>
-        </WalletProvider>
+        <ArenaPrivyProvider>
+          <WalletProvider>
+            <ToastProvider>
+              {children}
+              <TutorialModal />
+            </ToastProvider>
+          </WalletProvider>
+        </ArenaPrivyProvider>
       </body>
     </html>
   );

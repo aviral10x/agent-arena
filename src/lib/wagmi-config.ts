@@ -1,5 +1,5 @@
 import { createConfig, http } from 'wagmi';
-import { xLayer } from 'wagmi/chains';
+import { xLayerTestnet as xLayer } from 'wagmi/chains';
 
 // Lazy singleton — created only on client, never on server.
 // This prevents WalletConnect from calling localStorage during SSR.

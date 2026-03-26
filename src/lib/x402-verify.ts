@@ -6,10 +6,10 @@ import {
   parseAbi,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { xLayer } from 'wagmi/chains';
+import { xLayerTestnet } from 'wagmi/chains';
 import { prisma } from './db';
 
-const publicClient = createPublicClient({ chain: xLayer, transport: http() });
+const publicClient = createPublicClient({ chain: xLayerTestnet, transport: http('https://xlayertestrpc.okx.com') });
 
 // Server wallet — relayer that submits transferWithAuthorization on-chain
 // Lazy — only instantiate wallet client at runtime, not at build/module-load time
@@ -18,14 +18,14 @@ function getRelayerWalletClient() {
   if (!key || !key.startsWith('0x') || key.length !== 66) return null;
   try {
     const account = privateKeyToAccount(key as `0x${string}`);
-    return createWalletClient({ account, chain: xLayer, transport: http() });
+    return createWalletClient({ account, chain: xLayerTestnet, transport: http('https://xlayertestrpc.okx.com') });
   } catch {
     return null;
   }
 }
 
-// USDC on X Layer (chain 196)
-const USDC_ADDRESS = '0x74b7f16337b8972027f6196a17a631ac6de26d22' as const;
+// USDC on X Layer Testnet (chain 1952) — set USDC_CONTRACT_ADDRESS env to override
+const USDC_ADDRESS = (process.env.USDC_CONTRACT_ADDRESS ?? '0x74b7f16337b8972027f6196a17a631ac6de26d22') as `0x${string}`;
 const ARENA_RECEIVER = (process.env.ARENA_WALLET_ADDRESS ?? '0x0000000000000000000000000000000000000000') as `0x${string}`;
 
 // EIP-3009 ABI — transferWithAuthorization
@@ -87,7 +87,7 @@ export async function verifyX402Payment(
     const domain = {
       name:              'USD Coin',
       version:           '2',
-      chainId:           196,
+      chainId:           xLayerTestnet.id, // 1952
       verifyingContract: USDC_ADDRESS,
     };
 

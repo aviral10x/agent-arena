@@ -2,6 +2,8 @@
 
 import { useState, useCallback, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { usePrivy } from "@privy-io/react-auth";
+import { playClick, playToggleOn, playToggleOff, playConfirm, playSuccess, playError, playGenerate } from "@/lib/sfx";
 
 const ARCHETYPES = [
   "Net Dominator",
@@ -94,6 +96,8 @@ function StatSlider({
 
 export function SportAgentBuilder() {
   const router = useRouter();
+  const { user } = usePrivy();
+  const walletAddress = user?.wallet?.address ?? (user?.linkedAccounts?.find((a: any) => a.type === "wallet") as any)?.address ?? "";
 
   const [form, setForm] = useState<FormState>({
     name: "",
@@ -106,6 +110,18 @@ export function SportAgentBuilder() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [imageGenError, setImageGenError] = useState<string | null>(null);
+  const [moveImages, setMoveImages] = useState<Record<string, string>>(() => {
+    // Hydrate from localStorage on first render
+    if (typeof window === 'undefined') return {};
+    try {
+      const stored = localStorage.getItem('arena_move_images');
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
+  const [generatingMoves, setGeneratingMoves] = useState<Set<string>>(new Set());
 
   const usedPoints = form.stats.speed + form.stats.power + form.stats.stamina + form.stats.accuracy;
   const remainingPoints = STAT_BUDGET - usedPoints;
@@ -128,37 +144,96 @@ export function SportAgentBuilder() {
     setError(null);
   }, []);
 
+  const generateImage = useCallback(async () => {
+    if (!form.name.trim()) {
+      setImageGenError("Enter an agent name first.");
+      return;
+    }
+    playGenerate();
+    setGeneratingImage(true);
+    setImageGenError(null);
+    try {
+      const res = await fetch("/api/agents/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          archetype: form.archetype,
+          playingStyle: form.playingStyle,
+          stats: form.stats,
+          specialMoves: form.specialMoves,
+          sport: "badminton",
+        }),
+      });
+      if (!res.ok) throw new Error("Generation failed");
+      const data = await res.json();
+      if (data.imageBase64) {
+        setAvatarBase64(data.imageBase64);
+      } else {
+        throw new Error(data.error ?? "No image returned");
+      }
+    } catch (err: any) {
+      setImageGenError(err.message ?? "Image generation failed");
+    } finally {
+      setGeneratingImage(false);
+    }
+  }, [form.name, form.archetype]);
+
+  const generateMoveImage = useCallback(async (move: string) => {
+    if (moveImages[move] || generatingMoves.has(move)) return;
+    setGeneratingMoves(prev => new Set(prev).add(move));
+    try {
+      const res = await fetch(`/api/agents/move-image?name=${encodeURIComponent(move)}`);
+      const data = await res.json();
+      if (data.imageBase64) {
+        setMoveImages(prev => {
+          const next = { ...prev, [move]: data.imageBase64 };
+          try { localStorage.setItem('arena_move_images', JSON.stringify(next)); } catch {}
+          return next;
+        });
+      }
+    } catch {}
+    setGeneratingMoves(prev => { const s = new Set(prev); s.delete(move); return s; });
+  }, [moveImages, generatingMoves]);
+
   const toggleMove = useCallback((move: string) => {
     setForm((prev) => {
       const has = prev.specialMoves.includes(move);
       if (!has && prev.specialMoves.length >= 2) return prev;
-      return {
+      const next = {
         ...prev,
         specialMoves: has
           ? prev.specialMoves.filter((m) => m !== move)
           : [...prev.specialMoves, move],
       };
+      // Kick off image generation when move is selected
+      if (!has) setTimeout(() => generateMoveImage(move), 0);
+      return next;
     });
     setError(null);
-  }, []);
+  }, [generateMoveImage]);
 
   const handleSubmit = useCallback(
     async (event: FormEvent) => {
       event.preventDefault();
 
       if (!form.name.trim()) {
+        playError();
         setError("Athlete name is required.");
         return;
       }
       if (form.name.trim().length < 3) {
+        playError();
         setError("Athlete name must be at least 3 characters.");
         return;
       }
       if (form.specialMoves.length === 0) {
+        playError();
         setError("Pick at least one special move.");
         return;
       }
 
+      playConfirm();
       setSubmitting(true);
       setError(null);
 
@@ -175,8 +250,8 @@ export function SportAgentBuilder() {
             risk: form.playingStyle,
             bankroll: "0",
             color: "#66E3FF",
-            owner: "Arena Guest",
-            wallet: "0x000...0000",
+            owner: walletAddress || "Arena Guest",
+            wallet: walletAddress || "0x0000000000000000000000000000000000000000",
             // Sport-specific
             speed:    form.stats.speed,
             power:    form.stats.power,
@@ -184,20 +259,24 @@ export function SportAgentBuilder() {
             accuracy: form.stats.accuracy,
             specialMoves: form.specialMoves,
             type: "sport",
+            avatarUrl: avatarBase64 ? `data:image/png;base64,${avatarBase64}` : undefined,
           }),
         });
 
         if (!res.ok) throw new Error("Failed to create athlete");
 
+        const newAgent = await res.json();
+        playSuccess();
         setSubmitted(true);
-        setTimeout(() => { router.push("/competitions"); }, 1200);
+        setTimeout(() => { router.push(`/challenges?myAgentId=${newAgent.id}`); }, 1200);
       } catch {
+        playError();
         setError("Failed to create athlete. Please try again.");
       } finally {
         setSubmitting(false);
       }
     },
-    [form, router]
+    [form, router, avatarBase64]
   );
 
   if (submitted) {
@@ -212,7 +291,7 @@ export function SportAgentBuilder() {
               {form.name} INITIALIZED
             </div>
             <p className="mt-2 text-sm font-mono text-[#aaaab6]">
-              {form.archetype.toUpperCase()} athlete deployed. Redirecting to competitions…
+              {form.archetype.toUpperCase()} athlete deployed. Redirecting to matchmaking…
             </p>
           </div>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
@@ -274,7 +353,7 @@ export function SportAgentBuilder() {
             <button
               key={arch}
               type="button"
-              onClick={() => updateField("archetype", arch)}
+              onClick={() => { playClick(); updateField("archetype", arch); }}
               className="p-3 text-left transition-all border"
               style={{
                 background: form.archetype === arch ? 'rgba(143,245,255,0.1)' : 'transparent',
@@ -304,7 +383,7 @@ export function SportAgentBuilder() {
               <button
                 key={style}
                 type="button"
-                onClick={() => updateField("playingStyle", style)}
+                onClick={() => { playClick(); updateField("playingStyle", style); }}
                 className="p-3 border font-mono text-xs uppercase font-bold tracking-widest transition-all"
                 style={{
                   background: selected ? `${c.active}22` : 'transparent',
@@ -396,35 +475,65 @@ export function SportAgentBuilder() {
             const selected = form.specialMoves.includes(move);
             const disabled = !selected && form.specialMoves.length >= 2;
             const color = selected ? '#ffe6aa' : '#ff6c92';
+            const imgB64 = moveImages[move];
+            const imgLoading = generatingMoves.has(move);
             return (
               <button
                 key={move}
                 type="button"
                 disabled={disabled}
-                onClick={() => toggleMove(move)}
-                className="p-3 flex items-center gap-3 transition-all border disabled:opacity-30"
+                onClick={() => { form.specialMoves.includes(move) ? playToggleOff() : playToggleOn(); toggleMove(move); }}
+                className="p-2.5 flex items-center gap-2.5 transition-all border disabled:opacity-30"
                 style={{
                   background: selected ? `${color}0d` : 'transparent',
                   borderColor: selected ? `${color}66` : 'rgba(70,71,82,0.3)',
                 }}
               >
+                {/* AI image or placeholder */}
                 <div
-                  className="w-8 h-8 flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${color}20` }}
+                  className="w-10 h-10 flex-shrink-0 overflow-hidden relative"
+                  style={{
+                    background: imgB64 ? 'transparent' : `${color}15`,
+                    border: `1px solid ${color}30`,
+                  }}
                 >
-                  <span className="material-symbols-outlined text-sm" style={{ color }}>
-                    {selected ? 'flash_on' : 'add'}
-                  </span>
+                  {imgB64 ? (
+                    <img
+                      src={`data:image/png;base64,${imgB64}`}
+                      alt={move}
+                      className="w-full h-full object-cover"
+                      style={{ filter: selected ? 'none' : 'grayscale(0.6) brightness(0.7)' }}
+                    />
+                  ) : imgLoading ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" className="opacity-25"/>
+                        <path d="M4 12a8 8 0 018-8" stroke={color} strokeWidth="3" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        {selected
+                          ? <path d="M13 2L4.5 13.5H12L11 22L19.5 10.5H12L13 2Z" fill={color} opacity="0.8"/>
+                          : <path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+                        }
+                      </svg>
+                    </div>
+                  )}
+                  {selected && (
+                    <div className="absolute inset-0" style={{ boxShadow: `inset 0 0 8px ${color}40` }} />
+                  )}
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <div
-                    className="text-[10px] font-mono font-bold uppercase"
+                    className="text-[10px] font-mono font-bold uppercase leading-tight"
                     style={{ color: selected ? color : '#aaaab6' }}
                   >
                     {move}
                   </div>
                 </div>
-                {selected && <div className="ml-auto w-2 h-2 flex-shrink-0" style={{ background: color }} />}
+                {selected && <div className="w-1.5 h-1.5 flex-shrink-0" style={{ background: color }} />}
               </button>
             );
           })}
@@ -445,6 +554,74 @@ export function SportAgentBuilder() {
           rows={3}
           className="w-full resize-none bg-transparent text-sm leading-6 text-[#eeecfa] outline-none placeholder:text-[#464752] font-mono"
         />
+      </div>
+
+      {/* Image Generation */}
+      <div className="border border-[#464752]/30 bg-[#11131d]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#464752]/20">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-[#464752] font-mono">Agent Portrait</div>
+            <div className="text-[11px] text-[#aaaab6] font-mono mt-0.5">AI-generated cyberpunk avatar</div>
+          </div>
+          <button
+            type="button"
+            onClick={generateImage}
+            disabled={generatingImage}
+            className="flex items-center gap-2 px-4 py-2 border border-[#8ff5ff]/40 text-[#8ff5ff] font-mono text-[11px] uppercase tracking-widest transition-all hover:bg-[#8ff5ff]/10 hover:border-[#8ff5ff]/80 disabled:opacity-40"
+          >
+            {generatingImage ? (
+              <>
+                <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                  <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+                Generating…
+              </>
+            ) : (
+              <>
+                {/* sparkle SVG */}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2l1.5 5.5L19 9l-5.5 1.5L12 16l-1.5-5.5L5 9l5.5-1.5L12 2z"/>
+                  <path d="M5 14l.75 2.75L8.5 17.5l-2.75.75L5 21l-.75-2.75L1.5 17.5l2.75-.75L5 14z" opacity="0.6"/>
+                </svg>
+                {avatarBase64 ? "Regenerate" : "Generate Image →"}
+              </>
+            )}
+          </button>
+        </div>
+        {avatarBase64 ? (
+          <div className="p-4 flex gap-4 items-start">
+            <div className="relative flex-shrink-0">
+              <img
+                src={`data:image/png;base64,${avatarBase64}`}
+                alt={`${form.name} portrait`}
+                className="w-24 h-24 object-cover border border-[#8ff5ff]/30"
+                style={{ imageRendering: "auto" }}
+              />
+              <div className="absolute inset-0 border border-[#8ff5ff]/20 pointer-events-none" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] font-mono text-[#8ff5ff] uppercase tracking-widest mb-1">Portrait Locked</div>
+              <div className="text-xs text-[#aaaab6] font-mono leading-relaxed">
+                {form.name || "AGENT"} · {form.archetype}
+              </div>
+              <div className="mt-2 flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 bg-[#8ff5ff] rounded-full" />
+                <span className="text-[9px] font-mono text-[#464752] uppercase tracking-widest">Will be saved with agent</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="px-4 py-6 text-center">
+            <div className="text-[10px] font-mono text-[#464752] uppercase tracking-widest">
+              {imageGenError ? (
+                <span className="text-[#ff716c]">ERROR: {imageGenError}</span>
+              ) : (
+                "No portrait generated · optional"
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Error */}
@@ -471,7 +648,9 @@ export function SportAgentBuilder() {
         ) : (
           <>
             Enter the Arena
-            <span className="material-symbols-outlined font-bold">arrow_forward_ios</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            </svg>
           </>
         )}
       </button>

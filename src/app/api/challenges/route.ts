@@ -48,6 +48,7 @@ export async function POST(request: Request) {
         type:           type === 'sport' ? 'sport' : 'trading',
         sport:          type === 'sport' ? (sport ?? 'badminton') : 'badminton',
         startedAt:      new Date(),
+        isTicking:      false, // PartyKit drives ticks for sport matches
         // Phase 3: open betting window for 5 minutes
         bettingOpen:    true,
         bettingClosedAt: new Date(Date.now() + 5 * 60 * 1000),
@@ -71,7 +72,11 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(competition, { status: 201 });
+    return NextResponse.json({
+      ...competition,
+      liveUrl: `/competitions/${competition.id}/live`,
+      partyRoomId: competition.id,
+    }, { status: 201 });
   } catch (err: any) {
     console.error('[challenge]', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

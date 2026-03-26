@@ -5,9 +5,9 @@ import { useState, useEffect, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { cx } from "@/components/arena/ui";
 
-const ConnectButtonSafe = dynamic(
-  () => import('./connect-button-safe'),
-  { ssr: false, loading: () => <button className="bg-[#8ff5ff] text-[#005d63] px-4 py-1.5 font-bold uppercase text-xs skew-x-[-12deg]">Connect Wallet</button> }
+const AuthButton = dynamic(
+  () => import('./auth-button').then(m => ({ default: m.AuthButton })),
+  { ssr: false, loading: () => <div className="border border-[#464752]/30 px-3 py-1 text-[10px] font-mono uppercase text-[#464752]">...</div> }
 );
 
 /* Nav items — mapped from Stitch HTML */
@@ -68,8 +68,7 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
               LIVE {liveCount}
             </div>
           )}
-          <span className="material-symbols-outlined text-[#8ff5ff] p-2 hover:bg-[#8ff5ff]/10 transition-all cursor-pointer">sensors</span>
-          <ConnectButtonSafe />
+          <AuthButton />
           {/* Mobile hamburger */}
           <button
             onClick={() => setMenuOpen(v => !v)}
@@ -133,37 +132,7 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
       )}
 
       {/* ── Page content ── */}
-      <main className="flex-1 pt-16 pb-20 md:pb-0">{children}</main>
-
-      {/* ── Mobile Bottom Navigation (Stitch exact) ── */}
-      <nav className="bottom-nav md:hidden" aria-label="Mobile navigation">
-        {NAV.map(item => {
-          const on = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cx(
-                "flex flex-col items-center justify-center flex-1 h-full px-2 transition-all",
-                on ? "bg-[#8ff5ff] text-[#0c0e16] scale-110 z-10" : "text-[#464752] hover:bg-[#11131d] hover:text-[#8ff5ff]"
-              )}
-            >
-              <span className="material-symbols-outlined">{item.icon}</span>
-              <span className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase">{item.label}</span>
-            </Link>
-          );
-        })}
-        <Link
-          href="/agents/create"
-          className={cx(
-            "flex flex-col items-center justify-center flex-1 h-full px-2 transition-all",
-            isActive("/agents/create") ? "bg-[#8ff5ff] text-[#0c0e16] scale-110 z-10" : "text-[#464752] hover:bg-[#11131d] hover:text-[#8ff5ff]"
-          )}
-        >
-          <span className="material-symbols-outlined">memory</span>
-          <span className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase">Build</span>
-        </Link>
-      </nav>
+      <main className="flex-1 pt-16">{children}</main>
     </div>
   );
 }
