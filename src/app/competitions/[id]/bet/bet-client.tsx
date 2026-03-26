@@ -687,7 +687,7 @@ export function BetClient({
     },
     {
       tag: isSettled ? "SYS" : "INF",
-      color: isSettled ? "#ffe6aa" : cyan,
+      color: isSettled ? "#ffd666" : cyan,
       msg: winnerId
         ? `Winner_Declared: ${(agentA?.id === winnerId ? agentA : agentB)?.name.toUpperCase()}`
         : `Prize_Pool: $${totalBetUsdc.toFixed(2)}_USDC`,
@@ -866,7 +866,7 @@ export function BetClient({
             { label: "Prize Pool", value: `$${totalBetUsdc.toFixed(2)}`, unit: "USDC", color: cyan },
             { label: "Match Type", value: sport.toUpperCase(), unit: "", color: "white" },
             { label: "Betting", value: bettingOpen ? "OPEN" : "CLOSED", unit: "", color: bettingOpen ? "#22ff88" : "rgba(255,255,255,0.3)" },
-            { label: "Status", value: status.toUpperCase(), unit: "", color: isSettled ? "#ffe6aa" : cyan },
+            { label: "Status", value: status.toUpperCase(), unit: "", color: isSettled ? "#ffd666" : cyan },
           ].map(({ label, value, unit, color }) => (
             <div key={label} className="p-5" style={{ background: "rgba(5,6,14,0.4)" }}>
               <div className="text-[9px] font-mono text-white/30 uppercase tracking-widest mb-1">{label}</div>
@@ -1041,7 +1041,7 @@ export function BetClient({
           >
             <div
               className="absolute inset-0 opacity-10 pointer-events-none"
-              style={{ background: "radial-gradient(ellipse at 50% 0%, #ffe6aa 0%, transparent 70%)" }}
+              style={{ background: "radial-gradient(ellipse at 50% 0%, #ffd666 0%, transparent 70%)" }}
             />
             <div className="relative">
               <div className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-2">Match Concluded</div>
@@ -1049,7 +1049,7 @@ export function BetClient({
                 className="text-5xl font-black uppercase tracking-wider"
                 style={{
                   fontFamily: "Rajdhani, sans-serif",
-                  color: "#ffe6aa",
+                  color: "#ffd666",
                   textShadow: "0 0 30px rgba(255,230,170,0.4)",
                 }}
               >

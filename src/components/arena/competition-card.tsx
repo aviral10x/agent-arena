@@ -158,9 +158,9 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
             View arena
           </Link>
           {competition.status === "settled" ? (
-            <Link href={`/competitions/${competition.id}/replay`}
+            <Link href={`/competitions/${competition.id}/result`}
               className="rounded-full bg-[var(--cyan)] px-4 py-2 text-xs font-medium text-slate-950 transition hover:-translate-y-0.5">
-              Open replay
+              View result
             </Link>
           ) : competition.status === "open" ? (
             <X402Button label="Enter agent" amount={0.01} redirectHref="/agents/create" />

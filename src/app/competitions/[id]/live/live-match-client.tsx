@@ -62,7 +62,7 @@ function AgentPanel({
   agent: Agent; side: "a" | "b"; momentum: number; fatigue: number; gameState: GameState | null;
 }) {
   const initials = agent ? agent.name.slice(0, 2).toUpperCase() : side.toUpperCase().repeat(2);
-  const color = agent?.color ?? (side === "a" ? "#8ff5ff" : "#ff6c92");
+  const color = agent?.color ?? (side === "a" ? "#00f0ff" : "#ff2d78");
 
   // Real set scores
   const setScores = gameState && agent
@@ -135,24 +135,24 @@ function AgentPanel({
         {/* Fatigue bar */}
         <div>
           <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752] mb-1">
-            Fatigue {fatigue > 70 ? <span className="text-[#ff6c92]">(EXHAUSTED)</span> : ""}
+            Fatigue {fatigue > 70 ? <span className="text-[#ff2d78]">(EXHAUSTED)</span> : ""}
           </div>
           <div className="h-2 bg-[#11131d] border border-[#464752]/20">
             <div
               className="h-full transition-all duration-700"
               style={{
                 width: `${fatigue}%`,
-                background: fatigue > 70 ? "#ff6c92" : fatigue > 40 ? "#ffe6aa" : "#00ff87",
+                background: fatigue > 70 ? "#ff2d78" : fatigue > 40 ? "#ffd666" : "#00ff87",
               }}
             />
           </div>
         </div>
 
         <div className="space-y-2 mt-2">
-          <StatBar label="SPD" value={agent?.speed ?? 7} color="#8ff5ff" />
-          <StatBar label="PWR" value={agent?.power ?? 7} color="#ffe6aa" />
+          <StatBar label="SPD" value={agent?.speed ?? 7} color="#00f0ff" />
+          <StatBar label="PWR" value={agent?.power ?? 7} color="#ffd666" />
           <StatBar label="STA" value={agent?.stamina ?? 7} color="#00ff87" />
-          <StatBar label="ACC" value={agent?.accuracy ?? 7} color="#ff6c92" />
+          <StatBar label="ACC" value={agent?.accuracy ?? 7} color="#ff2d78" />
         </div>
 
         {agent && (
@@ -208,8 +208,8 @@ export function LiveMatchClient({
     "> REFEREE: Waiting for players…",
   ]);
 
-  const colorA = agentA?.color ?? "#8ff5ff";
-  const colorB = agentB?.color ?? "#ff6c92";
+  const colorA = agentA?.color ?? "#00f0ff";
+  const colorB = agentB?.color ?? "#ff2d78";
 
   // ── Determine viewer side ──────────────────────────────────────────────────
   const viewerSide: "a" | "b" | null =
@@ -345,17 +345,17 @@ export function LiveMatchClient({
   };
 
   return (
-    <div className="overflow-hidden h-screen flex flex-col bg-[#0c0e16] text-[#eeecfa]">
+    <div className="overflow-hidden h-screen flex flex-col bg-[#05060e] text-[#eeecfa]">
       <div className="scanline fixed inset-0 z-[60] opacity-10 pointer-events-none" />
 
       {/* ── Top nav ── */}
-      <header className="shrink-0 h-12 bg-[#11131d] border-b border-[#8ff5ff]/20 flex items-center px-4 gap-3 z-50">
+      <header className="shrink-0 h-12 bg-[#11131d] border-b border-[#00f0ff]/20 flex items-center px-4 gap-3 z-50">
         <Link href="/challenges" className="text-[10px] font-mono uppercase tracking-widest text-[#464752] hover:text-[#aaaab6] transition-colors">
           ← Back
         </Link>
         <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 bg-[#8ff5ff] rounded-full animate-ping" />
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#8ff5ff]">
+          <span className="w-1.5 h-1.5 bg-[#00f0ff] rounded-full animate-ping" />
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#00f0ff]">
             {socket.status === "settled" ? "MATCH_OVER" : "LIVE_MATCH"}
           </span>
         </div>
@@ -382,8 +382,8 @@ export function LiveMatchClient({
           </button>
         </div>
 
-        <div className="flex items-center gap-1 bg-[#11131d] border border-[#8ff5ff]/20 p-0.5">
-          <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest bg-[#8ff5ff] text-[#005d63]">
+        <div className="flex items-center gap-1 bg-[#11131d] border border-[#00f0ff]/20 p-0.5">
+          <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest bg-[#00f0ff] text-[#005d63]">
             TACTICAL_LENS
           </div>
           <button
@@ -398,8 +398,8 @@ export function LiveMatchClient({
           onClick={() => setShowBetPanel(p => !p)}
           className={`border px-3 py-1 font-mono text-[10px] uppercase transition-colors ${
             showBetPanel
-              ? "border-[#ff6c92] bg-[#ff6c92]/20 text-[#ff6c92]"
-              : "border-[#ff6c92]/40 text-[#ff6c92] hover:bg-[#ff6c92]/10"
+              ? "border-[#ff2d78] bg-[#ff2d78]/20 text-[#ff2d78]"
+              : "border-[#ff2d78]/40 text-[#ff2d78] hover:bg-[#ff2d78]/10"
           }`}
         >
           {showBetPanel ? "HIDE_BETS" : "PLACE_BET"}
@@ -417,7 +417,7 @@ export function LiveMatchClient({
       <div className="shrink-0 h-8 bg-[#11131d]/60 border-b border-[#464752]/10 flex items-center justify-center gap-6 text-[10px] font-mono uppercase">
         <span style={{ color: colorA }}>{agentA?.name.slice(0, 10) ?? "A"}</span>
         {scores.sets.map((s, i) => (
-          <span key={i} className={`px-2 ${i === (gs?.currentSet ?? 0) ? "text-[#ffe6aa]" : "text-[#464752]"}`}>
+          <span key={i} className={`px-2 ${i === (gs?.currentSet ?? 0) ? "text-[#ffd666]" : "text-[#464752]"}`}>
             {s.a1}–{s.a2}
           </span>
         ))}
@@ -440,7 +440,7 @@ export function LiveMatchClient({
         <AgentPanel agent={agentA} side="a" momentum={momentumA} fatigue={fatigueA} gameState={gs} />
 
         {/* Arena Canvas */}
-        <div className="col-span-6 relative overflow-hidden" style={{ background: "radial-gradient(ellipse at center, #0d1020 0%, #0c0e16 100%)" }}>
+        <div className="col-span-6 relative overflow-hidden" style={{ background: "radial-gradient(ellipse at center, #0d1020 0%, #05060e 100%)" }}>
           <div
             className="absolute inset-0"
             style={{ backgroundImage: "radial-gradient(circle, rgba(143,245,255,0.15) 1px, transparent 1px)", backgroundSize: "32px 32px" }}
@@ -471,7 +471,7 @@ export function LiveMatchClient({
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
               <div
                 className="font-['Space_Grotesk'] text-7xl font-black italic -skew-x-12 opacity-70 select-none animate-pulse"
-                style={{ color: "#8ff5ff", textShadow: "0 0 40px #8ff5ff" }}
+                style={{ color: "#00f0ff", textShadow: "0 0 40px #00f0ff" }}
               >
                 {flashText}
               </div>
@@ -500,13 +500,13 @@ export function LiveMatchClient({
             <span
               className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 border"
               style={{
-                color: socket.status === "settled" ? "#ff6c92" : "#8ff5ff",
+                color: socket.status === "settled" ? "#ff2d78" : "#00f0ff",
                 borderColor: socket.status === "settled" ? "rgba(255,45,120,0.4)" : "rgba(143,245,255,0.4)",
                 background: socket.status === "settled" ? "rgba(255,45,120,0.1)" : "rgba(143,245,255,0.1)",
               }}
             >
               <span className="inline-block w-1.5 h-1.5 rounded-full animate-ping mr-1.5 align-middle"
-                style={{ background: socket.status === "settled" ? "#ff6c92" : "#8ff5ff" }} />
+                style={{ background: socket.status === "settled" ? "#ff2d78" : "#00f0ff" }} />
               {socket.status === "settled"
                 ? `${socket.winner?.agentName ?? ""} WINS!`
                 : socket.status.toUpperCase()}
@@ -519,20 +519,20 @@ export function LiveMatchClient({
       </div>
 
       {/* ── Trainer Console ── */}
-      <div className="shrink-0 bg-[#11131d] border-t border-[#8ff5ff]/20">
+      <div className="shrink-0 bg-[#11131d] border-t border-[#00f0ff]/20">
         {socket.commandWindowOpen && (
           <div className="relative h-1 bg-[#11131d] overflow-hidden">
             <div
-              className="absolute inset-y-0 left-0 bg-[#8ff5ff] transition-none"
+              className="absolute inset-y-0 left-0 bg-[#00f0ff] transition-none"
               style={{ width: "100%", animation: `shrink ${socket.commandWindowMs}ms linear forwards` }}
             />
             <style>{`@keyframes shrink { from { width: 100% } to { width: 0% } }`}</style>
           </div>
         )}
         {socket.commandWindowOpen && viewerSide && (
-          <div className="px-4 py-1 flex items-center gap-2 bg-[#8ff5ff]/08 border-b border-[#8ff5ff]/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#8ff5ff] animate-ping" />
-            <span className="text-[9px] font-mono uppercase tracking-widest text-[#8ff5ff]">
+          <div className="px-4 py-1 flex items-center gap-2 bg-[#00f0ff]/08 border-b border-[#00f0ff]/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00f0ff] animate-ping" />
+            <span className="text-[9px] font-mono uppercase tracking-widest text-[#00f0ff]">
               Command Window — {(socket.commandWindowMs / 1000).toFixed(1)}s
             </span>
             <span className="ml-auto text-[9px] font-mono text-[#464752] uppercase">
@@ -546,7 +546,7 @@ export function LiveMatchClient({
               <div key={i} className="truncate">{l}</div>
             ))}
           </div>
-          <form onSubmit={handleTrainerSubmit} className="flex items-stretch border-l border-[#8ff5ff]/20 w-80">
+          <form onSubmit={handleTrainerSubmit} className="flex items-stretch border-l border-[#00f0ff]/20 w-80">
             <input
               value={trainerInput}
               onChange={e => setTrainerInput(e.target.value)}
@@ -557,7 +557,7 @@ export function LiveMatchClient({
               type="submit"
               className="px-4 font-['Space_Grotesk'] font-black uppercase text-xs hover:brightness-110 transition-all"
               style={{
-                background: socket.commandWindowOpen && viewerSide ? "#8ff5ff" : "#1a1d2b",
+                background: socket.commandWindowOpen && viewerSide ? "#00f0ff" : "#1a1d2b",
                 color:      socket.commandWindowOpen && viewerSide ? "#005d63" : "#464752",
               }}
             >
@@ -569,12 +569,12 @@ export function LiveMatchClient({
 
       {/* ── Bottom betting strip ── */}
       <div
-        className="shrink-0 border-t border-[#8ff5ff]/20 px-4 py-3 flex items-center gap-6"
+        className="shrink-0 border-t border-[#00f0ff]/20 px-4 py-3 flex items-center gap-6"
         style={{ background: "rgba(11,13,22,0.85)", backdropFilter: "blur(12px)" }}
       >
         <div className="flex items-center gap-2 shrink-0">
-          <span className="w-1.5 h-1.5 bg-[#ff6c92] rounded-full animate-ping" />
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#ff6c92]">MARKET_LIVE</span>
+          <span className="w-1.5 h-1.5 bg-[#ff2d78] rounded-full animate-ping" />
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#ff2d78]">MARKET_LIVE</span>
         </div>
         <div className="flex gap-2">
           <button
@@ -593,11 +593,11 @@ export function LiveMatchClient({
           </button>
         </div>
         <div className="text-[10px] font-mono text-[#464752]">
-          Pool: <span className="text-[#ffe6aa]">${totalBetUsdc.toFixed(2)}</span>
+          Pool: <span className="text-[#ffd666]">${totalBetUsdc.toFixed(2)}</span>
         </div>
         <button
           onClick={() => setShowBetPanel(p => !p)}
-          className="ml-auto bg-[#ff6c92] text-[#48001b] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
+          className="ml-auto bg-[#ff2d78] text-[#48001b] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
         >
           {showBetPanel ? "CLOSE ×" : "PLACE_STAKE →"}
         </button>
@@ -606,7 +606,7 @@ export function LiveMatchClient({
       {/* ── Inline Bet Panel (slides up from bottom) ── */}
       {showBetPanel && (
         <div
-          className="shrink-0 border-t border-[#ff6c92]/30 px-4 py-4"
+          className="shrink-0 border-t border-[#ff2d78]/30 px-4 py-4"
           style={{ background: "rgba(11,13,22,0.95)", backdropFilter: "blur(16px)" }}
         >
           {!privyReady ? (
@@ -615,7 +615,7 @@ export function LiveMatchClient({
             <div className="text-center">
               <button
                 onClick={() => privyLogin()}
-                className="bg-[#ff6c92] text-[#48001b] px-6 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:brightness-110 transition-all"
+                className="bg-[#ff2d78] text-[#48001b] px-6 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:brightness-110 transition-all"
               >
                 CONNECT_WALLET_TO_BET
               </button>
@@ -632,7 +632,7 @@ export function LiveMatchClient({
                   onClick={() => setBetPick("a")}
                   className={`px-3 py-2 border font-mono text-[10px] uppercase transition-all ${
                     betPick === "a"
-                      ? "border-[#8ff5ff] bg-[#8ff5ff]/15 text-[#8ff5ff]"
+                      ? "border-[#00f0ff] bg-[#00f0ff]/15 text-[#00f0ff]"
                       : "border-[#464752]/30 text-[#464752] hover:border-[#464752]"
                   }`}
                 >
@@ -642,7 +642,7 @@ export function LiveMatchClient({
                   onClick={() => setBetPick("b")}
                   className={`px-3 py-2 border font-mono text-[10px] uppercase transition-all ${
                     betPick === "b"
-                      ? "border-[#ff6c92] bg-[#ff6c92]/15 text-[#ff6c92]"
+                      ? "border-[#ff2d78] bg-[#ff2d78]/15 text-[#ff2d78]"
                       : "border-[#464752]/30 text-[#464752] hover:border-[#464752]"
                   }`}
                 >
@@ -659,7 +659,7 @@ export function LiveMatchClient({
                   max={100}
                   value={betAmount}
                   onChange={e => setBetAmount(Math.max(1, Math.min(100, Number(e.target.value))))}
-                  className="w-20 bg-[#11131d] border border-[#464752]/30 px-2 py-1 text-sm font-mono text-[#eeecfa] text-center outline-none focus:border-[#ff6c92]/60"
+                  className="w-20 bg-[#11131d] border border-[#464752]/30 px-2 py-1 text-sm font-mono text-[#eeecfa] text-center outline-none focus:border-[#ff2d78]/60"
                 />
                 <div className="flex gap-1">
                   {[1, 5, 10, 25].map(v => (
@@ -668,7 +668,7 @@ export function LiveMatchClient({
                       onClick={() => setBetAmount(v)}
                       className={`px-2 py-1 text-[9px] font-mono border transition-colors ${
                         betAmount === v
-                          ? "border-[#ffe6aa]/60 text-[#ffe6aa] bg-[#ffe6aa]/10"
+                          ? "border-[#ffd666]/60 text-[#ffd666] bg-[#ffd666]/10"
                           : "border-[#464752]/20 text-[#464752] hover:text-[#aaaab6]"
                       }`}
                     >
@@ -681,7 +681,7 @@ export function LiveMatchClient({
               {/* Payout preview */}
               <div className="text-center">
                 <div className="text-[9px] font-mono text-[#464752] uppercase">Payout</div>
-                <div className="font-mono text-sm text-[#ffe6aa] font-bold">
+                <div className="font-mono text-sm text-[#ffd666] font-bold">
                   ${betPick ? (betAmount * parseFloat(betPick === "a" ? oddsA : oddsB)).toFixed(2) : "—"}
                 </div>
               </div>
@@ -709,9 +709,9 @@ export function LiveMatchClient({
                   setBetSubmitting(false);
                 }}
                 disabled={!betPick || betSubmitting}
-                className="bg-[#ff6c92] text-[#48001b] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-[#ff2d78] text-[#48001b] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {betSubmitting ? "PLACING…" : "COMMIT_BET"}
+                {betSubmitting ? "PLACING…" : "COMMIT_BET (DEMO)"}
               </button>
             </div>
           )}

@@ -459,6 +459,14 @@ export function resolveRally(
   const chaseExertion = (attackDecision.action === 'SMASH' || attackDecision.action === 'SPECIAL') ? 5 : 2;
   newFatigue[defenderId] = Math.min(100, (newFatigue[defenderId] ?? 0) + chaseExertion * Math.max(0.3, 1.2 - defenderStats.stamina / 10));
 
+  // Passive micro-recovery within rallies: every 4th shot, high-stamina players recover slightly
+  if (!rallyEnds && gameState.rallyLength > 0 && gameState.rallyLength % 4 === 0) {
+    for (const id of agentIds) {
+      const microRecovery = agentStats[id].stamina * 0.4;
+      newFatigue[id] = Math.max(0, (newFatigue[id] ?? 0) - microRecovery);
+    }
+  }
+
   // Between points: fatigue partially recovers
   if (rallyEnds) {
     for (const id of agentIds) {
@@ -473,7 +481,8 @@ export function resolveRally(
   // ── Shuttle position with accuracy-based scatter ──────────────────────────
   const zone = Math.max(1, Math.min(9, attackDecision.targetZone));
   const zoneLanding = ZONE_POS[zone];
-  const scatter = Math.max(2, 16 - attackStats.accuracy * 1.4);
+  // accuracy 10 → scatter 3 (tight placement), accuracy 1 → scatter 18 (wild)
+  const scatter = Math.max(3, 20 - attackStats.accuracy * 2);
   const newShuttlePos = {
     x: Math.max(5, Math.min(95, zoneLanding.x + (Math.random() - 0.5) * scatter)),
     y: rallyEnds ? 50 : Math.max(5, Math.min(95, zoneLanding.y + (Math.random() - 0.5) * scatter)),

@@ -89,7 +89,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
               onClick={() => { setOpponentId(agent.id === opponentId ? null : agent.id); setError(null); }}
               className={`overflow-hidden border p-4 text-left transition-all ${
                 opponentId === agent.id
-                  ? 'border-[#ff6c92] bg-[#ff6c92]/10'
+                  ? 'border-[#ff2d78] bg-[#ff2d78]/10'
                   : 'border-[#464752]/20 bg-[#11131d] hover:bg-[#171924]'
               }`}
             >
@@ -108,7 +108,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
                 </div>
                 {agent.winRate && (
                   <div className="text-right shrink-0">
-                    <div className="font-mono text-sm text-[#8ff5ff]">{agent.winRate}</div>
+                    <div className="font-mono text-sm text-[#00f0ff]">{agent.winRate}</div>
                     <div className="text-[9px] font-mono text-[#464752]">WIN</div>
                   </div>
                 )}
@@ -123,9 +123,9 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
                   </span>
                 ))}
                 <span className={`border px-2 py-0.5 text-[9px] font-mono uppercase ml-auto ${
-                  agent.risk === 'Aggressive' ? 'border-[#ff6c92]/30 text-[#ff6c92]'
-                  : agent.risk === 'Moderate' ? 'border-[#ffe6aa]/30 text-[#ffe6aa]'
-                  : 'border-[#8ff5ff]/30 text-[#8ff5ff]'
+                  agent.risk === 'Aggressive' ? 'border-[#ff2d78]/30 text-[#ff2d78]'
+                  : agent.risk === 'Moderate' ? 'border-[#ffd666]/30 text-[#ffd666]'
+                  : 'border-[#00f0ff]/30 text-[#00f0ff]'
                 }`}>
                   {agent.risk}
                 </span>
@@ -163,7 +163,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
         <div className="bg-[#11131d] border border-[#464752]/20 p-4">
           <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-2">
             Your Fighter
-            {ready && !user && <span className="ml-2 text-[#ff6c92]">— Login to use your agent</span>}
+            {ready && !user && <span className="ml-2 text-[#ff2d78]">— Login to use your agent</span>}
             {!ready && <span className="ml-2 text-[#464752]">— loading…</span>}
           </div>
           {/* Combine: your agents first, then remaining public agents */}
@@ -183,7 +183,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
                       onClick={() => { setMyAgentId(a.id); setError(null); }}
                       className={`w-full flex items-center gap-2 p-2 border text-left transition-all ${
                         myAgentId === a.id
-                          ? 'border-[#8ff5ff] bg-[#8ff5ff]/10'
+                          ? 'border-[#00f0ff] bg-[#00f0ff]/10'
                           : 'border-[#464752]/20 hover:bg-[#171924]'
                       }`}
                     >
@@ -197,11 +197,11 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
                         <div className="font-['Space_Grotesk'] font-bold text-xs uppercase text-[#eeecfa]">{a.name}</div>
                         <div className="text-[9px] font-mono uppercase text-[#464752]">
                           {a.archetype}
-                          {isOwn && <span className="ml-1 text-[#8ff5ff]">★ YOURS</span>}
+                          {isOwn && <span className="ml-1 text-[#00f0ff]">★ YOURS</span>}
                         </div>
                       </div>
                       {myAgentId === a.id && (
-                        <span className="ml-auto text-[9px] font-mono text-[#8ff5ff] border border-[#8ff5ff]/30 px-1.5 py-0.5">SELECTED</span>
+                        <span className="ml-auto text-[9px] font-mono text-[#00f0ff] border border-[#00f0ff]/30 px-1.5 py-0.5">SELECTED</span>
                       )}
                     </button>
                   );
@@ -212,7 +212,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
                 <p className="text-[10px] font-mono text-[#464752]">No agents found. Build one first.</p>
                 <a
                   href="/agents/create"
-                  className="block w-full text-center bg-[#8ff5ff] text-[#003d42] px-4 py-2 font-['Space_Grotesk'] font-black text-xs uppercase hover:skew-x-[-6deg] transition-all"
+                  className="block w-full text-center bg-[#00f0ff] text-[#003d42] px-4 py-2 font-['Space_Grotesk'] font-black text-xs uppercase hover:skew-x-[-6deg] transition-all"
                 >
                   Build_Fighter →
                 </a>
@@ -222,13 +222,13 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
         </div>
 
         {/* Sport — badminton only */}
-        <div className="bg-[#11131d] border border-[#ffe6aa]/30 p-4 flex items-center gap-3">
+        <div className="bg-[#11131d] border border-[#ffd666]/30 p-4 flex items-center gap-3">
           <span className="text-2xl">🏸</span>
           <div>
             <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752]">Sport</div>
-            <div className="text-sm font-['Space_Grotesk'] font-bold uppercase text-[#ffe6aa]">Badminton</div>
+            <div className="text-sm font-['Space_Grotesk'] font-bold uppercase text-[#ffd666]">Badminton</div>
           </div>
-          <span className="ml-auto text-[9px] font-mono text-[#ffe6aa] border border-[#ffe6aa]/30 px-2 py-0.5">ACTIVE</span>
+          <span className="ml-auto text-[9px] font-mono text-[#ffd666] border border-[#ffd666]/30 px-2 py-0.5">ACTIVE</span>
         </div>
 
         {/* Match details */}
@@ -242,7 +242,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
         </div>
 
         {error && (
-          <p className="text-xs font-mono text-[#ff6c92] border border-[#ff6c92]/20 bg-[#ff6c92]/05 px-3 py-2">
+          <p className="text-xs font-mono text-[#ff2d78] border border-[#ff2d78]/20 bg-[#ff2d78]/05 px-3 py-2">
             {error}
           </p>
         )}
@@ -250,7 +250,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
         <button
           onClick={handleChallenge}
           disabled={!opponentId || !myAgentId || loading}
-          className="w-full bg-[#ff6c92] text-[#48001b] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all disabled:opacity-40 disabled:hover:skew-x-0 disabled:cursor-not-allowed"
+          className="w-full bg-[#ff2d78] text-[#48001b] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all disabled:opacity-40 disabled:hover:skew-x-0 disabled:cursor-not-allowed"
         >
           {loading ? 'Launching_Match…' : '⚔ Issue_Challenge →'}
         </button>

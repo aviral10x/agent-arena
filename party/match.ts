@@ -72,13 +72,15 @@ export default class MatchRoom implements Party.Server {
 
   gameState: GameState | null = null;
   sport: "badminton" = "badminton";
-  players: Map<string, PlayerInfo> = new Map(); // userId → PlayerInfo
-  connections: Map<string, Party.Connection> = new Map(); // userId → socket
-  pendingCommands: Map<string, string> = new Map(); // agentId → command text
+  players: Map<string, PlayerInfo> = new Map();
+  connections: Map<string, Party.Connection> = new Map();
+  pendingCommands: Map<string, string> = new Map();
   tickTimer: ReturnType<typeof setTimeout> | null = null;
   commandTimer: ReturnType<typeof setTimeout> | null = null;
+  matchTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
   isRunning = false;
   matchOver = false;
+  matchStartedAt: number = 0;
 
   constructor(readonly room: Party.Room) {}
 
@@ -177,9 +179,18 @@ export default class MatchRoom implements Party.Server {
 
     this.gameState = initGameState(this.sport, [playerA.agentId, playerB.agentId], playerA.agentId);
     this.isRunning = true;
+    this.matchStartedAt = Date.now();
 
     this.broadcast({ type: "match_start", gameState: this.gameState });
     this.scheduleNextTick();
+
+    // Match timeout: force-settle after 10 minutes
+    const MATCH_TIMEOUT_MS = 10 * 60 * 1000;
+    this.matchTimeoutTimer = setTimeout(() => {
+      if (!this.matchOver && this.isRunning && this.gameState) {
+        this.forceSettle();
+      }
+    }, MATCH_TIMEOUT_MS);
   }
 
   scheduleNextTick() {
@@ -357,6 +368,38 @@ PHYSICS RULES:
       result[p.side] = { agentId: p.agentId, agentName: p.agentName, agentColor: p.agentColor };
     }
     return result;
+  }
+
+  forceSettle() {
+    if (!this.gameState) return;
+    const playerA = [...this.players.values()].find(p => p.side === "a");
+    const playerB = [...this.players.values()].find(p => p.side === "b");
+    if (!playerA || !playerB) return;
+
+    // Determine winner by sets won, then current set score
+    const gs = this.gameState;
+    const countSets = (agentId: string) =>
+      gs.sets.filter((s, i) => {
+        const vals = Object.values(s.agentScores);
+        return s.agentScores[agentId] === Math.max(...vals) && Math.max(...vals) > 0;
+      }).length;
+    const setsA = countSets(playerA.agentId);
+    const setsB = countSets(playerB.agentId);
+    const currentA = gs.sets[gs.currentSet]?.agentScores[playerA.agentId] ?? 0;
+    const currentB = gs.sets[gs.currentSet]?.agentScores[playerB.agentId] ?? 0;
+
+    const winnerId = setsA > setsB ? playerA.agentId
+      : setsB > setsA ? playerB.agentId
+      : currentA >= currentB ? playerA.agentId : playerB.agentId;
+
+    const winner = winnerId === playerA.agentId ? playerA : playerB;
+    this.matchOver = true;
+    this.isRunning = false;
+    this.gameState.matchOver = true;
+    this.gameState.winner = winnerId;
+
+    this.broadcast({ type: "match_over", winnerId: winner.agentId, winnerName: winner.agentName, gameState: this.gameState });
+    this.persistResult(winnerId).catch(console.error);
   }
 
   async persistResult(winnerId: string) {

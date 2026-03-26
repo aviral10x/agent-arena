@@ -33,7 +33,7 @@ function ScoreBadge({ agent, isSport, size = "sm", isLeading = false }: { agent:
   const cls = size === "xs" ? "text-[10px] sm:text-[12px]" : "text-sm sm:text-base";
   if (isSport) {
     return (
-      <span className={`font-bold tabular-nums ${cls}`} style={{ fontFamily: 'var(--font-mono)', color: isLeading ? '#8ff5ff' : agent.color }}>
+      <span className={`font-bold tabular-nums ${cls}`} style={{ fontFamily: 'var(--font-mono)', color: isLeading ? '#00f0ff' : agent.color }}>
         {(agent as any).score ?? 0} pts
       </span>
     );
@@ -122,7 +122,7 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
       style={{
         background: '#11131d',
         border: isLive && isSport ? '1px solid rgba(143,245,255,0.1)' : '1px solid rgba(143,245,255,0.1)',
-        borderLeft: isLive && isSport ? '2px solid #8ff5ff' : undefined,
+        borderLeft: isLive && isSport ? '2px solid #00f0ff' : undefined,
         transition: 'border-color 0.2s, box-shadow 0.2s',
       }}
       onMouseEnter={e => {

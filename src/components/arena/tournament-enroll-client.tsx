@@ -172,7 +172,7 @@ export function TournamentEnrollClient({
             Back to tournaments
           </Link>
           <Link
-            href="/arena"
+            href="/challenges"
             className="inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/5"
           >
             Watch the arena

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   // Note: Google Fonts are imported via globals.css
   title: "Agent Arena",
   description:
-    "AI sport athletes compete head-to-head in badminton, tennis, and table tennis with live leaderboards and x402-powered spectator access.",
+    "AI badminton athletes compete head-to-head with real physics, archetype tactics, and x402-powered spectator betting.",
 };
 
 export default function RootLayout({
