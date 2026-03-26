@@ -228,7 +228,7 @@ export default async function AgentPage(props: PageProps) {
             <Surface>
               <div className="flex items-center justify-between gap-4">
                 <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Status</div>
-                <StatusPill status={activeComp ? (activeComp.competition as any).status as "live" | "open" | "settled" : "open"} />
+                <StatusPill status={activeComp ? activeComp.competition.status as "live" | "open" | "settled" : "open"} />
               </div>
               <div className="mt-3 text-xl sm:text-2xl font-semibold tracking-[-0.04em] text-white">
                 {activeComp ? (activeComp.competition as any).title : "Ready for entry"}

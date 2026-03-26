@@ -138,43 +138,49 @@ function generateMockShotDecision(
   gameState: GameState,
   specialMoves: string[]
 ): ShotDecision {
-  const momentum  = gameState.momentum[agent.id] ?? 50;
-  const shuttleY  = gameState.shuttlePosition.y;
+  const momentum     = gameState.momentum[agent.id] ?? 50;
+  const shuttleY     = gameState.shuttlePosition.y;
+  const rallyLen     = gameState.rallyLength;
+  const isAggressive = agent.risk === 'Aggressive';
+  const isDefensive  = agent.risk === 'Defensive' || agent.risk === 'Conservative';
 
-  // Use special move if momentum is very high and it's available
-  if (momentum > 80 && specialMoves.length > 0 && Math.random() < 0.3) {
+  // Special move on hot streak
+  if (momentum > 78 && specialMoves.length > 0 && Math.random() < 0.25) {
     return {
       action:      'SPECIAL',
       targetZone:  Math.floor(Math.random() * 9) + 1,
       specialMove: specialMoves[Math.floor(Math.random() * specialMoves.length)],
-      rationale:   `Unleashing special move — momentum at ${momentum.toFixed(0)}, time to end the rally!`,
+      rationale:   `Unleashing special move — momentum at ${momentum.toFixed(0)}, closing this rally!`,
     };
   }
 
-  const isAggressive = agent.risk === 'Aggressive';
-  const actions: SportAction[] =
-    shuttleY > 60 && isAggressive
-      ? ['SMASH', 'SMASH', 'DROP', 'DRIVE']
-      : momentum < 35
-      ? ['CLEAR', 'LOB', 'CLEAR', 'BLOCK']
-      : ['DROP', 'DRIVE', 'SMASH', 'CLEAR'];
+  // Weighted action pool based on game situation
+  const pool: SportAction[] = [];
+  if (shuttleY > 65 && !isDefensive) pool.push('SMASH', 'SMASH', 'DRIVE');
+  if (shuttleY < 30)                   pool.push('DROP', 'BLOCK', 'DRIVE');
+  if (rallyLen > 10)                   pool.push('CLEAR', 'LOB', 'CLEAR');
+  if (momentum < 35)                   pool.push('CLEAR', 'LOB', 'BLOCK');
+  if (isAggressive)                    pool.push('SMASH', 'DRIVE', 'DROP');
+  if (isDefensive)                     pool.push('CLEAR', 'LOB', 'BLOCK', 'DROP');
+  // Always ensure all actions are reachable
+  pool.push('SMASH', 'DROP', 'CLEAR', 'DRIVE', 'LOB', 'BLOCK');
 
-  const action     = actions[Math.floor(Math.random() * actions.length)];
+  const action     = pool[Math.floor(Math.random() * pool.length)];
   const targetZone = Math.floor(Math.random() * 9) + 1;
 
   const rationales: Record<string, string> = {
-    SMASH:  `Shuttle is high — driving a smash to zone ${targetZone}.`,
-    DROP:   `Deceptive drop to zone ${targetZone} — forcing a difficult net return.`,
-    CLEAR:  `Clearing to the back to reset and regain positioning.`,
-    DRIVE:  `Flat drive down the line to zone ${targetZone}.`,
-    LOB:    `Lob to push opponent deep and create space at the net.`,
-    BLOCK:  `Defensive block — keeping the rally alive.`,
-    SERVE:  `Serving wide to zone ${targetZone}.`,
+    SMASH:  `Shuttle is high — smashing to zone ${targetZone} for a winner.`,
+    DROP:   `Precise drop to zone ${targetZone} — catching them off guard.`,
+    CLEAR:  `Clearing deep to reset, buying time to reposition.`,
+    DRIVE:  `Flat drive to zone ${targetZone} — fast and flat.`,
+    LOB:    `Lobbing high to push opponent deep into the back court.`,
+    BLOCK:  `Tight defensive block — neutralizing the attack.`,
+    SERVE:  `Serving into zone ${targetZone}.`,
   };
 
   return {
     action,
     targetZone,
-    rationale: rationales[action] ?? 'Tactical shot selection.',
+    rationale: rationales[action] ?? 'Tactical decision.',
   };
 }
