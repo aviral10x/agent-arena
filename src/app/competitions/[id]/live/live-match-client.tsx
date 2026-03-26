@@ -194,11 +194,13 @@ export function LiveMatchClient({
   const [betDone, setBetDone]       = useState(false);
 
   // Privy wallet for inline betting with x402
-  const { user, login: privyLogin, ready: privyReady } = usePrivy();
+  const { user, login: privyLogin, ready: privyReady, authenticated } = usePrivy();
   const { wallets } = useWallets();
+  // Use any available address — Privy embedded, external, or from URL param
   const betWallet = user?.wallet?.address
     ?? wallets.find(w => w.walletClientType !== 'privy')?.address
     ?? wallets[0]?.address
+    ?? viewerWallet
     ?? '';
   const [betPayStep, setBetPayStep] = useState<string | null>(null);
   const prevRallyRef = useRef<string | null>(null);
@@ -612,13 +614,13 @@ export function LiveMatchClient({
         >
           {!privyReady ? (
             <div className="text-center text-[10px] font-mono text-[#464752]">Loading…</div>
-          ) : !betWallet ? (
+          ) : !authenticated ? (
             <div className="text-center">
               <button
-                onClick={() => { if (!user) privyLogin(); }}
+                onClick={() => privyLogin()}
                 className="bg-[#ff6c92] text-[#48001b] px-6 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:brightness-110 transition-all"
               >
-                {user ? 'WALLET_LOADING…' : 'CONNECT_WALLET_TO_BET'}
+                CONNECT_WALLET_TO_BET
               </button>
             </div>
           ) : betDone ? (

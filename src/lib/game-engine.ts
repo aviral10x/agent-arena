@@ -245,29 +245,30 @@ function defenseReturnProb(
   let baseDifficulty: number;
   switch (attackAction) {
     case 'SMASH': {
-      // The higher the shuttle when smashed, the harder to defend
+      // Smash is hard to return but not automatic — good defenders return ~50-60%
+      // Higher shuttle = better smash quality = harder to defend
       const smashQuality = Math.min(1.0, attackShuttleHeight / 3.0);
-      baseDifficulty = 0.22 + (1 - smashQuality) * 0.22; // 0.22 to 0.44
+      baseDifficulty = 0.42 + (1 - smashQuality) * 0.18; // 0.42 (perfect smash) to 0.60 (weak smash)
       break;
     }
     case 'SPECIAL':
-      baseDifficulty = 0.18;
+      baseDifficulty = 0.30; // signature moves are hard but not instant kills
       break;
     case 'DROP':
-      baseDifficulty = 0.40; // requires quick net movement
+      baseDifficulty = 0.52; // requires quick net movement but defenders anticipate
       break;
     case 'DRIVE':
-      baseDifficulty = 0.52; // fast but predictable
+      baseDifficulty = 0.58; // fast but predictable trajectory
       break;
     case 'LOB':
     case 'CLEAR':
-      baseDifficulty = 0.82; // high and slow — easy to prepare
+      baseDifficulty = 0.85; // high and slow — easy to prepare
       break;
     case 'BLOCK':
-      baseDifficulty = 0.62;
+      baseDifficulty = 0.65; // net return, tricky but reachable
       break;
     case 'SERVE':
-      baseDifficulty = 0.88;
+      baseDifficulty = 0.90; // almost always returned
       break;
     default:
       baseDifficulty = 0.60;
@@ -283,10 +284,10 @@ function defenseReturnProb(
   const distWeight = attackAction === 'SMASH' || attackAction === 'SPECIAL' ? 0.16 : 0.10;
   const reachPenalty = (distToLanding / 10) * speedFactor * distWeight;
 
-  // Stat bonuses for defense
-  const speedBonus    = (defenderStats.speed    - 5) / 40;
-  const reflexBonus   = (defenderStats.accuracy - 5) / 70;
-  const momentumBonus = (defenderMomentum - 50) / 400;
+  // Stat bonuses for defense — higher impact so skilled defenders shine
+  const speedBonus    = (defenderStats.speed    - 5) / 30;  // ±0.17
+  const reflexBonus   = (defenderStats.accuracy - 5) / 50;  // ±0.10
+  const momentumBonus = (defenderMomentum - 50) / 350;      // ±0.14
 
   // Fatigue: very tired players can't spring to the shuttle
   const fatiguePenalty = (defenderFatigue / 100) * 0.22;
