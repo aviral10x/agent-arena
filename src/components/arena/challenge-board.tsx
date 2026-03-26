@@ -158,65 +158,66 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
           )}
         </div>
 
-        {/* My Fighter */}
+        {/* My Fighter — shows your agents first, then all agents as fallback */}
         <div className="bg-[#11131d] border border-[#464752]/20 p-4">
           <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-2">
             Your Fighter
             {ready && !user && <span className="ml-2 text-[#ff6c92]">— Login to use your agent</span>}
             {!ready && <span className="ml-2 text-[#464752]">— loading…</span>}
           </div>
-          {myAgents.length > 0 ? (
-            <div className="space-y-2">
-              {myAgents.map(a => (
-                <button
-                  key={a.id}
-                  onClick={() => { setMyAgentId(a.id); setError(null); }}
-                  className={`w-full flex items-center gap-2 p-2 border text-left transition-all ${
-                    myAgentId === a.id
-                      ? 'border-[#8ff5ff] bg-[#8ff5ff]/10'
-                      : 'border-[#464752]/20 hover:bg-[#171924]'
-                  }`}
+          {/* Combine: your agents first, then remaining public agents */}
+          {(() => {
+            const myIds = new Set(myAgents.map(a => a.id));
+            const allFighters = [
+              ...myAgents,
+              ...agents.filter(a => !myIds.has(a.id)),
+            ];
+            return allFighters.length > 0 ? (
+              <div className="space-y-2 max-h-[220px] overflow-y-auto">
+                {allFighters.map(a => {
+                  const isOwn = myIds.has(a.id);
+                  return (
+                    <button
+                      key={a.id}
+                      onClick={() => { setMyAgentId(a.id); setError(null); }}
+                      className={`w-full flex items-center gap-2 p-2 border text-left transition-all ${
+                        myAgentId === a.id
+                          ? 'border-[#8ff5ff] bg-[#8ff5ff]/10'
+                          : 'border-[#464752]/20 hover:bg-[#171924]'
+                      }`}
+                    >
+                      <div
+                        className="h-8 w-8 flex items-center justify-center font-['Bebas_Neue'] text-sm shrink-0"
+                        style={{ background: `${a.color}22`, border: `1px solid ${a.color}66`, color: a.color }}
+                      >
+                        {a.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-['Space_Grotesk'] font-bold text-xs uppercase text-[#eeecfa]">{a.name}</div>
+                        <div className="text-[9px] font-mono uppercase text-[#464752]">
+                          {a.archetype}
+                          {isOwn && <span className="ml-1 text-[#8ff5ff]">★ YOURS</span>}
+                        </div>
+                      </div>
+                      {myAgentId === a.id && (
+                        <span className="ml-auto text-[9px] font-mono text-[#8ff5ff] border border-[#8ff5ff]/30 px-1.5 py-0.5">SELECTED</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-[10px] font-mono text-[#464752]">No agents found. Build one first.</p>
+                <a
+                  href="/agents/create"
+                  className="block w-full text-center bg-[#8ff5ff] text-[#003d42] px-4 py-2 font-['Space_Grotesk'] font-black text-xs uppercase hover:skew-x-[-6deg] transition-all"
                 >
-                  <div
-                    className="h-8 w-8 flex items-center justify-center font-['Bebas_Neue'] text-sm shrink-0"
-                    style={{ background: `${a.color}22`, border: `1px solid ${a.color}66`, color: a.color }}
-                  >
-                    {a.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="font-['Space_Grotesk'] font-bold text-xs uppercase text-[#eeecfa]">{a.name}</div>
-                    <div className="text-[9px] font-mono uppercase text-[#464752]">{a.archetype}</div>
-                  </div>
-                  {myAgentId === a.id && (
-                    <span className="ml-auto text-[9px] font-mono text-[#8ff5ff] border border-[#8ff5ff]/30 px-1.5 py-0.5">SELECTED</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          ) : myAgentId && myAgent ? (
-            <div className="flex items-center gap-3">
-              <div
-                className="h-10 w-10 flex items-center justify-center font-['Bebas_Neue'] text-lg shrink-0"
-                style={{ background: `${myAgent.color}22`, border: `1px solid ${myAgent.color}`, color: myAgent.color }}
-              >
-                {myAgent.name.slice(0, 2).toUpperCase()}
+                  Build_Fighter →
+                </a>
               </div>
-              <div>
-                <div className="font-['Space_Grotesk'] font-bold text-sm uppercase text-[#eeecfa]">{myAgent.name}</div>
-                <div className="text-[10px] font-mono text-[#464752] uppercase">{myAgent.archetype}</div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-[10px] font-mono text-[#464752]">No agents found. Build one first.</p>
-              <a
-                href="/agents/create"
-                className="block w-full text-center bg-[#8ff5ff] text-[#003d42] px-4 py-2 font-['Space_Grotesk'] font-black text-xs uppercase hover:skew-x-[-6deg] transition-all"
-              >
-                Build_Fighter →
-              </a>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Sport — badminton only */}

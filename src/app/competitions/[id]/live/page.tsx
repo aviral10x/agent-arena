@@ -43,6 +43,7 @@ export default async function LiveMatchPage(props: PageProps) {
         pnlPct: caA.pnlPct ?? 0,
         trades: caA.trades ?? 0,
         owner: caA.agent.owner ?? "",
+        specialMoves: (caA.agent as any).specialMoves ?? "[]",
       }
     : null;
 
@@ -62,6 +63,7 @@ export default async function LiveMatchPage(props: PageProps) {
         pnlPct: caB.pnlPct ?? 0,
         trades: caB.trades ?? 0,
         owner: caB.agent.owner ?? "",
+        specialMoves: (caB.agent as any).specialMoves ?? "[]",
       }
     : null;
 
