@@ -106,8 +106,6 @@ export default function PromoPage() {
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,240,255,0.06)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ''; }}
           >
             Watch Live Battles
           </Link>
