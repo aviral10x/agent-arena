@@ -53,7 +53,17 @@ type ServerMsg =
   | { type: "error"; message: string };
 
 const COMMAND_WINDOW_MS = 2500;
-const TICK_INTERVAL_MS = 3000; // time between rallies
+// Variable tick interval — break rhythmic pattern
+function tickInterval(gameState: GameState | null): number {
+  if (!gameState) return 3000;
+  const base = 2800;
+  const jitter = Math.random() * 800; // 0–800ms random
+  // After a point: longer pause (celebration / reset)
+  if (gameState.rallyLength === 0) return base + 700 + jitter;
+  // Deep in rally: faster pace
+  if (gameState.rallyLength > 6) return base - 400 + jitter;
+  return base + jitter;
+}
 
 // ── Room state ───────────────────────────────────────────────────────────────
 
@@ -174,7 +184,7 @@ export default class MatchRoom implements Party.Server {
 
   scheduleNextTick() {
     if (this.tickTimer) clearTimeout(this.tickTimer);
-    this.tickTimer = setTimeout(() => this.openCommandWindow(), TICK_INTERVAL_MS);
+    this.tickTimer = setTimeout(() => this.openCommandWindow(), tickInterval(this.gameState));
   }
 
   openCommandWindow() {

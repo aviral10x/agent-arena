@@ -277,6 +277,7 @@ function StakeTerminal({
   committed: boolean;
   walletAddress: string | null;
 }) {
+  const { ready, login } = usePrivy();
   const cyan = "#00f0ff";
   const magenta = "#ff2d78";
   const selected = selectedAgent
@@ -508,16 +509,26 @@ function StakeTerminal({
                   Betting Closed
                 </div>
               </div>
-            ) : !walletAddress ? (
+            ) : !ready ? (
               <div className="text-center px-4">
                 <div
                   className="text-xl font-black uppercase tracking-tighter leading-none"
                   style={{ fontFamily: "Rajdhani, sans-serif" }}
                 >
-                  Connect Wallet
+                  Loading…
                 </div>
+              </div>
+            ) : !walletAddress ? (
+              <div className="text-center px-4">
+                <button
+                  onClick={() => login()}
+                  className="text-xl font-black uppercase tracking-tighter leading-none hover:text-[#00f0ff] transition-colors"
+                  style={{ fontFamily: "Rajdhani, sans-serif" }}
+                >
+                  Connect Wallet
+                </button>
                 <div className="text-[10px] font-mono text-white/50 mt-1 uppercase tracking-widest">
-                  To place bet
+                  Tap to connect
                 </div>
               </div>
             ) : !selectedAgent ? (
@@ -571,7 +582,7 @@ export function BetClient({
   sport,
   recentBets,
 }: Props) {
-  const { user, login } = usePrivy();
+  const { user, login, ready } = usePrivy();
   const walletAddress = user?.wallet?.address ?? null;
 
   const [visible, setVisible] = useState(false);
