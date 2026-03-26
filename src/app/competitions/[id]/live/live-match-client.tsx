@@ -192,6 +192,7 @@ export function LiveMatchClient({
   const [betAmount, setBetAmount]   = useState(5);
   const [betSubmitting, setBetSubmitting] = useState(false);
   const [betDone, setBetDone]       = useState(false);
+  const [betTxInfo, setBetTxInfo]   = useState<{ amount: number; agent: string; wallet: string } | null>(null);
 
   // Privy wallet for inline betting with x402
   const { user, login: privyLogin, ready: privyReady, authenticated } = usePrivy();
@@ -242,8 +243,27 @@ export function LiveMatchClient({
 
   const socket = useMatchSocket(isSport ? competitionId : "", playerConfig);
 
-  // ── Real game state from WebSocket ──────────────────────────────────────────
-  const gs = socket.gameState;
+  // ── Polling fallback when WebSocket isn't connected ─────────────────────────
+  const [polledGs, setPolledGs] = useState<GameState | null>(null);
+  useEffect(() => {
+    // Only poll if WebSocket hasn't delivered game state after 5 seconds
+    if (socket.gameState || socket.status === "live" || socket.status === "settled") return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/competitions/${competitionId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.gameState) {
+          const parsed = typeof data.gameState === "string" ? JSON.parse(data.gameState) : data.gameState;
+          setPolledGs(parsed);
+        }
+      } catch {}
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [competitionId, socket.gameState, socket.status]);
+
+  // ── Real game state: prefer WebSocket, fallback to polling ──────────────────
+  const gs = socket.gameState ?? polledGs;
 
   // Real positions from game state, with smooth defaults
   const agentPosA = useMemo(() => {
@@ -624,8 +644,25 @@ export function LiveMatchClient({
               </button>
             </div>
           ) : betDone ? (
-            <div className="text-center text-[#00ff87] font-mono text-sm uppercase">
-              Bet placed! Good luck 🏸
+            <div className="flex items-center justify-center gap-6 text-[#00ff87] font-mono text-xs uppercase">
+              <span>BET CONFIRMED</span>
+              {betTxInfo && (
+                <>
+                  <span className="text-[#464752]">|</span>
+                  <span>${betTxInfo.amount} USDC on <span className="text-[#8ff5ff]">{betTxInfo.agent}</span></span>
+                  <span className="text-[#464752]">|</span>
+                  <span className="text-[#464752]">From: {betTxInfo.wallet.slice(0, 6)}…{betTxInfo.wallet.slice(-4)}</span>
+                  <span className="text-[#464752]">|</span>
+                  <a
+                    href={`https://www.okx.com/xlayer/tx/${betTxInfo.wallet}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#8ff5ff] hover:underline"
+                  >
+                    View on X Layer →
+                  </a>
+                </>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-4 max-w-3xl mx-auto">
@@ -749,7 +786,11 @@ export function LiveMatchClient({
                         ...(payload ? { payload } : { payload: { txSignature: `demo_${Date.now()}` } }),
                       }),
                     });
-                    if (res.ok) setBetDone(true);
+                    if (res.ok) {
+                      const agentName = betPick === "a" ? (agentA?.name ?? "A") : (agentB?.name ?? "B");
+                      setBetTxInfo({ amount: betAmount, agent: agentName, wallet: betWallet });
+                      setBetDone(true);
+                    }
                     else {
                       const data = await res.json().catch(() => ({}));
                       setLog(l => [...l.slice(-20), `> BET ERROR: ${data.error ?? 'Failed'}`]);
