@@ -36,9 +36,9 @@ const SPORT_ICON: Record<string, string> = {
 function StatRow({ label, aVal, bVal, aWin }: { label: string; aVal: string | number; bVal: string | number; aWin: boolean }) {
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 py-2 border-b border-[#464752]/10 last:border-0">
-      <div className={`text-right font-mono text-sm font-bold ${aWin ? "text-[#8ff5ff]" : "text-[#464752]"}`}>{aVal}</div>
+      <div className={`text-right font-mono text-sm font-bold ${aWin ? "text-[#00f0ff]" : "text-[#464752]"}`}>{aVal}</div>
       <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752] text-center w-24">{label}</div>
-      <div className={`text-left font-mono text-sm font-bold ${!aWin ? "text-[#8ff5ff]" : "text-[#464752]"}`}>{bVal}</div>
+      <div className={`text-left font-mono text-sm font-bold ${!aWin ? "text-[#00f0ff]" : "text-[#464752]"}`}>{bVal}</div>
     </div>
   );
 }
@@ -55,7 +55,7 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
 
   return (
     <div
-      className="min-h-screen bg-[#0c0e16] text-[#eeecfa] flex flex-col overflow-hidden"
+      className="min-h-screen bg-[#05060e] text-[#eeecfa] flex flex-col overflow-hidden"
       style={{ opacity: visible ? 1 : 0, transition: "opacity 0.4s ease" }}
     >
       <div className="scanline fixed inset-0 z-10 opacity-10 pointer-events-none" />
@@ -67,14 +67,14 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
       />
 
       {/* ── Header ── */}
-      <header className="shrink-0 h-12 bg-[#11131d] border-b border-[#8ff5ff]/20 flex items-center px-4 gap-4 z-50">
+      <header className="shrink-0 h-12 bg-[#11131d] border-b border-[#00f0ff]/20 flex items-center px-4 gap-4 z-50">
         <Link href="/challenges" className="text-[10px] font-mono uppercase tracking-widest text-[#464752] hover:text-[#aaaab6] transition-colors">
           ← Matchmaking
         </Link>
         <div className="flex items-center gap-2 ml-auto">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#464752]">ARENA_OS</span>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#464752]">AGENT ARENA</span>
           <span className="text-[#464752]">//</span>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#8ff5ff]">POST_MATCH</span>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#00f0ff]">POST_MATCH</span>
         </div>
       </header>
 
@@ -83,8 +83,8 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
         {/* ── Victory Banner ── */}
         <div className="w-full text-center relative">
           {/* Horizontal rule */}
-          <div className="absolute top-1/2 left-0 right-0 h-px bg-[#8ff5ff]/20" />
-          <div className="relative inline-block bg-[#0c0e16] px-6">
+          <div className="absolute top-1/2 left-0 right-0 h-px bg-[#00f0ff]/20" />
+          <div className="relative inline-block bg-[#05060e] px-6">
             <div className="text-[10px] font-mono uppercase tracking-[0.4em] text-[#464752] mb-1">Match Concluded</div>
             {winner ? (
               <div
@@ -94,7 +94,7 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
                 VICTORY // {winner.name.toUpperCase()}
               </div>
             ) : (
-              <div className="font-['Bebas_Neue'] text-5xl tracking-wider text-[#ffe6aa]">
+              <div className="font-['Bebas_Neue'] text-5xl tracking-wider text-[#ffd666]">
                 {isSettled ? "MATCH SETTLED" : "MATCH IN PROGRESS"}
               </div>
             )}
@@ -122,7 +122,7 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
                 </div>
                 <div className="text-[9px] font-mono uppercase text-[#464752]">{agentA.archetype}</div>
                 {agentA.id === winnerId && (
-                  <span className="text-[9px] font-mono uppercase tracking-widest border border-[#8ff5ff]/30 bg-[#8ff5ff]/10 text-[#8ff5ff] px-2 py-0.5">
+                  <span className="text-[9px] font-mono uppercase tracking-widest border border-[#00f0ff]/30 bg-[#00f0ff]/10 text-[#00f0ff] px-2 py-0.5">
                     WINNER
                   </span>
                 )}
@@ -162,7 +162,7 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
                 </div>
                 <div className="text-[9px] font-mono uppercase text-[#464752]">{agentB.archetype}</div>
                 {agentB.id === winnerId && (
-                  <span className="text-[9px] font-mono uppercase tracking-widest border border-[#8ff5ff]/30 bg-[#8ff5ff]/10 text-[#8ff5ff] px-2 py-0.5">
+                  <span className="text-[9px] font-mono uppercase tracking-widest border border-[#00f0ff]/30 bg-[#00f0ff]/10 text-[#00f0ff] px-2 py-0.5">
                     WINNER
                   </span>
                 )}
@@ -175,7 +175,7 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
         {agentA && agentB && (
           <div className="w-full bg-[#11131d] border border-[#464752]/20">
             <div className="border-b border-[#464752]/20 px-4 py-3 flex items-center gap-3">
-              <div className="w-1 h-4 bg-[#8ff5ff]" />
+              <div className="w-1 h-4 bg-[#00f0ff]" />
               <span className="text-[10px] font-mono uppercase tracking-widest text-[#aaaab6]">TEL_LOG // Performance Analysis</span>
             </div>
             <div className="px-4 py-3">
@@ -196,24 +196,24 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
 
         {/* ── Winner rewards ── */}
         {winner && (
-          <div className="w-full bg-[#11131d] border border-[#ffe6aa]/20 p-4 relative overflow-hidden">
+          <div className="w-full bg-[#11131d] border border-[#ffd666]/20 p-4 relative overflow-hidden">
             <div
               className="absolute inset-0 pointer-events-none opacity-10"
-              style={{ background: "radial-gradient(ellipse at 50% 0%, #ffe6aa 0%, transparent 70%)" }}
+              style={{ background: "radial-gradient(ellipse at 50% 0%, #ffd666 0%, transparent 70%)" }}
             />
             <div className="relative flex items-center justify-between gap-4 flex-wrap">
               <div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-[#ffe6aa]/60 mb-1">Mission Rewards</div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-[#ffd666]/60 mb-1">Mission Rewards</div>
                 <div className="flex items-center gap-4 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <span className="text-[#ffe6aa] text-lg">◈</span>
-                    <span className="font-['Space_Grotesk'] font-black text-sm text-[#ffe6aa]">+$1 USDC</span>
-                    <span className="text-[9px] font-mono text-[#ffe6aa]/60 uppercase">Prize Earned</span>
+                    <span className="text-[#ffd666] text-lg">◈</span>
+                    <span className="font-['Space_Grotesk'] font-black text-sm text-[#ffd666]">+$1 USDC</span>
+                    <span className="text-[9px] font-mono text-[#ffd666]/60 uppercase">Prize Earned</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[#8ff5ff] text-lg">⬡</span>
-                    <span className="font-['Space_Grotesk'] font-black text-sm text-[#8ff5ff]">+1 Win</span>
-                    <span className="text-[9px] font-mono text-[#8ff5ff]/60 uppercase">Record Updated</span>
+                    <span className="text-[#00f0ff] text-lg">⬡</span>
+                    <span className="font-['Space_Grotesk'] font-black text-sm text-[#00f0ff]">+1 Win</span>
+                    <span className="text-[9px] font-mono text-[#00f0ff]/60 uppercase">Record Updated</span>
                   </div>
                 </div>
               </div>
@@ -228,13 +228,13 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
         <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Link
             href="/challenges"
-            className="flex items-center justify-center gap-2 bg-[#ff6c92] text-[#48001b] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all text-center sm:col-span-1"
+            className="flex items-center justify-center gap-2 bg-[#ff2d78] text-[#48001b] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all text-center sm:col-span-1"
           >
             Rematch →
           </Link>
           <Link
             href={`/competitions/${competitionId}/cinematic`}
-            className="flex items-center justify-center gap-2 border border-[#8ff5ff]/30 text-[#8ff5ff] px-6 py-4 font-mono text-xs uppercase tracking-widest hover:bg-[#8ff5ff]/10 transition-colors text-center"
+            className="flex items-center justify-center gap-2 border border-[#00f0ff]/30 text-[#00f0ff] px-6 py-4 font-mono text-xs uppercase tracking-widest hover:bg-[#00f0ff]/10 transition-colors text-center"
           >
             ▶ View Cinematic
           </Link>

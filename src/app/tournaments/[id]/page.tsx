@@ -10,7 +10,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export async function generateMetadata(props: PageProps) {
   const { id } = await props.params;
   const t = await prisma.tournament.findUnique({ where: { id }, select: { title: true } });
-  return { title: t ? `${t.title} · Bracket · ARENA_OS` : "Bracket · ARENA_OS" };
+  return { title: t ? `${t.title} · Bracket · Agent Arena` : "Bracket · Agent Arena" };
 }
 
 export default async function TournamentBracketPage(props: PageProps) {
@@ -45,7 +45,7 @@ export default async function TournamentBracketPage(props: PageProps) {
   const enrollmentOpen = new Date() >= tournament.enrollmentOpensAt;
   const canEnroll = !isLive && !isSettled && enrollmentOpen && spotsLeft > 0;
 
-  const statusColor = isLive ? "#8ff5ff" : isSettled ? "#464752" : "#ffe6aa";
+  const statusColor = isLive ? "#00f0ff" : isSettled ? "#464752" : "#ffd666";
   const statusLabel = isLive ? "LIVE" : isSettled ? "SETTLED" : spotsLeft === 0 ? "FULL" : "ENROLLING";
 
   // Build bracket rounds from slots
@@ -105,13 +105,13 @@ export default async function TournamentBracketPage(props: PageProps) {
               {statusLabel}
             </span>
             {tournament.isRecurring && (
-              <span className="text-[10px] font-mono text-[#ffe6aa] border border-[#ffe6aa]/30 bg-[#ffe6aa]/10 px-2 py-0.5 uppercase">
+              <span className="text-[10px] font-mono text-[#ffd666] border border-[#ffd666]/30 bg-[#ffd666]/10 px-2 py-0.5 uppercase">
                 WEEKLY
               </span>
             )}
             <span>LIVE_STREAM_ACTIVE</span>
             <span>•</span>
-            <span className="text-[#ffe6aa]">{tournament.currentAgents}/{tournament.maxAgents} AGENTS</span>
+            <span className="text-[#ffd666]">{tournament.currentAgents}/{tournament.maxAgents} AGENTS</span>
           </div>
         </section>
 
@@ -133,8 +133,8 @@ export default async function TournamentBracketPage(props: PageProps) {
         {/* ── Bracket ── */}
         <section className="mb-10">
           <div className="flex items-center gap-3 mb-6 border-b border-[#464752]/10 pb-3">
-            <span className="w-1.5 h-1.5 bg-[#8ff5ff]" />
-            <h2 className="font-mono text-xs uppercase tracking-widest text-[#8ff5ff]">Tournament_Bracket</h2>
+            <span className="w-1.5 h-1.5 bg-[#00f0ff]" />
+            <h2 className="font-mono text-xs uppercase tracking-widest text-[#00f0ff]">Tournament_Bracket</h2>
           </div>
 
           <div className="overflow-x-auto pb-4">
@@ -146,7 +146,7 @@ export default async function TournamentBracketPage(props: PageProps) {
                 {qfPairsDisplay.map((pair, pi) => (
                   <div
                     key={pi}
-                    className="bg-[#11131d] border-l border-[#8ff5ff]/40 relative"
+                    className="bg-[#11131d] border-l border-[#00f0ff]/40 relative"
                   >
                     {pair.map((slot, si) => (
                       <div
@@ -173,7 +173,7 @@ export default async function TournamentBracketPage(props: PageProps) {
                       </div>
                     ))}
                     {/* Connector line */}
-                    <div className="absolute -right-4 top-1/2 w-4 border-t border-[#8ff5ff]/20" />
+                    <div className="absolute -right-4 top-1/2 w-4 border-t border-[#00f0ff]/20" />
                   </div>
                 ))}
               </div>
@@ -181,7 +181,7 @@ export default async function TournamentBracketPage(props: PageProps) {
               {/* ── Connector: QF→SF ── */}
               <div className="flex flex-col justify-around w-16 shrink-0">
                 {[0, 1].map((i) => (
-                  <div key={i} className="h-[90px] border-y border-r border-[#8ff5ff]/20" />
+                  <div key={i} className="h-[90px] border-y border-r border-[#00f0ff]/20" />
                 ))}
               </div>
 
@@ -196,7 +196,7 @@ export default async function TournamentBracketPage(props: PageProps) {
                       key={si}
                       className="relative"
                       style={{
-                        borderLeft: isThisSFLive ? "4px solid #ff6c92" : "1px solid rgba(70,71,82,0.4)",
+                        borderLeft: isThisSFLive ? "4px solid #ff2d78" : "1px solid rgba(70,71,82,0.4)",
                         boxShadow: isThisSFLive ? "0 0 30px rgba(255,108,146,0.15)" : undefined,
                       }}
                     >
@@ -215,7 +215,7 @@ export default async function TournamentBracketPage(props: PageProps) {
                               </div>
                               <span className="truncate text-[11px] font-mono text-[#eeecfa] uppercase">{ca.agent.name}</span>
                               {isThisSFLive ? (
-                                <span className="ml-auto text-[10px] font-mono text-[#ff6c92] animate-pulse">
+                                <span className="ml-auto text-[10px] font-mono text-[#ff2d78] animate-pulse">
                                   {(ca as any).score ?? 0}
                                 </span>
                               ) : (
@@ -227,7 +227,7 @@ export default async function TournamentBracketPage(props: PageProps) {
                           ))}
                           {isThisSFLive && (
                             <div className="absolute -top-2 -right-2">
-                              <span className="w-1.5 h-1.5 bg-[#ff6c92] rounded-full animate-ping inline-block" />
+                              <span className="w-1.5 h-1.5 bg-[#ff2d78] rounded-full animate-ping inline-block" />
                             </div>
                           )}
                         </>
@@ -235,7 +235,7 @@ export default async function TournamentBracketPage(props: PageProps) {
                         <div className="bg-[#11131d] px-3 py-4 text-[10px] font-mono text-[#464752]">Awaiting QF results</div>
                       )}
                       {/* Connector */}
-                      <div className="absolute -right-4 top-1/2 w-4 border-t border-[#8ff5ff]/20" />
+                      <div className="absolute -right-4 top-1/2 w-4 border-t border-[#00f0ff]/20" />
                     </div>
                   );
                 })}
@@ -243,7 +243,7 @@ export default async function TournamentBracketPage(props: PageProps) {
 
               {/* ── Connector: SF→Finals ── */}
               <div className="flex flex-col justify-around w-16 shrink-0">
-                <div className="h-[90px] border-y border-r border-[#8ff5ff]/20" style={{ marginTop: "45px" }} />
+                <div className="h-[90px] border-y border-r border-[#00f0ff]/20" style={{ marginTop: "45px" }} />
               </div>
 
               {/* ── Finals ── */}
@@ -254,7 +254,7 @@ export default async function TournamentBracketPage(props: PageProps) {
                   const winner = finalComp?.agents.find((a) => (a as any).agent.id === finalComp.winnerId);
                   return (
                     <div
-                      className="bg-[#11131d] border-2 border-[#8ff5ff]/20 relative"
+                      className="bg-[#11131d] border-2 border-[#00f0ff]/20 relative"
                       style={{ boxShadow: isSettled ? "0 0 40px rgba(143,245,255,0.1)" : undefined }}
                     >
                       {isSettled && winner ? (
@@ -268,11 +268,11 @@ export default async function TournamentBracketPage(props: PageProps) {
                             >
                               {(winner as any).agent.name}
                             </div>
-                            <div className="text-[10px] font-mono text-[#ffe6aa] mt-1 uppercase tracking-widest">CHAMPION</div>
+                            <div className="text-[10px] font-mono text-[#ffd666] mt-1 uppercase tracking-widest">CHAMPION</div>
                           </div>
                           <div className="px-4 py-3 text-center">
                             <div className="text-[9px] font-mono text-[#464752] uppercase">Prize Collected</div>
-                            <div className="font-mono text-lg text-[#ffe6aa] font-bold">
+                            <div className="font-mono text-lg text-[#ffd666] font-bold">
                               ${tournament.winnerPrizeUsdc?.toFixed(2) ?? "—"}
                             </div>
                           </div>
@@ -291,7 +291,7 @@ export default async function TournamentBracketPage(props: PageProps) {
                                 {ca.agent.name.slice(0, 2).toUpperCase()}
                               </div>
                               <span className="truncate text-xs font-mono text-[#eeecfa] uppercase font-bold">{ca.agent.name}</span>
-                              <span className="ml-auto text-xs font-mono text-[#8ff5ff]">{(ca as any).score ?? 0}</span>
+                              <span className="ml-auto text-xs font-mono text-[#00f0ff]">{(ca as any).score ?? 0}</span>
                             </div>
                           ))}
                         </>
@@ -313,14 +313,14 @@ export default async function TournamentBracketPage(props: PageProps) {
         {liveComp && (
           <section className="mb-10">
             <div
-              className="bg-[#171924] border-l-4 border-[#ff6c92] p-5"
+              className="bg-[#171924] border-l-4 border-[#ff2d78] p-5"
               style={{ boxShadow: "0 0 30px rgba(255,108,146,0.1)" }}
             >
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="w-1.5 h-1.5 bg-[#ff6c92] rounded-full animate-ping" />
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#ff6c92]">Match_In_Progress</span>
+                    <span className="w-1.5 h-1.5 bg-[#ff2d78] rounded-full animate-ping" />
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#ff2d78]">Match_In_Progress</span>
                   </div>
                   <div className="font-['Space_Grotesk'] font-black uppercase text-[#eeecfa] text-lg">
                     {liveComp.title}
@@ -337,13 +337,13 @@ export default async function TournamentBracketPage(props: PageProps) {
                 <div className="flex gap-2 shrink-0">
                   <Link
                     href={`/competitions/${liveComp.id}/live`}
-                    className="bg-[#8ff5ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
+                    className="bg-[#00f0ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
                   >
                     Watch_Live →
                   </Link>
                   <Link
                     href={`/competitions/${liveComp.id}/bet`}
-                    className="border border-[#ff6c92]/40 text-[#ff6c92] px-4 py-2 font-mono text-xs uppercase hover:bg-[#ff6c92]/10 transition-colors"
+                    className="border border-[#ff2d78]/40 text-[#ff2d78] px-4 py-2 font-mono text-xs uppercase hover:bg-[#ff2d78]/10 transition-colors"
                   >
                     Place_Bet
                   </Link>
@@ -362,7 +362,7 @@ export default async function TournamentBracketPage(props: PageProps) {
             {canEnroll && (
               <Link
                 href={`/tournaments/${id}/enroll`}
-                className="ml-auto bg-[#8ff5ff] text-[#005d63] px-4 py-1.5 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
+                className="ml-auto bg-[#00f0ff] text-[#005d63] px-4 py-1.5 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
               >
                 Enroll_Now →
               </Link>
@@ -416,7 +416,7 @@ export default async function TournamentBracketPage(props: PageProps) {
             </div>
             <div className="space-y-2">
               {tournament.competitions.map((comp) => {
-                const cColor = comp.status === "live" ? "#8ff5ff" : comp.status === "settled" ? "#464752" : "#ffe6aa";
+                const cColor = comp.status === "live" ? "#00f0ff" : comp.status === "settled" ? "#464752" : "#ffd666";
                 return (
                   <Link
                     key={comp.id}

@@ -3,7 +3,7 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   AGENT ARENA — ARENA_OS Neo-Tokyo Design System (Stitch v4)
+   AGENT ARENA — Neo-Tokyo Design System
    Colors, fonts, spacing, animations extracted from Stitch HTML files
 ───────────────────────────────────────────────────────────────────────────── */
 
@@ -27,7 +27,7 @@
   --color-error-dim: #d7383b;
   --color-on-secondary-fixed-variant: #a20045;
   --color-outline-variant: #464752;
-  --color-tertiary: #ffe6aa;
+  --color-tertiary: #ffd666;
   --color-error: #ff716c;
   --color-secondary-container: #bc0051;
   --color-on-secondary-fixed: #6d002c;
@@ -44,7 +44,7 @@
   --color-surface-container-high: #1d1f2b;
   --color-inverse-surface: #fbf8ff;
   --color-on-primary-container: #005359;
-  --color-background: #0c0e16;
+  --color-background: #05060e;
   --color-on-tertiary-fixed: #493800;
   --color-on-surface-variant: #aaaab6;
   --color-primary-fixed: #00eefc;
@@ -54,17 +54,17 @@
   --color-on-error-container: #ffa8a3;
   --color-on-surface: #eeecfa;
   --color-on-primary-fixed: #003f43;
-  --color-surface-tint: #8ff5ff;
+  --color-surface-tint: #00f0ff;
   --color-secondary-fixed: #ffc2cc;
   --color-surface-container-lowest: #000000;
   --color-inverse-on-surface: #54545f;
   --color-error-container: #9f0519;
   --color-primary-fixed-dim: #00deec;
-  --color-primary: #8ff5ff;
-  --color-secondary: #ff6c92;
-  --color-surface: #0c0e16;
+  --color-primary: #00f0ff;
+  --color-secondary: #ff2d78;
+  --color-surface: #05060e;
   --color-secondary-dim: #e40a65;
-  --color-surface-dim: #0c0e16;
+  --color-surface-dim: #05060e;
   --color-tertiary-fixed: #ffd666;
   --color-surface-container-highest: #232532;
   --color-primary-dim: #00deec;
@@ -76,8 +76,8 @@
   --color-on-tertiary-container: #5f4a00;
 
   /* ── Neon accents ── */
-  --neon-cyan: #8ff5ff;
-  --neon-magenta: #ff6c92;
+  --neon-cyan: #00f0ff;
+  --neon-magenta: #ff2d78;
   --neon-green: #00ff87;
   --neon-red: #ff3a50;
   --gold-trophy: #ffd666;
@@ -96,9 +96,9 @@
   --red-soft: rgba(255, 58, 80, 0.12);
   --gold: var(--gold-trophy);
   --gold-soft: rgba(255, 214, 102, 0.14);
-  --bg: #0c0e16;
-  --bg-arena: #0c0e16;
-  --bg-void: #0c0e16;
+  --bg: #05060e;
+  --bg-arena: #05060e;
+  --bg-void: #05060e;
   --bg-surface: #11131d;
   --bg-raised: #1d1f2b;
   --bg-soft: #0f111a;
@@ -162,7 +162,7 @@ html {
 
 body {
   margin: 0;
-  background: var(--color-background, #0c0e16);
+  background: var(--color-background, #05060e);
   color: var(--text-primary);
   font-family: 'Manrope', 'Space Grotesk', sans-serif;
   background-image: radial-gradient(ellipse 120% 60% at 50% -20%, rgba(143, 245, 255, 0.04) 0%, transparent 70%);
@@ -172,7 +172,7 @@ body {
 a { color: inherit; text-decoration: none; }
 
 ::selection {
-  background: var(--color-primary, #8ff5ff);
+  background: var(--color-primary, #00f0ff);
   color: var(--color-on-primary, #005d63);
 }
 
@@ -213,7 +213,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Glitch hover ── */
 .glitch-hover:hover {
-  text-shadow: 2px 0 #ff6c92, -2px 0 #8ff5ff;
+  text-shadow: 2px 0 #ff2d78, -2px 0 #00f0ff;
 }
 
 /* ── Glass panel ── */
@@ -276,7 +276,7 @@ a { color: inherit; text-decoration: none; }
 .text-balance { text-wrap: balance; }
 
 .text-gradient {
-  background: linear-gradient(135deg, #8ff5ff 0%, #ffffff 45%, #ff6c92 100%);
+  background: linear-gradient(135deg, #00f0ff 0%, #ffffff 45%, #ff2d78 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -294,7 +294,7 @@ a { color: inherit; text-decoration: none; }
   background-color: #11131d;
 }
 .data-table-row:nth-child(odd) {
-  background-color: #0c0e16;
+  background-color: #05060e;
 }
 
 /* ── Status pills ── */
@@ -483,8 +483,8 @@ p { text-wrap: pretty; }
 }
 
 @keyframes neon-pulse {
-  0%, 100% { box-shadow: 0 0 5px #8ff5ff, 0 0 10px #8ff5ff; }
-  50%       { box-shadow: 0 0 20px #8ff5ff, 0 0 40px #8ff5ff; }
+  0%, 100% { box-shadow: 0 0 5px #00f0ff, 0 0 10px #00f0ff; }
+  50%       { box-shadow: 0 0 20px #00f0ff, 0 0 40px #00f0ff; }
 }
 
 @keyframes live-ping {

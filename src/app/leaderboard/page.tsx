@@ -14,7 +14,7 @@ export default async function LeaderboardPage() {
   });
 
   const rankColors = ["#ffd666", "#c0c0c0", "#cd7f32"];
-  const rankBorders = ["border-tertiary shadow-[0_0_15px_#ffe6aa]", "border-[#c0c0c0]", "border-[#cd7f32]"];
+  const rankBorders = ["border-tertiary shadow-[0_0_15px_#ffd666]", "border-[#c0c0c0]", "border-[#cd7f32]"];
 
   return (
     <SiteChrome activeHref="/leaderboard">
@@ -23,30 +23,30 @@ export default async function LeaderboardPage() {
 
         {/* Hero */}
         <section className="mb-12 relative">
-          <div className="absolute -left-4 top-0 w-1 h-12 bg-primary" style={{ background: '#8ff5ff' }} />
-          <h1 className="font-headline text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-2" style={{ color: '#8ff5ff', fontFamily: 'Space Grotesk' }}>
+          <div className="absolute -left-4 top-0 w-1 h-12 bg-primary" style={{ background: '#00f0ff' }} />
+          <h1 className="font-headline text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-2" style={{ color: '#00f0ff', fontFamily: 'Space Grotesk' }}>
             Global_Rankings
           </h1>
           <div className="flex items-center gap-4 text-xs font-mono" style={{ color: '#464752' }}>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full animate-pulse inline-block" style={{ background: '#8ff5ff' }} />
+              <span className="w-2 h-2 rounded-full animate-pulse inline-block" style={{ background: '#00f0ff' }} />
               SYSTEM_LIVE
             </span>
             <span>•</span>
             <span>LAST_REFRESH: LIVE</span>
             <span>•</span>
-            <span style={{ color: '#ff6c92' }}>NETWORK_LOAD: OPTIMAL</span>
+            <span style={{ color: '#ff2d78' }}>NETWORK_LOAD: OPTIMAL</span>
           </div>
         </section>
 
         {/* Filters & Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
           <div className="lg:col-span-3 flex flex-wrap items-center gap-2 p-1 border" style={{ background: '#11131d', borderColor: 'rgba(70,71,82,0.1)' }}>
-            <button className="px-6 py-2 text-xs font-bold uppercase tracking-widest" style={{ background: '#8ff5ff', color: '#005d63' }}>All Time</button>
+            <button className="px-6 py-2 text-xs font-bold uppercase tracking-widest" style={{ background: '#00f0ff', color: '#005d63' }}>All Time</button>
             <button className="px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all hover:bg-[#232532]" style={{ color: '#464752' }}>This Week</button>
             <button className="px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all hover:bg-[#232532]" style={{ color: '#464752' }}>This Season</button>
             <div className="h-6 w-px mx-2" style={{ background: 'rgba(70,71,82,0.2)' }} />
-            <select className="bg-transparent border-none text-xs font-mono uppercase tracking-widest focus:ring-0 cursor-pointer" style={{ color: '#8ff5ff' }}>
+            <select className="bg-transparent border-none text-xs font-mono uppercase tracking-widest focus:ring-0 cursor-pointer" style={{ color: '#00f0ff' }}>
               <option>ALL_SPORTS</option>
               <option>BADMINTON</option>
               <option>TENNIS</option>
@@ -83,7 +83,7 @@ export default async function LeaderboardPage() {
               const rankColor = rankColors[i] ?? '#aaaab6';
               const winRate = (s.winRate * 100).toFixed(1);
               const streak = s.currentStreak;
-              const agentColor = s.agent.color ?? '#8ff5ff';
+              const agentColor = s.agent.color ?? '#00f0ff';
               const isMedal = i < 3;
 
               return (
@@ -92,7 +92,7 @@ export default async function LeaderboardPage() {
                   href={`/agents/${s.agentId}`}
                   className="flex items-center px-6 py-5 border-b relative group transition-all"
                   style={{
-                    background: i % 2 === 0 ? '#0c0e16' : '#11131d',
+                    background: i % 2 === 0 ? '#05060e' : '#11131d',
                     borderColor: 'rgba(70,71,82,0.1)',
                   }}
                 >
@@ -151,7 +151,7 @@ export default async function LeaderboardPage() {
                   </div>
 
                   {/* Streak */}
-                  <div className="w-20 flex justify-center items-center gap-1" style={{ color: streak > 0 ? '#ff6c92' : '#464752' }}>
+                  <div className="w-20 flex justify-center items-center gap-1" style={{ color: streak > 0 ? '#ff2d78' : '#464752' }}>
                     <span className="material-symbols-outlined" style={{ fontVariationSettings: streak > 0 ? "'FILL' 1" : "'FILL' 0" }}>local_fire_department</span>
                     <span className="font-mono text-sm font-bold">{Math.abs(streak)}</span>
                   </div>
@@ -176,7 +176,7 @@ export default async function LeaderboardPage() {
         <div className="mt-8 flex justify-between items-center text-[10px] font-mono uppercase tracking-widest" style={{ color: '#464752' }}>
           <div>Showing 1 - {allStats.length} of {allStats.length} Agents</div>
           <div className="flex gap-4">
-            <span className="font-bold underline" style={{ color: '#8ff5ff' }}>01</span>
+            <span className="font-bold underline" style={{ color: '#00f0ff' }}>01</span>
           </div>
         </div>
       </div>

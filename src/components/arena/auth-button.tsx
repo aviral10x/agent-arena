@@ -21,9 +21,9 @@ export function AuthButton() {
 
     return (
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 border border-[#8ff5ff]/20 bg-[#8ff5ff]/05 px-2 py-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#8ff5ff]" />
-          <span className="text-[10px] font-mono text-[#8ff5ff] uppercase">{display}</span>
+        <div className="flex items-center gap-1.5 border border-[#00f0ff]/20 bg-[#00f0ff]/05 px-2 py-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#00f0ff]" />
+          <span className="text-[10px] font-mono text-[#00f0ff] uppercase">{display}</span>
         </div>
         <button
           onClick={logout}
@@ -38,7 +38,7 @@ export function AuthButton() {
   return (
     <button
       onClick={login}
-      className="border border-[#8ff5ff]/30 px-3 py-1 text-[10px] font-mono uppercase text-[#8ff5ff] hover:bg-[#8ff5ff]/10 transition-colors"
+      className="border border-[#00f0ff]/30 px-3 py-1 text-[10px] font-mono uppercase text-[#00f0ff] hover:bg-[#00f0ff]/10 transition-colors"
     >
       Login_→
     </button>

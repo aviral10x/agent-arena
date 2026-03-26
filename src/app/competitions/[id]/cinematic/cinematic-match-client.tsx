@@ -74,8 +74,8 @@ export function CinematicMatchClient({
     }
   }, [tick, muted]);
 
-  const colorA = agentA?.color ?? "#8ff5ff";
-  const colorB = agentB?.color ?? "#ff6c92";
+  const colorA = agentA?.color ?? "#00f0ff";
+  const colorB = agentB?.color ?? "#ff2d78";
 
   const avatarA = agentA ? getAgentAvatar(agentA.id, agentA.archetype) : null;
   const avatarB = agentB ? getAgentAvatar(agentB.id, agentB.archetype) : null;
@@ -83,7 +83,7 @@ export function CinematicMatchClient({
   const actionLog = [
     { time: "0:42", event: agentA ? `SMASH by ${agentA.name}` : "SMASH executed", color: colorA },
     { time: "0:38", event: agentB ? `Return by ${agentB.name}` : "Return executed", color: colorB },
-    { time: "0:35", event: agentA ? `POINT: ${agentA.name}` : "POINT awarded", color: "#ffe6aa" },
+    { time: "0:35", event: agentA ? `POINT: ${agentA.name}` : "POINT awarded", color: "#ffd666" },
     { time: "0:31", event: "Drop shot executed", color: "#464752" },
     { time: "0:28", event: "Rally continues", color: "#464752" },
   ];
@@ -126,7 +126,7 @@ export function CinematicMatchClient({
       `}</style>
 
       {/* ── Top nav ── */}
-      <header className="shrink-0 h-12 bg-[#11131d]/80 border-b border-[#8ff5ff]/20 flex items-center px-4 gap-4 z-50 backdrop-blur-xl">
+      <header className="shrink-0 h-12 bg-[#11131d]/80 border-b border-[#00f0ff]/20 flex items-center px-4 gap-4 z-50 backdrop-blur-xl">
         <Link
           href={`/competitions/${competitionId}`}
           className="text-[10px] font-mono uppercase tracking-widest text-[#464752] hover:text-[#aaaab6] transition-colors"
@@ -134,13 +134,13 @@ export function CinematicMatchClient({
           ← Back
         </Link>
 
-        {/* ARENA_OS logo */}
+        {/* AGENT ARENA logo */}
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 border border-[#8ff5ff]/60 flex items-center justify-center">
-            <div className="w-2 h-2 bg-[#8ff5ff]" />
+          <div className="w-5 h-5 border border-[#00f0ff]/60 flex items-center justify-center">
+            <div className="w-2 h-2 bg-[#00f0ff]" />
           </div>
-          <span className="font-['Space_Grotesk'] font-black text-xs uppercase tracking-widest text-[#8ff5ff]">
-            ARENA_OS
+          <span className="font-['Space_Grotesk'] font-black text-xs uppercase tracking-widest text-[#00f0ff]">
+            AGENT ARENA
           </span>
         </div>
 
@@ -149,20 +149,20 @@ export function CinematicMatchClient({
 
         <div className="ml-auto flex items-center gap-2">
           {/* Lens switcher */}
-          <div className="flex items-center gap-1 bg-[#11131d] border border-[#8ff5ff]/20 p-0.5">
+          <div className="flex items-center gap-1 bg-[#11131d] border border-[#00f0ff]/20 p-0.5">
             <button
               onClick={() => router.push(`/competitions/${competitionId}/live`)}
               className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest text-[#464752] hover:text-[#aaaab6] transition-colors"
             >
               TACTICAL
             </button>
-            <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest bg-[#8ff5ff] text-[#005d63] font-bold">
+            <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest bg-[#00f0ff] text-[#005d63] font-bold">
               CINEMATIC
             </div>
           </div>
 
           {/* Connect wallet */}
-          <button className="border border-[#8ff5ff]/30 px-3 py-1 text-[10px] font-mono uppercase text-[#8ff5ff] hover:bg-[#8ff5ff]/10 transition-colors">
+          <button className="border border-[#00f0ff]/30 px-3 py-1 text-[10px] font-mono uppercase text-[#00f0ff] hover:bg-[#00f0ff]/10 transition-colors">
             CONNECT_WALLET
           </button>
         </div>
@@ -171,7 +171,7 @@ export function CinematicMatchClient({
       {/* ── Score HUD center ── */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30">
         <div
-          className="flex items-stretch gap-0 border-b-2 border-[#8ff5ff]"
+          className="flex items-stretch gap-0 border-b-2 border-[#00f0ff]"
           style={{
             background: "rgba(35,37,50,0.6)",
             backdropFilter: "blur(20px)",
@@ -191,12 +191,12 @@ export function CinematicMatchClient({
           </div>
 
           {/* Divider + rally info */}
-          <div className="px-4 py-3 flex flex-col items-center justify-center border-l border-r border-[#8ff5ff]/20">
+          <div className="px-4 py-3 flex flex-col items-center justify-center border-l border-r border-[#00f0ff]/20">
             <div className="font-mono text-2xl text-[#464752] leading-none">:</div>
             <div className="text-[8px] font-mono text-[#464752] mt-1">RALLY_{tick % 10 + 1}</div>
             <div
               className="text-[8px] font-mono uppercase mt-0.5"
-              style={{ color: competitionStatus === "live" ? "#8ff5ff" : "#ffe6aa" }}
+              style={{ color: competitionStatus === "live" ? "#00f0ff" : "#ffd666" }}
             >
               {competitionStatus}
             </div>
@@ -234,7 +234,7 @@ export function CinematicMatchClient({
             }}
           >
             {/* Court lines */}
-            <div className="absolute inset-6 border border-[#8ff5ff]/20" />
+            <div className="absolute inset-6 border border-[#00f0ff]/20" />
             <div className="absolute inset-6" style={{ borderTop: "2px solid rgba(143,245,255,0.25)" }} />
             <div className="absolute bottom-6 left-6 right-6" style={{ borderBottom: "2px solid rgba(143,245,255,0.25)" }} />
             {/* Center net */}
@@ -245,11 +245,11 @@ export function CinematicMatchClient({
                 background: "linear-gradient(to bottom, transparent, rgba(143,245,255,0.8) 20%, rgba(143,245,255,0.8) 80%, transparent)",
               }}
             />
-            <div className="absolute top-6 bottom-6 left-1/2 -translate-x-px border-l border-dashed border-[#8ff5ff]/10" />
+            <div className="absolute top-6 bottom-6 left-1/2 -translate-x-px border-l border-dashed border-[#00f0ff]/10" />
             {/* Service boxes */}
-            <div className="absolute top-6 bottom-6 left-[25%] border-l border-[#8ff5ff]/10" />
-            <div className="absolute top-6 bottom-6 right-[25%] border-r border-[#8ff5ff]/10" />
-            <div className="absolute top-1/2 left-6 right-6 border-t border-[#8ff5ff]/10" />
+            <div className="absolute top-6 bottom-6 left-[25%] border-l border-[#00f0ff]/10" />
+            <div className="absolute top-6 bottom-6 right-[25%] border-r border-[#00f0ff]/10" />
+            <div className="absolute top-1/2 left-6 right-6 border-t border-[#00f0ff]/10" />
 
             {/* Canvas: shuttlecock + player tokens + particles */}
             <SportCourtCanvas
@@ -273,12 +273,12 @@ export function CinematicMatchClient({
       <div className="absolute left-4 top-20 bottom-16 w-64 z-20 flex flex-col gap-3 overflow-hidden pointer-events-none">
         {/* Action log */}
         <div
-          className="border-l-2 border-[#8ff5ff] pl-3 pr-3 py-3"
+          className="border-l-2 border-[#00f0ff] pl-3 pr-3 py-3"
           style={{ background: "rgba(17,19,29,0.85)", backdropFilter: "blur(16px)" }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <span className="w-1.5 h-1.5 bg-[#8ff5ff] rounded-full animate-ping" />
-            <span className="text-[9px] font-mono uppercase tracking-widest text-[#8ff5ff]">Action_Log</span>
+            <span className="w-1.5 h-1.5 bg-[#00f0ff] rounded-full animate-ping" />
+            <span className="text-[9px] font-mono uppercase tracking-widest text-[#00f0ff]">Action_Log</span>
           </div>
           <div className="space-y-1.5">
             {actionLog.map((e, i) => (
@@ -355,7 +355,7 @@ export function CinematicMatchClient({
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-[9px] font-mono uppercase tracking-widest text-[#464752]">Live_Odds</span>
-            <span className="w-1.5 h-1.5 bg-[#ff6c92] rounded-full animate-ping" />
+            <span className="w-1.5 h-1.5 bg-[#ff2d78] rounded-full animate-ping" />
           </div>
           <div className="space-y-2">
             {([
@@ -404,18 +404,18 @@ export function CinematicMatchClient({
           {/* Open bet slip CTA */}
           <Link
             href={`/competitions/${competitionId}/bet`}
-            className="block mt-3 bg-[#ff6c92] text-[#48001b] px-4 py-3 font-['Space_Grotesk'] font-black uppercase text-sm text-center glitch-hover transition-all hover:skew-x-[-6deg]"
+            className="block mt-3 bg-[#ff2d78] text-[#48001b] px-4 py-3 font-['Space_Grotesk'] font-black uppercase text-sm text-center glitch-hover transition-all hover:skew-x-[-6deg]"
           >
             OPEN_BET_SLIP →
           </Link>
 
           <div className="mt-3 pt-3 border-t border-[#464752]/20 flex items-center justify-between">
             <div className="text-[9px] font-mono text-[#464752]">
-              Pool: <span className="text-[#ffe6aa] font-bold">${totalBetUsdc.toFixed(2)}</span>
+              Pool: <span className="text-[#ffd666] font-bold">${totalBetUsdc.toFixed(2)}</span>
             </div>
             {/* Spectator avatars */}
             <div className="flex -space-x-1.5">
-              {[colorA, colorB, "#ffe6aa", "#49f3a6"].map((c, i) => (
+              {[colorA, colorB, "#ffd666", "#49f3a6"].map((c, i) => (
                 <div
                   key={i}
                   className="w-5 h-5 rounded-full border border-[#11131d] flex items-center justify-center text-[7px] font-mono"
@@ -434,7 +434,7 @@ export function CinematicMatchClient({
 
       {/* ── Bottom controls ── */}
       <div
-        className="shrink-0 border-t border-[#8ff5ff]/20 px-4 py-2.5 flex items-center gap-3 z-50"
+        className="shrink-0 border-t border-[#00f0ff]/20 px-4 py-2.5 flex items-center gap-3 z-50"
         style={{ background: "rgba(11,13,22,0.92)", backdropFilter: "blur(16px)" }}
       >
         {/* 3D lens / Orbit toggle */}
@@ -443,7 +443,7 @@ export function CinematicMatchClient({
             onClick={() => setLensMode("3D")}
             className={`px-4 py-1.5 text-[10px] font-mono uppercase tracking-widest transition-colors ${
               lensMode === "3D"
-                ? "bg-[#8ff5ff] text-[#005d63] font-bold"
+                ? "bg-[#00f0ff] text-[#005d63] font-bold"
                 : "text-[#464752] hover:text-[#aaaab6]"
             }`}
           >
@@ -453,7 +453,7 @@ export function CinematicMatchClient({
             onClick={() => setLensMode("ORBIT")}
             className={`px-4 py-1.5 text-[10px] font-mono uppercase tracking-widest transition-colors ${
               lensMode === "ORBIT"
-                ? "bg-[#8ff5ff] text-[#005d63] font-bold"
+                ? "bg-[#00f0ff] text-[#005d63] font-bold"
                 : "text-[#464752] hover:text-[#aaaab6]"
             }`}
           >
@@ -467,7 +467,7 @@ export function CinematicMatchClient({
           style={{
             background: "rgba(255,108,146,0.08)",
             borderColor: "rgba(255,108,146,0.3)",
-            color: "#ff6c92",
+            color: "#ff2d78",
           }}
         >
           ● CINEMATIC_MODE
@@ -495,7 +495,7 @@ export function CinematicMatchClient({
             onClick={() => setMuted((m) => !m)}
             title={muted ? "Unmute SFX" : "Mute SFX"}
             className="border border-[#464752]/30 px-3 py-1.5 text-[10px] font-mono uppercase transition-colors"
-            style={{ color: muted ? "#464752" : "#8ff5ff", borderColor: muted ? "rgba(70,71,82,0.3)" : "rgba(143,245,255,0.3)" }}
+            style={{ color: muted ? "#464752" : "#00f0ff", borderColor: muted ? "rgba(70,71,82,0.3)" : "rgba(143,245,255,0.3)" }}
           >
             {muted ? "SFX_OFF" : "♪ SFX"}
           </button>

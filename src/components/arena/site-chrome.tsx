@@ -12,10 +12,11 @@ const AuthButton = dynamic(
 
 /* Nav items — mapped from Stitch HTML */
 const NAV = [
-  { href: "/arena",         label: "Arena",       icon: "analytics" },
-  { href: "/leaderboard",   label: "Leaderboard", icon: "military_tech" },
-  { href: "/agents",        label: "Agents",      icon: "settings_accessibility" },
-  { href: "/tournaments",   label: "Tournaments", icon: "bolt" },
+  { href: "/challenges",    label: "Arena",        icon: "analytics" },
+  { href: "/leaderboard",   label: "Leaderboard",  icon: "military_tech" },
+  { href: "/agents",        label: "Agents",        icon: "settings_accessibility" },
+  { href: "/competitions",  label: "Matches",       icon: "sports_esports" },
+  { href: "/tournaments",   label: "Tournaments",   icon: "bolt" },
 ];
 
 export function SiteChrome({ children, activeHref, liveCount }: { children: ReactNode; activeHref?: string; liveCount?: number }) {
@@ -32,10 +33,10 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
     <div className="arena-grid min-h-screen flex flex-col">
 
       {/* ── Top Navigation Bar (Stitch exact) ── */}
-      <nav className="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#0c0e16]/80 backdrop-blur-xl shadow-[0_0_15px_rgba(143,245,255,0.1)]">
+      <nav className="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#05060e]/80 backdrop-blur-xl shadow-[0_0_15px_rgba(143,245,255,0.1)]">
         {/* Logo */}
-        <Link href="/" className="text-2xl font-black text-[#8ff5ff] italic tracking-tighter" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          ARENA_OS
+        <Link href="/" className="text-2xl font-black text-[#00f0ff] italic tracking-tighter" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+          AGENT ARENA
         </Link>
 
         {/* Desktop nav links */}
@@ -49,8 +50,8 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
                 className={cx(
                   "px-4 py-2 transition-all",
                   on
-                    ? "text-[#8ff5ff] border-b-2 border-[#8ff5ff] pb-1 shadow-[0_4px_10px_-2px_rgba(143,245,255,0.5)]"
-                    : "text-[#464752] hover:text-[#8ff5ff]/70"
+                    ? "text-[#00f0ff] border-b-2 border-[#00f0ff] pb-1 shadow-[0_4px_10px_-2px_rgba(143,245,255,0.5)]"
+                    : "text-[#464752] hover:text-[#00f0ff]/70"
                 )}
               >
                 {item.label}
@@ -63,8 +64,8 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
         <div className="flex items-center space-x-4">
           {/* Live indicator */}
           {liveCount !== undefined && liveCount > 0 && (
-            <div className="hidden sm:flex items-center gap-1.5 font-mono text-[10px] text-[#8ff5ff]">
-              <span className="w-1.5 h-1.5 bg-[#8ff5ff] rounded-full animate-ping" />
+            <div className="hidden sm:flex items-center gap-1.5 font-mono text-[10px] text-[#00f0ff]">
+              <span className="w-1.5 h-1.5 bg-[#00f0ff] rounded-full animate-ping" />
               LIVE {liveCount}
             </div>
           )}
@@ -73,7 +74,7 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
           <button
             onClick={() => setMenuOpen(v => !v)}
             className="flex h-8 w-8 items-center justify-center md:hidden"
-            style={{ border: '1px solid rgba(143,245,255,0.2)', color: '#8ff5ff' }}
+            style={{ border: '1px solid rgba(143,245,255,0.2)', color: '#00f0ff' }}
             aria-label="Menu"
           >
             {menuOpen ? (
@@ -107,8 +108,8 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
                     fontFamily: "'JetBrains Mono', monospace",
                     ...(on ? {
                       background: 'rgba(143,245,255,0.08)',
-                      color: '#8ff5ff',
-                      borderLeft: '2px solid #8ff5ff',
+                      color: '#00f0ff',
+                      borderLeft: '2px solid #00f0ff',
                     } : {
                       color: '#464752',
                     }),
@@ -121,7 +122,7 @@ export function SiteChrome({ children, activeHref, liveCount }: { children: Reac
             })}
             <Link
               href="/agents/create"
-              className="flex items-center gap-3 px-4 py-3 mt-2 bg-[#8ff5ff] text-[#005d63] text-sm font-bold uppercase tracking-widest skew-x-[-12deg]"
+              className="flex items-center gap-3 px-4 py-3 mt-2 bg-[#00f0ff] text-[#005d63] text-sm font-bold uppercase tracking-widest skew-x-[-12deg]"
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
             >
               <span className="material-symbols-outlined text-sm">memory</span>

@@ -28,7 +28,7 @@ export async function generateMetadata(props: PageProps) {
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? "https://agentarena.xyz";
   const agent = await prisma.agent.findUnique({ where: { id }, select: { name: true, archetype: true } });
   return {
-    title: agent ? `${agent.name} · ARENA_OS` : "ARENA_OS",
+    title: agent ? `${agent.name} · Agent Arena` : "Agent Arena",
     description: agent ? `${agent.name} is an AI sport athlete (${agent.archetype}) competing in Agent Arena.` : "AI sport athlete profile",
     openGraph: { images: [`${base}/api/og/agent/${id}`] },
     twitter: { card: "summary_large_image", images: [`${base}/api/og/agent/${id}`] },
@@ -78,7 +78,7 @@ export default async function AgentPage(props: PageProps) {
   const shareTweet = `My AI athlete ${agent.name} (${agent.archetype}) is live on @AgentArenaXYZ — ${winRate} win rate. Challenge it 👇 ${shareUrl}`;
 
   const statusColor = activeComp
-    ? (activeComp.competition as any).status === "live" ? "#8ff5ff" : "#ffe6aa"
+    ? (activeComp.competition as any).status === "live" ? "#00f0ff" : "#ffd666"
     : "#464752";
   const statusLabel = activeComp
     ? (activeComp.competition as any).status === "live" ? "LIVE" : "OPEN"
@@ -130,7 +130,7 @@ export default async function AgentPage(props: PageProps) {
               <ShareButton text={shareTweet} url={shareUrl} label="Share" />
               <Link
                 href="/challenges"
-                className="bg-[#ff6c92] text-[#48001b] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
+                className="bg-[#ff2d78] text-[#48001b] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
               >
                 Challenge →
               </Link>
@@ -160,7 +160,7 @@ export default async function AgentPage(props: PageProps) {
                 {recentDots.map((r, i) => (
                   <div
                     key={i}
-                    className="flex h-6 w-6 items-center justify-center font-mono text-[10px] font-bold text-[#0c0e16]"
+                    className="flex h-6 w-6 items-center justify-center font-mono text-[10px] font-bold text-[#05060e]"
                     style={{ background: r === "W" ? "#00ff87" : "#ff4466" }}
                   >
                     {r}
@@ -189,10 +189,10 @@ export default async function AgentPage(props: PageProps) {
             <div className="bg-[#171924] border border-[#464752]/20 p-5">
               <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-4">Sport_Stats</div>
               <div className="space-y-2">
-                <StatBar label="SPD" value={(agent as any).speed ?? 7} color="#8ff5ff" />
-                <StatBar label="PWR" value={(agent as any).power ?? 7} color="#ffe6aa" />
+                <StatBar label="SPD" value={(agent as any).speed ?? 7} color="#00f0ff" />
+                <StatBar label="PWR" value={(agent as any).power ?? 7} color="#ffd666" />
                 <StatBar label="STA" value={(agent as any).stamina ?? 7} color="#00ff87" />
-                <StatBar label="ACC" value={(agent as any).accuracy ?? 7} color="#ff6c92" />
+                <StatBar label="ACC" value={(agent as any).accuracy ?? 7} color="#ff2d78" />
               </div>
             </div>
 
@@ -204,7 +204,7 @@ export default async function AgentPage(props: PageProps) {
                   {specialMoves.map((move: string) => (
                     <span
                       key={move}
-                      className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest border border-[#8ff5ff]/30 bg-[#8ff5ff]/08 text-[#8ff5ff]"
+                      className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest border border-[#00f0ff]/30 bg-[#00f0ff]/08 text-[#00f0ff]"
                     >
                       {move}
                     </span>
@@ -249,7 +249,7 @@ export default async function AgentPage(props: PageProps) {
                   className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 border"
                   style={{ color: statusColor, borderColor: `${statusColor}40`, background: `${statusColor}18` }}
                 >
-                  {statusColor === "#8ff5ff" && <span className="inline-block w-1.5 h-1.5 bg-[#8ff5ff] rounded-full animate-ping mr-1.5 align-middle" />}
+                  {statusColor === "#00f0ff" && <span className="inline-block w-1.5 h-1.5 bg-[#00f0ff] rounded-full animate-ping mr-1.5 align-middle" />}
                   {statusLabel}
                 </span>
               </div>
@@ -260,14 +260,14 @@ export default async function AgentPage(props: PageProps) {
                 {activeComp ? (
                   <Link
                     href={`/competitions/${(activeComp.competition as any).id}`}
-                    className="bg-[#8ff5ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
+                    className="bg-[#00f0ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
                   >
                     Watch_Live →
                   </Link>
                 ) : (
                   <Link
                     href="/challenges"
-                    className="bg-[#8ff5ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
+                    className="bg-[#00f0ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
                   >
                     Enter_Competition →
                   </Link>
