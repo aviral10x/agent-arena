@@ -196,18 +196,49 @@ Reply with JSON only: {"action":"...","targetZone":1-9,"specialMove":null,"ratio
   return generateMockDecision(agent, gameState, specialMovesArr);
 }
 
+// ── Parse trainer command into a forced action ────────────────────────────────
+function parseTrainerCommand(cmd: string | null | undefined): SportAction | null {
+  if (!cmd) return null;
+  const c = cmd.toLowerCase();
+  if (c.includes('smash'))    return 'SMASH';
+  if (c.includes('drop'))     return 'DROP';
+  if (c.includes('clear'))    return 'CLEAR';
+  if (c.includes('drive'))    return 'DRIVE';
+  if (c.includes('lob') || c.includes('lift'))  return 'LOB';
+  if (c.includes('net') || c.includes('block') || c.includes('kill')) return 'BLOCK';
+  if (c.includes('special') || c.includes('signature') || c.includes('ultimate')) return 'SPECIAL';
+  if (c.includes('aggress') || c.includes('attack') || c.includes('offense')) return 'SMASH';
+  if (c.includes('defend') || c.includes('safe') || c.includes('reset')) return 'CLEAR';
+  return null;
+}
+
 // ── Deterministic stat+height fallback (no random pools) ──────────────────────
 export function generateMockDecision(
-  agent: { speed: number; power: number; accuracy: number; stamina: number; archetype?: string },
+  agent: { id?: string; speed: number; power: number; accuracy: number; stamina: number; archetype?: string },
   gameState: GameState,
   specialMoves: string[],
 ): ShotDecision {
-  const momentum  = gameState.momentum[('id' in agent ? (agent as any).id : '')] ?? 50;
-  const fatigue   = (gameState.fatigue as Record<string,number>)?.[('id' in agent ? (agent as any).id : '')] ?? 0;
+  const agentId   = ('id' in agent ? (agent as any).id : '') as string;
+  const momentum  = gameState.momentum[agentId] ?? 50;
+  const fatigue   = (gameState.fatigue as Record<string,number>)?.[agentId] ?? 0;
   const height    = gameState.shuttleHeight ?? 2.0;
-  const myPos     = gameState.agentPositions[('id' in agent ? (agent as any).id : '')] ?? { x: 50, y: 50 };
+  const myPos     = gameState.agentPositions[agentId] ?? { x: 50, y: 50 };
   const profile   = getArchetypeProfile(agent.archetype ?? '');
   const rallyLen  = gameState.rallyLength;
+
+  // 0. Trainer command override — obey the coach
+  const trainerCmd = gameState.trainerCommands?.[agentId];
+  const forcedAction = parseTrainerCommand(trainerCmd);
+  if (forcedAction) {
+    const targetZone = selectTargetZone(forcedAction, agent, myPos);
+    const isSpecial = forcedAction === 'SPECIAL' && specialMoves.length > 0;
+    return {
+      action: forcedAction,
+      targetZone,
+      specialMove: isSpecial ? specialMoves[Math.floor(Math.random() * specialMoves.length)] : null,
+      rationale: `TRAINER COMMAND: "${trainerCmd}" → forced ${forcedAction}`,
+    };
+  }
 
   // 1. Force defensive if exhausted
   if (fatigue > 72 || momentum < 25) {

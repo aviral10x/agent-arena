@@ -342,11 +342,12 @@ PHYSICS RULES:
     // Delegate to the physics-aware stat-driven decision in sport-agent-runner
     return generateMockDecision(
       {
+        id:        player.agentId,  // needed for trainer command lookup
         speed:     player.stats.speed,
         power:     player.stats.power,
         accuracy:  player.stats.accuracy,
         stamina:   player.stats.stamina,
-        archetype: player.strategy, // strategy field carries archetype info
+        archetype: player.strategy,
       },
       gameState,
       player.specialMoves,
