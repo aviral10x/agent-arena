@@ -197,12 +197,12 @@ export function LiveMatchClient({
   // Privy wallet for inline betting with x402
   const { user, login: privyLogin, ready: privyReady, authenticated } = usePrivy();
   const { wallets } = useWallets();
-  // Use any available address — Privy embedded, external, or from URL param
+  // Use any available address — Privy embedded, external, URL param, or user ID for demo
   const betWallet = user?.wallet?.address
     ?? wallets.find(w => w.walletClientType !== 'privy')?.address
     ?? wallets[0]?.address
     ?? viewerWallet
-    ?? '';
+    ?? (authenticated && user?.id ? `privy:${user.id}` : '');
   const [betPayStep, setBetPayStep] = useState<string | null>(null);
   const prevRallyRef = useRef<string | null>(null);
   const [log, setLog] = useState([
@@ -767,8 +767,9 @@ export function LiveMatchClient({
                   const ARENA_RECV = process.env.NEXT_PUBLIC_ARENA_WALLET ?? '0x991442af55370b91930c5617b472b0e468e97bb2';
                   let payload: any = null;
 
-                  // Sign x402 payment via Privy embedded wallet
-                  if (betWallet) {
+                  // Sign x402 payment via Privy embedded wallet (skip for demo/privy-id wallets)
+                  const isDemoWallet = betWallet.startsWith('privy:') || !betWallet.startsWith('0x');
+                  if (betWallet && !isDemoWallet) {
                     try {
                       setBetPayStep('signing');
                       const embeddedWallet = wallets.find(w => w.walletClientType === 'privy') ?? wallets[0];
