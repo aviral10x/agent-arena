@@ -301,8 +301,62 @@ PHYSICS RULES:
 - LOB/BLOCK only valid if shuttleHeight <= 1.2
 - If fatigue > 70: must play CLEAR or LOB`;
 
-    const groqKey = this.room.env.GROQ_API_KEY as string | undefined;
+    const SYSTEM_MSG = `You are a badminton AI agent. OBEY shuttle height physics — do NOT pick SMASH when height < 2.0. Reply ONLY with JSON: {"action":"SMASH"|"DROP"|"CLEAR"|"DRIVE"|"LOB"|"BLOCK"|"SERVE"|"SPECIAL","targetZone":1-9,"specialMove":null,"rationale":"one sentence"}`;
+    const validActions = ["SERVE","SMASH","DROP","CLEAR","DRIVE","LOB","BLOCK","SPECIAL"];
 
+    const parseAI = (raw: string): ShotDecision | null => {
+      try {
+        const p = JSON.parse(raw);
+        if (validActions.includes(p.action)) {
+          return { action: p.action as SportAction, targetZone: Math.max(1, Math.min(9, Number(p.targetZone) || 5)), specialMove: p.specialMove ?? null, rationale: p.rationale ?? "AI decision." };
+        }
+      } catch {}
+      return null;
+    };
+
+    // Primary: OpenAI gpt-4o-mini
+    const openaiKey = this.room.env.OPENAI_API_KEY as string | undefined;
+    if (openaiKey) {
+      try {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${openaiKey}` },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [{ role: "system", content: SYSTEM_MSG }, { role: "user", content: prompt }],
+            temperature: 0.6, max_tokens: 100, response_format: { type: "json_object" },
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json() as any;
+          const d = parseAI(data.choices?.[0]?.message?.content ?? "{}");
+          if (d) return d;
+        }
+      } catch (e: any) { console.warn("[match] OpenAI failed:", e.message?.slice(0, 60)); }
+    }
+
+    // Secondary: Gemini Flash
+    const googleKey = this.room.env.GOOGLE_AI_API_KEY as string | undefined;
+    if (googleKey) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${SYSTEM_MSG}\n\n${prompt}` }] }],
+            generationConfig: { temperature: 0.6, maxOutputTokens: 100, responseMimeType: "application/json" },
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json() as any;
+          const d = parseAI(data.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}");
+          if (d) return d;
+        }
+      } catch (e: any) { console.warn("[match] Gemini failed:", e.message?.slice(0, 60)); }
+    }
+
+    // Tertiary: Groq
+    const groqKey = this.room.env.GROQ_API_KEY as string | undefined;
     if (groqKey) {
       try {
         const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -310,31 +364,19 @@ PHYSICS RULES:
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
           body: JSON.stringify({
             model: "llama-3.3-70b-versatile",
-            messages: [
-              { role: "system", content: `You are a badminton AI agent. OBEY shuttle height physics — do NOT pick SMASH when height < 2.0. Reply ONLY with JSON: {"action":"SMASH"|"DROP"|"CLEAR"|"DRIVE"|"LOB"|"BLOCK"|"SERVE"|"SPECIAL","targetZone":1-9,"specialMove":null,"rationale":"one sentence"}` },
-              { role: "user", content: prompt },
-            ],
-            temperature: 0.6,
-            max_tokens: 110,
-            response_format: { type: "json_object" },
+            messages: [{ role: "system", content: SYSTEM_MSG }, { role: "user", content: prompt }],
+            temperature: 0.6, max_tokens: 100, response_format: { type: "json_object" },
           }),
         });
-        const data = await res.json() as any;
-        const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
-        const validActions = ["SERVE","SMASH","DROP","CLEAR","DRIVE","LOB","BLOCK","SPECIAL"];
-        if (validActions.includes(parsed.action)) {
-          return {
-            action: parsed.action as SportAction,
-            targetZone: Math.max(1, Math.min(9, Number(parsed.targetZone) || 5)),
-            specialMove: parsed.specialMove ?? null,
-            rationale: parsed.rationale ?? "Tactical decision.",
-          };
+        if (res.ok) {
+          const data = await res.json() as any;
+          const d = parseAI(data.choices?.[0]?.message?.content ?? "{}");
+          if (d) return d;
         }
-      } catch (e) {
-        console.warn("[match] Groq failed, using mock:", e);
-      }
+      } catch (e: any) { console.warn("[match] Groq failed:", e.message?.slice(0, 60)); }
     }
 
+    console.warn(`[match] ALL AI providers failed for ${player.agentName} — physics fallback`);
     return this.mockDecision(player, gameState);
   }
 
