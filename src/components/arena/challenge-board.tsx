@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { useSignTypedData, useAccount } from 'wagmi';
 
 type AgentRow = {
   id: string; name: string; archetype: string; color: string;
@@ -24,9 +23,6 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
     ?? wallets.find(w => w.walletClientType !== 'privy')?.address
     ?? wallets[0]?.address
     ?? '';
-
-  const { signTypedDataAsync } = useSignTypedData();
-  const { address: wagmiAddr } = useAccount();
 
   const [opponentId,   setOpponentId]   = useState<string | null>(null);
   const [myAgentId,    setMyAgentId]    = useState<string>(params.get('myAgentId') ?? '');
@@ -66,53 +62,69 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
 
     let payload: any = null;
 
-    // ── Step 1: Sign x402 payment ($0.10 USDC entry fee) ──
-    const signerAddr = wagmiAddr ?? walletAddress;
-    if (signerAddr) {
+    // ── Step 1: Try x402 payment ($0.10 USDC entry fee) via Privy embedded wallet ──
+    if (walletAddress) {
       try {
         setPaymentStep('signing');
-        const amountMicro = BigInt(Math.round(ENTRY_FEE_USDC * 1_000_000)); // 100000 (6 decimals)
-        const nonce       = `0x${crypto.randomUUID().replace(/-/g, '')}` as `0x${string}`;
-        const validBefore = BigInt(Math.floor(Date.now() / 1000) + 300); // 5 min window
+        // Use the embedded wallet's provider for EIP-712 signing
+        const embeddedWallet = wallets.find(w => w.walletClientType === 'privy') ?? wallets[0];
+        if (embeddedWallet) {
+          const provider = await embeddedWallet.getEthereumProvider();
+          const amountMicro = Math.round(ENTRY_FEE_USDC * 1_000_000);
+          const nonce = `0x${crypto.randomUUID().replace(/-/g, '')}`;
+          const validBefore = Math.floor(Date.now() / 1000) + 300;
+          const from = walletAddress as `0x${string}`;
 
-        const domain = {
-          name:              'USD Coin',
-          version:           '2',
-          chainId:           196,  // X Layer
-          verifyingContract: USDC_ADDRESS,
-        };
-        const types = {
-          TransferWithAuthorization: [
-            { name: 'from',        type: 'address' },
-            { name: 'to',          type: 'address' },
-            { name: 'value',       type: 'uint256' },
-            { name: 'validAfter',  type: 'uint256' },
-            { name: 'validBefore', type: 'uint256' },
-            { name: 'nonce',       type: 'bytes32' },
-          ],
-        } as const;
-        const message = {
-          from:        signerAddr as `0x${string}`,
-          to:          ARENA_RECEIVER,
-          value:       amountMicro,
-          validAfter:  BigInt(0),
-          validBefore,
-          nonce,
-        };
+          const typedData = {
+            types: {
+              EIP712Domain: [
+                { name: 'name', type: 'string' },
+                { name: 'version', type: 'string' },
+                { name: 'chainId', type: 'uint256' },
+                { name: 'verifyingContract', type: 'address' },
+              ],
+              TransferWithAuthorization: [
+                { name: 'from', type: 'address' },
+                { name: 'to', type: 'address' },
+                { name: 'value', type: 'uint256' },
+                { name: 'validAfter', type: 'uint256' },
+                { name: 'validBefore', type: 'uint256' },
+                { name: 'nonce', type: 'bytes32' },
+              ],
+            },
+            primaryType: 'TransferWithAuthorization',
+            domain: {
+              name: 'USD Coin',
+              version: '2',
+              chainId: 196,
+              verifyingContract: USDC_ADDRESS,
+            },
+            message: {
+              from,
+              to: ARENA_RECEIVER,
+              value: String(amountMicro),
+              validAfter: '0',
+              validBefore: String(validBefore),
+              nonce,
+            },
+          };
 
-        const signature = await signTypedDataAsync({ domain, types, primaryType: 'TransferWithAuthorization', message });
+          const signature = await provider.request({
+            method: 'eth_signTypedData_v4',
+            params: [from, JSON.stringify(typedData)],
+          });
 
-        payload = {
-          signature,
-          from:        signerAddr,
-          to:          ARENA_RECEIVER,
-          value:       amountMicro.toString(),
-          validAfter:  '0',
-          validBefore: validBefore.toString(),
-          nonce,
-        };
+          payload = {
+            signature,
+            from,
+            to: ARENA_RECEIVER,
+            value: String(amountMicro),
+            validAfter: '0',
+            validBefore: String(validBefore),
+            nonce,
+          };
+        }
       } catch (signErr: any) {
-        // User rejected or wallet unavailable → fallback to demo (free) mode
         console.warn('[challenge] x402 sign failed, using demo mode:', signErr.message?.slice(0, 60));
         payload = null;
       }
