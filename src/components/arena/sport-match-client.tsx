@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { SportScoreboard } from './sport-scoreboard';
 import { BettingPanelClient } from './betting-panel-client';
 import { CourtCanvas } from './court-canvas';
+import { playSFX } from '@/lib/sport-sfx';
 import type { GameState } from '@/lib/game-engine';
 import { getScoreDisplay } from '@/lib/game-engine';
 
@@ -393,6 +394,28 @@ export function SportMatchClient({
 
   const lastAction = gameState?.lastAction ?? '';
 
+  // ── SFX: fire on every action change ────────────────────────────────────────
+  const prevActionRef = useRef('');
+  const prevScoreRef  = useRef({ a1: 0, a2: 0 });
+  useEffect(() => {
+    if (!mounted) return;
+    if (lastAction && lastAction !== prevActionRef.current) {
+      prevActionRef.current = lastAction;
+      // Volume based on power: SMASH/SPECIAL loudest
+      const vol = ['SMASH', 'SPECIAL'].includes(lastAction) ? 0.7
+                : ['DRIVE', 'DROP'].includes(lastAction)    ? 0.5
+                : 0.35;
+      playSFX(lastAction, vol);
+    }
+    // Point sound when score changes
+    const cur = { a1: a1score, a2: a2score };
+    if ((cur.a1 !== prevScoreRef.current.a1 || cur.a2 !== prevScoreRef.current.a2) &&
+        (prevScoreRef.current.a1 > 0 || prevScoreRef.current.a2 > 0)) {
+      playSFX('POINT', 0.6);
+    }
+    prevScoreRef.current = cur;
+  }, [lastAction, a1score, a2score, mounted]);
+
   return (
     <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-5">
 
@@ -510,6 +533,14 @@ export function SportMatchClient({
 
         {/* Status badges */}
         <div className="absolute top-3 right-4 flex items-center gap-2">
+          {/* Mute toggle */}
+          <button
+            onClick={() => { (window as any).__arenaMuted = !(window as any).__arenaMuted; }}
+            className="text-[11px] text-white/20 hover:text-white/50 transition-colors"
+            title="Toggle SFX"
+          >
+            {(typeof window !== 'undefined' && (window as any).__arenaMuted) ? '🔇' : '🔊'}
+          </button>
           {isLive && (
             <span
               className="flex items-center gap-1.5 text-[10px] font-black tracking-widest text-emerald-400 px-2 py-0.5 rounded-full"
