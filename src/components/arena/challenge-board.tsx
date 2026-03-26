@@ -9,41 +9,42 @@ type AgentRow = {
   risk: string; winRate?: string; traits: string[]; competitions: any[];
 };
 
-const SPORTS = [
-  { value: 'badminton',    label: 'Badminton',     icon: '🏸' },
-  { value: 'tennis',       label: 'Tennis',        icon: '🎾' },
-  { value: 'table-tennis', label: 'Table Tennis',  icon: '🏓' },
-] as const;
+// Only badminton is supported in this version
+const SPORT = 'badminton';
 
 export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
   const router        = useRouter();
   const params        = useSearchParams();
-  const { user }      = usePrivy();
-  const { wallets }   = useWallets();
-  // Privy: prefer connected external wallet, fall back to embedded wallet (social login)
-  const walletAddress = user?.wallet?.address ?? wallets[0]?.address ?? '';
+  const { user, ready }  = usePrivy();
+  const { wallets }      = useWallets();
+  // Privy: embedded wallet (user.wallet) or any connected external wallet
+  // wallets[] may be empty on first render — use user.wallet as primary source
+  const walletAddress = user?.wallet?.address
+    ?? wallets.find(w => w.walletClientType !== 'privy')?.address
+    ?? wallets[0]?.address
+    ?? '';
 
   const [opponentId,   setOpponentId]   = useState<string | null>(null);
   const [myAgentId,    setMyAgentId]    = useState<string>(params.get('myAgentId') ?? '');
   const [myAgents,     setMyAgents]     = useState<AgentRow[]>([]);
-  const [sport,        setSport]        = useState<string>('badminton');
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState<string | null>(null);
 
-  // Fetch agents owned by the connected wallet
+  // Fetch agents owned by the connected wallet.
+  // Wait for Privy to be ready AND user to be logged in before fetching.
   useEffect(() => {
-    if (!walletAddress) return;
-    fetch(`/api/agents?owner=${encodeURIComponent(walletAddress)}`)
+    if (!ready || !user) return;
+    // walletAddress may still be hydrating — retry once it's available
+    const addr = walletAddress || user.id;
+    if (!addr) return;
+    fetch(`/api/agents?owner=${encodeURIComponent(walletAddress || addr)}`)
       .then(r => r.json())
       .then((data: AgentRow[]) => {
         setMyAgents(data);
-        // Auto-select if myAgentId from URL is valid, else pick first
-        if (!params.get('myAgentId') && data.length > 0) {
-          setMyAgentId(data[0].id);
-        }
+        if (!params.get('myAgentId') && data.length > 0) setMyAgentId(data[0].id);
       })
       .catch(() => {});
-  }, [walletAddress, params]);
+  }, [ready, user, walletAddress, params]);
 
   const opponent   = agents.find(a => a.id === opponentId);
   const myAgent    = myAgents.find(a => a.id === myAgentId) ?? agents.find(a => a.id === myAgentId);
@@ -60,7 +61,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
           targetAgentId:     opponentId,
           challengerAgentId: myAgentId,
           type:              'sport',
-          sport,
+          sport:             SPORT,
         }),
       });
       if (!compRes.ok) throw new Error('Failed to create challenge');
@@ -161,7 +162,8 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
         <div className="bg-[#11131d] border border-[#464752]/20 p-4">
           <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-2">
             Your Fighter
-            {!user && <span className="ml-2 text-[#ff6c92]">— Login to use your agent</span>}
+            {ready && !user && <span className="ml-2 text-[#ff6c92]">— Login to use your agent</span>}
+            {!ready && <span className="ml-2 text-[#464752]">— loading…</span>}
           </div>
           {myAgents.length > 0 ? (
             <div className="space-y-2">
@@ -217,25 +219,14 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
           )}
         </div>
 
-        {/* Sport selector */}
-        <div className="bg-[#11131d] border border-[#464752]/20 p-4">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-2">Sport</div>
-          <div className="flex gap-2">
-            {SPORTS.map(s => (
-              <button
-                key={s.value}
-                onClick={() => setSport(s.value)}
-                className={`flex-1 flex flex-col items-center gap-1 border py-2 transition-all ${
-                  sport === s.value
-                    ? 'border-[#ffe6aa] bg-[#ffe6aa]/10 text-[#ffe6aa]'
-                    : 'border-[#464752]/20 text-[#464752] hover:border-[#464752]/40'
-                }`}
-              >
-                <span className="text-xl">{s.icon}</span>
-                <span className="text-[9px] font-mono uppercase">{s.label}</span>
-              </button>
-            ))}
+        {/* Sport — badminton only */}
+        <div className="bg-[#11131d] border border-[#ffe6aa]/30 p-4 flex items-center gap-3">
+          <span className="text-2xl">🏸</span>
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752]">Sport</div>
+            <div className="text-sm font-['Space_Grotesk'] font-bold uppercase text-[#ffe6aa]">Badminton</div>
           </div>
+          <span className="ml-auto text-[9px] font-mono text-[#ffe6aa] border border-[#ffe6aa]/30 px-2 py-0.5">ACTIVE</span>
         </div>
 
         {/* Match details */}

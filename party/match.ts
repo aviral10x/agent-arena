@@ -19,6 +19,7 @@ import {
   type ShotDecision,
   type SportAction,
 } from "../src/lib/game-engine";
+import { generateMockDecision } from "../src/lib/sport-agent-runner";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ export default class MatchRoom implements Party.Server {
   options: Party.ServerOptions = { hibernate: false };
 
   gameState: GameState | null = null;
-  sport: "badminton" | "tennis" | "table-tennis" = "badminton";
+  sport: "badminton" = "badminton";
   players: Map<string, PlayerInfo> = new Map(); // userId → PlayerInfo
   connections: Map<string, Party.Connection> = new Map(); // userId → socket
   pendingCommands: Map<string, string> = new Map(); // agentId → command text
@@ -255,14 +256,29 @@ export default class MatchRoom implements Party.Server {
     const momentum = gameState.momentum[player.agentId] ?? 50;
     const trainerCmd = gameState.trainerCommands[player.agentId];
 
-    const prompt = `You are a ${gameState.sport} AI agent.
+    const shuttleH = gameState.shuttleHeight ?? 2.0;
+    const fatigue  = (gameState.fatigue as Record<string,number>)?.[player.agentId] ?? 0;
+    const heightLabel =
+      shuttleH >= 2.5 ? "OVERHEAD — prime smash height" :
+      shuttleH >= 2.0 ? "HIGH — overhead drop/clear/smash" :
+      shuttleH >= 1.5 ? "MID-HIGH — drop or drive" :
+      shuttleH >= 0.8 ? "MID — drive or lob" :
+      "LOW — lob or net shot only";
+
+    const prompt = `You are a badminton AI agent.
 Name: ${player.agentName} | Style: ${player.strategy}
 Stats: Speed ${player.stats.speed}/10, Power ${player.stats.power}/10, Accuracy ${player.stats.accuracy}/10, Stamina ${player.stats.stamina}/10
 Score: You ${myScore} – ${oppScore} ${opponentName} | Set ${gameState.currentSet + 1}
 Momentum: ${momentum.toFixed(0)}/100${momentum > 65 ? " 🔥" : momentum < 35 ? " 🥶" : ""}
-Shuttle: (${gameState.shuttlePosition.x.toFixed(0)}, ${gameState.shuttlePosition.y.toFixed(0)}) | Rally length: ${gameState.rallyLength}
-Last action: ${gameState.lastAction}
-${trainerCmd ? `TRAINER: "${trainerCmd}" — FOLLOW THIS NOW!` : ""}`;
+FATIGUE: ${fatigue.toFixed(0)}/100${fatigue > 70 ? " (exhausted — play CLEAR or LOB)" : ""}
+SHUTTLE HEIGHT: ${shuttleH.toFixed(1)} → ${heightLabel}
+Rally length: ${gameState.rallyLength} | Last shot: ${gameState.lastAction}
+${trainerCmd ? `TRAINER: "${trainerCmd}" — FOLLOW THIS NOW!` : ""}
+
+PHYSICS RULES:
+- SMASH only valid if shuttleHeight >= 2.0 (choosing SMASH at low height = ~8% success)
+- LOB/BLOCK only valid if shuttleHeight <= 1.2
+- If fatigue > 70: must play CLEAR or LOB`;
 
     const groqKey = this.room.env.GROQ_API_KEY as string | undefined;
 
@@ -274,11 +290,11 @@ ${trainerCmd ? `TRAINER: "${trainerCmd}" — FOLLOW THIS NOW!` : ""}`;
           body: JSON.stringify({
             model: "llama-3.3-70b-versatile",
             messages: [
-              { role: "system", content: `You are a ${gameState.sport} agent. Reply ONLY with JSON: {"action":"SMASH"|"DROP"|"CLEAR"|"DRIVE"|"LOB"|"BLOCK"|"SERVE"|"SPECIAL","targetZone":1-9,"specialMove":null,"rationale":"one sentence"}` },
+              { role: "system", content: `You are a badminton AI agent. OBEY shuttle height physics — do NOT pick SMASH when height < 2.0. Reply ONLY with JSON: {"action":"SMASH"|"DROP"|"CLEAR"|"DRIVE"|"LOB"|"BLOCK"|"SERVE"|"SPECIAL","targetZone":1-9,"specialMove":null,"rationale":"one sentence"}` },
               { role: "user", content: prompt },
             ],
-            temperature: 0.7,
-            max_tokens: 100,
+            temperature: 0.6,
+            max_tokens: 110,
             response_format: { type: "json_object" },
           }),
         });
@@ -302,18 +318,18 @@ ${trainerCmd ? `TRAINER: "${trainerCmd}" — FOLLOW THIS NOW!` : ""}`;
   }
 
   mockDecision(player: PlayerInfo, gameState: GameState): ShotDecision {
-    const momentum = gameState.momentum[player.agentId] ?? 50;
-    const shuttleY = gameState.shuttlePosition.y;
-    const pool: SportAction[] = [];
-    if (shuttleY > 65 && player.risk !== "Defensive") pool.push("SMASH", "SMASH", "DRIVE");
-    if (shuttleY < 30) pool.push("DROP", "BLOCK");
-    if (gameState.rallyLength > 8) pool.push("CLEAR", "LOB");
-    if (momentum < 35) pool.push("CLEAR", "LOB", "BLOCK");
-    if (player.risk === "Aggressive") pool.push("SMASH", "DRIVE", "DROP");
-    if (player.risk === "Defensive") pool.push("CLEAR", "LOB", "BLOCK");
-    pool.push("SMASH", "DROP", "CLEAR", "DRIVE", "LOB", "BLOCK");
-    const action = pool[Math.floor(Math.random() * pool.length)];
-    return { action, targetZone: Math.floor(Math.random() * 9) + 1, specialMove: null, rationale: "Tactical decision." };
+    // Delegate to the physics-aware stat-driven decision in sport-agent-runner
+    return generateMockDecision(
+      {
+        speed:     player.stats.speed,
+        power:     player.stats.power,
+        accuracy:  player.stats.accuracy,
+        stamina:   player.stats.stamina,
+        archetype: player.strategy, // strategy field carries archetype info
+      },
+      gameState,
+      player.specialMoves,
+    );
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

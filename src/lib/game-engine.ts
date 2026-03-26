@@ -1,27 +1,55 @@
 /**
- * Sports Game Engine v2 — balanced point-by-point simulation
+ * Badminton Game Engine — physics-driven, stats-based simulation
  *
- * Fixes from v1:
- * - Both agents get a chance each rally (attacker + defender)
- * - Momentum swings are smaller (+5/-5 instead of +8/-8)
- * - Defense has a fair chance to return shots
- * - Score can't run away — comeback mechanics via momentum reset
- * - Rally length matters — longer rallies favor the more stamina-heavy agent
+ * Core mechanic:
+ *  shuttleHeight (0–3) tracks where the shuttle is when the player hits it.
+ *  Each shot produces a specific height for the opponent:
+ *    CLEAR / LOB  → 3.0  (overhead opportunity for opponent)
+ *    SMASH        → 0.2  (fast downward, receiver gets it near ground)
+ *    DROP         → 0.4  (gentle net drop, receiver at forecourt)
+ *    DRIVE        → 1.2  (flat mid-height exchange)
+ *    BLOCK        → 0.8  (soft net return, mid-low)
+ *    SERVE        → 2.0  (standard service height)
+ *    SPECIAL      → 0.1  (signature power move, very low for receiver)
+ *
+ *  Stats drive every probability:
+ *    power    → smash damage / special move effectiveness
+ *    accuracy → drop/drive placement, reduced scatter
+ *    speed    → defensive reach, cover more court
+ *    stamina  → fatigue resistance, late-rally performance
  */
 
-export type SportAction = 'SERVE' | 'SMASH' | 'DROP' | 'CLEAR' | 'DRIVE' | 'LOB' | 'BLOCK' | 'SPECIAL';
+export type SportAction =
+  | 'SERVE'
+  | 'SMASH'
+  | 'DROP'
+  | 'CLEAR'
+  | 'DRIVE'
+  | 'LOB'
+  | 'BLOCK'
+  | 'SPECIAL';
+
+export type BadmintonStats = {
+  speed:    number; // 1–10
+  power:    number;
+  stamina:  number;
+  accuracy: number;
+  archetype?: string;
+};
 
 export type GameState = {
-  sport: 'badminton' | 'tennis' | 'table-tennis';
+  sport: 'badminton';
   servingAgentId: string;
   rallyCount: number;
   currentSet: number;
   sets: { agentScores: Record<string, number> }[];
   shuttlePosition: { x: number; y: number };
+  shuttleHeight: number;       // 0 = ground/net, 1 = mid, 2 = high, 3 = overhead
   agentPositions: Record<string, { x: number; y: number }>;
-  momentum: Record<string, number>;
+  momentum: Record<string, number>;     // 0–100
+  fatigue:  Record<string, number>;     // 0–100, 0=fresh 100=exhausted
   lastAction: string;
-  lastAgentId: string; // who played the last shot
+  lastAgentId: string;
   rallyLength: number;
   trainerCommands: Record<string, string | null>;
   preComputedDecisions?: Record<string, any>;
@@ -31,7 +59,7 @@ export type GameState = {
 
 export type ShotDecision = {
   action: SportAction;
-  targetZone: number;
+  targetZone: number;   // 1–9
   specialMove?: string | null;
   rationale: string;
 };
@@ -49,134 +77,245 @@ export type RallyResult = {
   newGameState: GameState;
   matchOver: boolean;
   setOver: boolean;
-  isWinner: boolean; // did a point end?
+  isWinner: boolean;
 };
 
-// ── Scoring rules ──────────────────────────────────────────────────────────────
-const SCORING_RULES = {
-  badminton:      { pointsPerSet: 21, setsToWin: 2, totalSets: 3, deuceAt: 20, maxPoints: 30 },
-  tennis:         { pointsPerSet: 6,  setsToWin: 2, totalSets: 3, deuceAt: 5,  maxPoints: 7  },
-  'table-tennis': { pointsPerSet: 11, setsToWin: 3, totalSets: 5, deuceAt: 10, maxPoints: 15 },
+// ── Badminton scoring ──────────────────────────────────────────────────────────
+const SCORING = { pointsPerSet: 21, setsToWin: 2, totalSets: 3, deuceAt: 20, maxPoints: 30 };
+
+// ── Zone landing positions (0=unused, 1–9 grid) ──────────────────────────────
+const ZONE_POS: { x: number; y: number }[] = [
+  { x: 50, y: 50 }, // 0: sentinel
+  { x: 15, y: 10 }, // 1: deep back-left
+  { x: 50, y: 10 }, // 2: deep back-center
+  { x: 85, y: 10 }, // 3: deep back-right
+  { x: 15, y: 50 }, // 4: mid-left
+  { x: 50, y: 50 }, // 5: center
+  { x: 85, y: 50 }, // 6: mid-right
+  { x: 20, y: 85 }, // 7: front-left (near net)
+  { x: 50, y: 85 }, // 8: front-center (near net)
+  { x: 80, y: 85 }, // 9: front-right (near net)
+];
+
+// ── Shuttle height produced by each shot (what opponent receives) ─────────────
+const RESULT_HEIGHT: Record<SportAction, number> = {
+  CLEAR:   3.0,  // high deep — overhead opportunity for opponent
+  LOB:     2.8,  // high lift — same
+  SERVE:   2.0,  // standard service
+  DROP:    0.4,  // falls near net — receiver must rush forecourt
+  SMASH:   0.2,  // fast downward — almost at ground for receiver
+  DRIVE:   1.2,  // flat mid-height exchange
+  BLOCK:   0.8,  // gentle net return
+  SPECIAL: 0.1,  // power kill — nearly impossible height for receiver
 };
 
-// ── Distance between two court positions ──────────────────────────────────────
-function courtDistance(a: { x: number; y: number }, b: { x: number; y: number }): number {
+// ── Stamina cost per shot (badminton is exhausting) ───────────────────────────
+const FATIGUE_COST: Record<SportAction, number> = {
+  SMASH:   10,
+  SPECIAL: 14,
+  DRIVE:    6,
+  CLEAR:    5,
+  LOB:      4,
+  DROP:     3,
+  BLOCK:    3,
+  SERVE:    1,
+};
+
+// ── Court distance helper ─────────────────────────────────────────────────────
+function dist(a: { x: number; y: number }, b: { x: number; y: number }): number {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
-// ── Zone landing positions (0=center, 1–9 as grid) ───────────────────────────
-const ZONE_POS: { x: number; y: number }[] = [
-  { x: 50, y: 50 }, // 0: center (unused sentinel)
-  { x: 20, y: 10 }, // 1: back-left
-  { x: 50, y: 10 }, // 2: back-center
-  { x: 80, y: 10 }, // 3: back-right
-  { x: 20, y: 50 }, // 4: mid-left
-  { x: 50, y: 50 }, // 5: center
-  { x: 80, y: 50 }, // 6: mid-right
-  { x: 20, y: 85 }, // 7: front-left
-  { x: 50, y: 85 }, // 8: front-center
-  { x: 80, y: 85 }, // 9: front-right
-];
-
-// ── Attack success probability (stats + position penalty if out-of-position) ──
+// ── Attack success probability ────────────────────────────────────────────────
+// Returns probability [0,1] that the attacker executes this shot successfully.
+// Core insight: you can't smash a shuttle that's near the ground — physics won't let you.
 function attackSuccessProb(
   action: SportAction,
-  stats: { speed: number; power: number; accuracy: number; stamina: number },
+  stats: BadmintonStats,
+  shuttleHeight: number,
   momentum: number,
-  rallyLength: number,
-  distanceToShuttle: number, // how far attacker had to run to reach shuttle
+  fatigue: number,
+  distToShuttle: number,
 ): number {
-  const momentumBonus = (momentum - 50) / 500; // ±0.10
-  // Stamina decay — stronger effect than before
-  const staminaDecay = Math.max(0.4, 1 - (rallyLength * (1 - stats.stamina / 11)) / 25);
-  // Position penalty: if agent had to run far, shot quality drops (mitigated by speed)
-  const reachPenalty = Math.max(0, (distanceToShuttle - 20) / 100) * Math.max(0.2, 1 - stats.speed / 12);
+  // Base probability driven by shuttle height at contact
+  let base: number;
+  switch (action) {
+    case 'SMASH':
+      // Smash requires overhead shuttle — failure below waist is near-certain
+      if (shuttleHeight >= 2.5) base = 0.72;
+      else if (shuttleHeight >= 2.0) base = 0.60;
+      else if (shuttleHeight >= 1.5) base = 0.38;
+      else if (shuttleHeight >= 1.0) base = 0.20;
+      else base = 0.07; // literally can't smash a shuttle near the floor
+      break;
 
-  const base: Record<SportAction, number> = {
-    SERVE:   0.94,
-    CLEAR:   0.88,
-    LOB:     0.84,
-    BLOCK:   0.82,
-    DRIVE:   0.76,
-    DROP:    0.70,
-    SMASH:   0.62,
-    SPECIAL: 0.55,
-  };
+    case 'DROP':
+      // Overhead drop - needs height for deception
+      if (shuttleHeight >= 2.0) base = 0.76;
+      else if (shuttleHeight >= 1.5) base = 0.68;
+      else if (shuttleHeight >= 1.0) base = 0.56;
+      else base = 0.38;
+      break;
 
-  // Stat modifier — wider range so stats matter more
+    case 'CLEAR':
+      // Most reliable shot, works from almost any height
+      if (shuttleHeight >= 1.5) base = 0.90;
+      else if (shuttleHeight >= 0.5) base = 0.85;
+      else base = 0.78; // clearing from below net is hard
+      break;
+
+    case 'LOB':
+      // Lift from low position — natural when shuttle is below waist
+      if (shuttleHeight <= 0.8) base = 0.86;
+      else if (shuttleHeight <= 1.5) base = 0.80;
+      else base = 0.65; // lobbing an overhead shuttle is awkward
+      break;
+
+    case 'DRIVE':
+      // Flat drive best at mid height
+      if (shuttleHeight >= 0.8 && shuttleHeight <= 1.6) base = 0.74;
+      else if (shuttleHeight <= 0.8) base = 0.60;
+      else base = 0.58; // high drive is awkward
+      break;
+
+    case 'BLOCK':
+      // Net shot / block best when shuttle is at net level
+      if (shuttleHeight <= 0.8) base = 0.80;
+      else if (shuttleHeight <= 1.4) base = 0.70;
+      else base = 0.58;
+      break;
+
+    case 'SERVE':
+      base = 0.96;
+      break;
+
+    case 'SPECIAL':
+      // Signature move — needs height to execute properly
+      if (shuttleHeight >= 2.0) base = 0.64;
+      else if (shuttleHeight >= 1.0) base = 0.46;
+      else base = 0.30;
+      break;
+
+    default:
+      base = 0.70;
+  }
+
+  // Stat modifier — stats have significant impact
   const statMod =
-    action === 'SMASH'   ? (stats.power    - 5) / 40 :
-    action === 'DROP'    ? (stats.accuracy - 5) / 40 :
-    action === 'DRIVE'   ? (stats.speed    - 5) / 40 :
+    action === 'SMASH'   ? (stats.power    - 5) / 30 :  // ±0.17
+    action === 'SPECIAL' ? (Math.max(stats.power, stats.accuracy) - 5) / 35 :
+    action === 'DROP'    ? (stats.accuracy - 5) / 35 :  // ±0.14
+    action === 'DRIVE'   ? (stats.speed    - 5) / 35 :
+    action === 'BLOCK'   ? (stats.speed    - 5) / 40 :
     action === 'CLEAR'   ? (stats.stamina  - 5) / 50 :
     action === 'LOB'     ? (stats.stamina  - 5) / 60 :
-    action === 'BLOCK'   ? (stats.speed    - 5) / 60 :
-    action === 'SPECIAL' ? (Math.max(stats.power, stats.accuracy) - 5) / 50 :
     0;
 
-  return Math.min(0.96, Math.max(0.15,
-    base[action] + statMod + momentumBonus - reachPenalty
-  )) * staminaDecay;
+  // Momentum bonus: hot streak makes every shot better
+  const momentumBonus = (momentum - 50) / 400; // ±0.125
+
+  // Fatigue penalty: tired players mis-hit shots
+  const fatiguePenalty = (fatigue / 100) * 0.25; // up to -0.25
+
+  // Reach penalty: if attacker ran far to reach shuttle, shot quality drops
+  // Fast players cover distance without penalty
+  const reachPenalty = distToShuttle > 20
+    ? ((distToShuttle - 20) / 80) * Math.max(0.1, 1 - stats.speed / 14)
+    : 0;
+
+  return Math.min(0.95, Math.max(0.06,
+    base + statMod + momentumBonus - fatiguePenalty - reachPenalty
+  ));
 }
 
-// ── Defense (return) probability ────────────────────────────────────────────────
-// Core mechanic: defender must physically REACH the shuttle landing zone.
-// If they're too slow or too far away, they can't return it.
+// ── Defense (return) probability ──────────────────────────────────────────────
+// Can the defender physically reach and return the shot?
+// Shuttle height BEFORE the shot (attacker's height) determines shot quality.
 function defenseReturnProb(
   attackAction: SportAction,
+  attackShuttleHeight: number,
   targetZone: number,
   defenderPos: { x: number; y: number },
-  defenderStats: { speed: number; power: number; accuracy: number; stamina: number },
+  defenderStats: BadmintonStats,
   defenderMomentum: number,
+  defenderFatigue: number,
   rallyLength: number,
 ): number {
-  const momentumBonus = (defenderMomentum - 50) / 500;
-  const staminaDecay = Math.max(0.4, 1 - (rallyLength * (1 - defenderStats.stamina / 11)) / 25);
+  // How hard this shot type is to defend — depends on how well the smash was hit
+  let baseDifficulty: number;
+  switch (attackAction) {
+    case 'SMASH': {
+      // The higher the shuttle when smashed, the harder to defend
+      const smashQuality = Math.min(1.0, attackShuttleHeight / 3.0);
+      baseDifficulty = 0.22 + (1 - smashQuality) * 0.22; // 0.22 to 0.44
+      break;
+    }
+    case 'SPECIAL':
+      baseDifficulty = 0.18;
+      break;
+    case 'DROP':
+      baseDifficulty = 0.40; // requires quick net movement
+      break;
+    case 'DRIVE':
+      baseDifficulty = 0.52; // fast but predictable
+      break;
+    case 'LOB':
+    case 'CLEAR':
+      baseDifficulty = 0.82; // high and slow — easy to prepare
+      break;
+    case 'BLOCK':
+      baseDifficulty = 0.62;
+      break;
+    case 'SERVE':
+      baseDifficulty = 0.88;
+      break;
+    default:
+      baseDifficulty = 0.60;
+  }
 
-  // How hard each shot type is to return (base difficulty)
-  const difficulty: Record<SportAction, number> = {
-    SMASH:   0.35, // hardest — fast and steep
-    SPECIAL: 0.38,
-    DRIVE:   0.50,
-    DROP:    0.48, // requires good positioning
-    LOB:     0.72,
-    CLEAR:   0.76,
-    BLOCK:   0.70,
-    SERVE:   0.82,
-  };
-
-  // Distance the defender must cover to reach landing zone
+  // Distance the defender must cover
   const landingPos = ZONE_POS[Math.max(1, Math.min(9, targetZone))] ?? ZONE_POS[5];
-  const dist = courtDistance(defenderPos, landingPos);
-  // Reach factor: speed-10 agent barely needs to move; speed-1 agent struggles
-  // Each 10 units of distance reduces return prob by (1 - speed/12) * 0.08
-  const reachPenalty = (dist / 10) * Math.max(0.01, 1 - defenderStats.speed / 12) * 0.12;
+  const distToLanding = dist(defenderPos, landingPos);
 
-  const speedBonus  = (defenderStats.speed    - 5) / 45;
-  const reflexBonus = (defenderStats.accuracy - 5) / 70;
+  // Reach penalty: fast players can cover the court; slow players get exposed
+  // SMASH/SPECIAL: shuttle is fast, so distance matters MORE
+  const speedFactor = Math.max(0.05, 1 - defenderStats.speed / 12);
+  const distWeight = attackAction === 'SMASH' || attackAction === 'SPECIAL' ? 0.16 : 0.10;
+  const reachPenalty = (distToLanding / 10) * speedFactor * distWeight;
 
-  return Math.min(0.92, Math.max(0.10,
-    difficulty[attackAction] + speedBonus + reflexBonus + momentumBonus - reachPenalty
-  )) * staminaDecay;
+  // Stat bonuses for defense
+  const speedBonus    = (defenderStats.speed    - 5) / 40;
+  const reflexBonus   = (defenderStats.accuracy - 5) / 70;
+  const momentumBonus = (defenderMomentum - 50) / 400;
+
+  // Fatigue: very tired players can't spring to the shuttle
+  const fatiguePenalty = (defenderFatigue / 100) * 0.22;
+
+  return Math.min(0.94, Math.max(0.08,
+    baseDifficulty + speedBonus + reflexBonus + momentumBonus
+    - reachPenalty - fatiguePenalty
+  ));
 }
 
 // ── Initialize game state ──────────────────────────────────────────────────────
 export function initGameState(
-  sport: 'badminton' | 'tennis' | 'table-tennis',
+  sport: 'badminton',
   agentIds: string[],
-  servingFirst?: string
+  servingFirst?: string,
 ): GameState {
   return {
-    sport,
+    sport: 'badminton',
     servingAgentId: servingFirst ?? agentIds[0],
     rallyCount: 0,
     currentSet: 0,
     sets: [{ agentScores: Object.fromEntries(agentIds.map(id => [id, 0])) }],
     shuttlePosition: { x: 50, y: 50 },
+    shuttleHeight: 2.0, // start at service height
     agentPositions: Object.fromEntries(
       agentIds.map((id, i) => [id, { x: 50, y: i === 0 ? 75 : 25 }])
     ),
     momentum: Object.fromEntries(agentIds.map(id => [id, 50])),
+    fatigue:  Object.fromEntries(agentIds.map(id => [id, 0])),
     lastAction: 'SERVE',
     lastAgentId: servingFirst ?? agentIds[0],
     rallyLength: 0,
@@ -189,98 +328,96 @@ export function initGameState(
 export function resolveRally(
   gameState: GameState,
   decisions: Record<string, ShotDecision>,
-  agentStats: Record<string, { speed: number; power: number; accuracy: number; stamina: number }>
+  agentStats: Record<string, BadmintonStats>,
 ): RallyResult {
-  const rules = SCORING_RULES[gameState.sport];
   const agentIds = Object.keys(agentStats);
   const [a1, a2] = agentIds;
 
-  // Determine attacker (who hits) and defender (who tries to return)
-  // Rally starts with server, then alternates
+  // Who hits this exchange (alternates each shot within the rally)
   const attackerId = gameState.rallyLength % 2 === 0
     ? gameState.servingAgentId
     : agentIds.find(id => id !== gameState.servingAgentId)!;
   const defenderId = agentIds.find(id => id !== attackerId)!;
 
-  const attackDecision = decisions[attackerId] ?? { action: 'CLEAR' as SportAction, targetZone: 5, rationale: 'fallback' };
-  const attackStats = agentStats[attackerId];
-  const defenderStats = agentStats[defenderId];
-  const attackMomentum = gameState.momentum[attackerId] ?? 50;
+  const attackDecision  = decisions[attackerId] ?? { action: 'CLEAR' as SportAction, targetZone: 2, rationale: 'fallback' };
+  const attackStats     = agentStats[attackerId];
+  const defenderStats   = agentStats[defenderId];
+  const attackMomentum  = gameState.momentum[attackerId]  ?? 50;
   const defenderMomentum = gameState.momentum[defenderId] ?? 50;
+  const attackFatigue   = gameState.fatigue[attackerId]   ?? 0;
+  const defenderFatigue = gameState.fatigue[defenderId]   ?? 0;
 
-  // How far did the attacker have to run to reach the shuttle?
-  const attackerPos = gameState.agentPositions[attackerId] ?? { x: 50, y: 50 };
-  const distToShuttle = courtDistance(attackerPos, gameState.shuttlePosition);
+  // Current shuttle height when attacker hits it
+  const currentHeight = gameState.shuttleHeight ?? 2.0;
 
-  // Step 1: Does the attacker execute their shot successfully?
+  // How far did the attacker have to run?
+  const attackerPos   = gameState.agentPositions[attackerId] ?? { x: 50, y: 50 };
+  const defenderPos   = gameState.agentPositions[defenderId] ?? { x: 50, y: 50 };
+  const distToShuttle = dist(attackerPos, gameState.shuttlePosition);
+
+  // Step 1: Can the attacker execute this shot given the shuttle height?
   const attackProb = attackSuccessProb(
-    attackDecision.action, attackStats, attackMomentum, gameState.rallyLength, distToShuttle
+    attackDecision.action, attackStats, currentHeight,
+    attackMomentum, attackFatigue, distToShuttle,
   );
   const attackSuccess = Math.random() < attackProb;
 
-  // Step 2: If attack succeeds, can the defender physically reach and return it?
-  const defenderPos = gameState.agentPositions[defenderId] ?? { x: 50, y: 50 };
+  // Step 2: If shot is executed, can the defender physically return it?
   const defenseProb = attackSuccess
     ? defenseReturnProb(
-        attackDecision.action,
+        attackDecision.action, currentHeight,
         attackDecision.targetZone,
-        defenderPos,
-        defenderStats,
-        defenderMomentum,
+        defenderPos, defenderStats,
+        defenderMomentum, defenderFatigue,
         gameState.rallyLength,
       )
     : 1; // attack failed, defender wins by default
   const defenseSuccess = attackSuccess ? Math.random() < defenseProb : true;
 
-  // Determine outcome
-  const isSpecial = attackDecision.action === 'SPECIAL';
-  const specialCost = isSpecial ? 15 : 0;
+  const isSpecial   = attackDecision.action === 'SPECIAL';
+  const specialCost = isSpecial ? 18 : 0;
 
+  // ── Determine outcome ────────────────────────────────────────────────────
   let pointWinnerId = '';
-  let loserId = '';
-  let rallyEnds = false;
+  let loserId       = '';
+  let rallyEnds     = false;
 
   if (!attackSuccess) {
-    // Attacker messed up → defender wins point
-    rallyEnds = true;
+    rallyEnds     = true;
     pointWinnerId = defenderId;
-    loserId = attackerId;
+    loserId       = attackerId;
   } else if (!defenseSuccess) {
-    // Attacker's shot was unreturnable → attacker wins point
-    rallyEnds = true;
+    rallyEnds     = true;
     pointWinnerId = attackerId;
-    loserId = defenderId;
+    loserId       = defenderId;
   } else {
-    // Both succeeded → rally continues
     rallyEnds = false;
-    // Unless it's been going on too long
-    if (gameState.rallyLength >= 20) {
-      rallyEnds = true;
-      // Stamina decides who collapses
-      const a1Stamina = agentStats[a1].stamina + (gameState.momentum[a1] ?? 50) / 50;
-      const a2Stamina = agentStats[a2].stamina + (gameState.momentum[a2] ?? 50) / 50;
-      pointWinnerId = a1Stamina >= a2Stamina ? a1 : a2;
-      loserId = agentIds.find(id => id !== pointWinnerId)!;
+    // Stamina collapse: very long rallies — higher stamina player wins
+    if (gameState.rallyLength >= 22) {
+      rallyEnds     = true;
+      const a1Score = agentStats[a1].stamina - (gameState.fatigue[a1] ?? 0) / 12;
+      const a2Score = agentStats[a2].stamina - (gameState.fatigue[a2] ?? 0) / 12;
+      pointWinnerId = a1Score >= a2Score ? a1 : a2;
+      loserId       = agentIds.find(id => id !== pointWinnerId)!;
     }
   }
 
-  // ── Update scores ─────────────────────────────────────────────────────────
+  // ── Update scores ────────────────────────────────────────────────────────
   const newSets = gameState.sets.map(s => ({
     ...s, agentScores: { ...s.agentScores },
   }));
-  let setOver = false;
+  let setOver      = false;
   let newCurrentSet = gameState.currentSet;
-  let matchOver = false;
+  let matchOver    = false;
   let winner: string | undefined;
 
   if (rallyEnds && pointWinnerId) {
     const scores = newSets[gameState.currentSet].agentScores;
     scores[pointWinnerId] = (scores[pointWinnerId] ?? 0) + 1;
-
     const myScore  = scores[pointWinnerId];
     const oppScore = scores[loserId] ?? 0;
-    const wonSet = myScore >= rules.pointsPerSet &&
-                   (myScore - oppScore >= 2 || myScore >= rules.maxPoints);
+    const wonSet   = myScore >= SCORING.pointsPerSet &&
+                     (myScore - oppScore >= 2 || myScore >= SCORING.maxPoints);
 
     if (wonSet) {
       setOver = true;
@@ -290,9 +427,9 @@ export function resolveRally(
         return s.agentScores[pointWinnerId] === Math.max(...vals) && Math.max(...vals) > 0;
       }).length;
 
-      if (setsWon >= rules.setsToWin) {
+      if (setsWon >= SCORING.setsToWin) {
         matchOver = true;
-        winner = pointWinnerId;
+        winner    = pointWinnerId;
       } else {
         newCurrentSet++;
         newSets.push({ agentScores: Object.fromEntries(agentIds.map(id => [id, 0])) });
@@ -300,76 +437,90 @@ export function resolveRally(
     }
   }
 
-  // ── Update momentum (smaller swings, comeback mechanic) ───────────────────
+  // ── Update momentum ──────────────────────────────────────────────────────
   const newMomentum = { ...gameState.momentum };
   if (rallyEnds && pointWinnerId) {
-    newMomentum[pointWinnerId] = Math.min(85, newMomentum[pointWinnerId] + 5);
-    newMomentum[loserId]       = Math.max(20, newMomentum[loserId] - 4);
-    // Comeback mechanic: if score gap > 5, losing agent gets momentum boost
+    newMomentum[pointWinnerId] = Math.min(88, newMomentum[pointWinnerId] + 6);
+    newMomentum[loserId]       = Math.max(18, newMomentum[loserId] - 5);
+    // Comeback mechanic: trailing player gets a push
     const scores = newSets[gameState.currentSet].agentScores;
-    const gap = (scores[pointWinnerId] ?? 0) - (scores[loserId] ?? 0);
-    if (gap > 5) {
-      newMomentum[loserId] = Math.min(55, newMomentum[loserId] + 3);
-    }
-    if (isSpecial) {
-      newMomentum[attackerId] = Math.max(15, newMomentum[attackerId] - specialCost);
+    const gap    = (scores[pointWinnerId] ?? 0) - (scores[loserId] ?? 0);
+    if (gap > 4) newMomentum[loserId] = Math.min(52, newMomentum[loserId] + 4);
+    if (isSpecial) newMomentum[attackerId] = Math.max(15, newMomentum[attackerId] - specialCost);
+  }
+
+  // ── Update fatigue ────────────────────────────────────────────────────────
+  const newFatigue = { ...gameState.fatigue };
+  const shotCost   = FATIGUE_COST[attackDecision.action] ?? 5;
+  // Stamina reduces fatigue accumulation (high-stamina player recovers faster)
+  const fatigueGain = shotCost * Math.max(0.3, 1.2 - attackStats.stamina / 10);
+  newFatigue[attackerId] = Math.min(100, (newFatigue[attackerId] ?? 0) + fatigueGain);
+  // Defender also burns some energy moving to chase the shuttle
+  const chaseExertion = (attackDecision.action === 'SMASH' || attackDecision.action === 'SPECIAL') ? 5 : 2;
+  newFatigue[defenderId] = Math.min(100, (newFatigue[defenderId] ?? 0) + chaseExertion * Math.max(0.3, 1.2 - defenderStats.stamina / 10));
+
+  // Between points: fatigue partially recovers
+  if (rallyEnds) {
+    for (const id of agentIds) {
+      const recovery = 12 + (agentStats[id].stamina - 5) * 1.5;
+      newFatigue[id] = Math.max(0, (newFatigue[id] ?? 0) - recovery);
     }
   }
 
-  // ── Move shuttle to target zone ───────────────────────────────────────────
+  // ── New shuttle height for next exchange ─────────────────────────────────
+  const newShuttleHeight = rallyEnds ? 2.0 : (RESULT_HEIGHT[attackDecision.action] ?? 1.5);
+
+  // ── Shuttle position with accuracy-based scatter ──────────────────────────
   const zone = Math.max(1, Math.min(9, attackDecision.targetZone));
-  const zoneLanding = ZONE_POS[zone] ?? ZONE_POS[5];
-  // Accuracy-based spread: low accuracy = more scatter around intended zone
-  const spread = Math.max(3, 18 - attackStats.accuracy * 1.5);
+  const zoneLanding = ZONE_POS[zone];
+  const scatter = Math.max(2, 16 - attackStats.accuracy * 1.4);
   const newShuttlePos = {
-    x: Math.max(5, Math.min(95, zoneLanding.x + (Math.random() - 0.5) * spread)),
-    y: rallyEnds ? 50 : Math.max(5, Math.min(95, zoneLanding.y + (Math.random() - 0.5) * spread)),
+    x: Math.max(5, Math.min(95, zoneLanding.x + (Math.random() - 0.5) * scatter)),
+    y: rallyEnds ? 50 : Math.max(5, Math.min(95, zoneLanding.y + (Math.random() - 0.5) * scatter)),
   };
 
-  // ── Move agents: attacker recovers to base; defender chases shuttle ────────
+  // ── Agent movement ────────────────────────────────────────────────────────
   const newPositions = { ...gameState.agentPositions };
-  // Attacker moves to where they hit from, then starts recovering
+  // After their shot, attacker recovers toward T-position (center-court baseline)
+  const tPos = { x: 50, y: attackerId === a1 ? 72 : 28 };
   newPositions[attackerId] = {
-    x: attackerPos.x + (50 - attackerPos.x) * 0.4 + (Math.random() - 0.5) * 10,
-    y: attackerId === agentIds[0]
-      ? Math.max(55, Math.min(95, attackerPos.y + (Math.random() - 0.5) * 10))
-      : Math.max(5,  Math.min(45, attackerPos.y + (Math.random() - 0.5) * 10)),
+    x: attackerPos.x + (tPos.x - attackerPos.x) * 0.45 + (Math.random() - 0.5) * 8,
+    y: attackerPos.y + (tPos.y - attackerPos.y) * 0.45,
   };
   if (!rallyEnds) {
-    // Defender sprints toward the shuttle landing zone
-    // Speed determines how close they can get (high speed = reaches exactly; low speed = arrives late)
-    const coverage = Math.min(1.0, defenderStats.speed / 8);
-    const defTarget = {
+    // Defender sprints toward shuttle landing zone; speed determines coverage
+    const coverage = Math.min(0.98, defenderStats.speed / 8.0);
+    const defenderTgt = {
       x: newShuttlePos.x + (defenderPos.x - newShuttlePos.x) * (1 - coverage),
       y: newShuttlePos.y + (defenderPos.y - newShuttlePos.y) * (1 - coverage),
     };
     newPositions[defenderId] = {
-      x: Math.max(5, Math.min(95, defTarget.x + (Math.random() - 0.5) * 8)),
-      y: Math.max(5, Math.min(95, defTarget.y + (Math.random() - 0.5) * 8)),
+      x: Math.max(5, Math.min(95, defenderTgt.x + (Math.random() - 0.5) * 7)),
+      y: Math.max(5, Math.min(95, defenderTgt.y + (Math.random() - 0.5) * 7)),
     };
   } else {
-    // Reset positions to base after point
-    newPositions[attackerId] = { x: 50, y: attackerId === agentIds[0] ? 75 : 25 };
-    newPositions[defenderId] = { x: 50, y: defenderId === agentIds[0] ? 75 : 25 };
+    // Reset both to T-positions after the point
+    newPositions[a1] = { x: 50, y: 72 };
+    newPositions[a2] = { x: 50, y: 28 };
   }
 
-  // ── Build description ──────────────────────────────────────────────────────
+  // ── Description ──────────────────────────────────────────────────────────
   const actionLabel = isSpecial && attackDecision.specialMove
-    ? `✨ ${attackDecision.specialMove}` : attackDecision.action;
-  const zones = ['', 'deep left', 'deep center', 'deep right', 'mid left', 'center', 'mid right', 'short left', 'short center', 'short right'];
+    ? `✨ ${attackDecision.specialMove}`
+    : badmintonShotLabel(attackDecision.action, currentHeight);
+  const zones = ['','deep L','deep C','deep R','mid-L','center','mid-R','net-L','net-C','net-R'];
   const zoneName = zones[attackDecision.targetZone] ?? 'court';
-  const attackerName = attackerId; // will be resolved to name in UI
 
   let description: string;
   if (!rallyEnds) {
-    description = `${actionLabel} to ${zoneName} — rally continues (${gameState.rallyLength + 1} shots)`;
+    description = `${actionLabel} → ${zoneName} (rally: ${gameState.rallyLength + 1} shots)`;
   } else if (pointWinnerId === attackerId) {
-    description = `${actionLabel} to ${zoneName} — UNRETURNABLE! ${gameState.rallyLength + 1}-shot rally`;
+    description = `${actionLabel} to ${zoneName} — WINNER! ${gameState.rallyLength + 1}-shot rally`;
   } else {
-    description = `${actionLabel} to ${zoneName} — OUT! ${gameState.rallyLength + 1}-shot rally`;
+    description = `${actionLabel} → ${zoneName} — FAULT! ${gameState.rallyLength + 1}-shot rally`;
   }
 
-  // ── Clear consumed trainer commands ────────────────────────────────────────
+  // ── Trainer commands consumed ─────────────────────────────────────────────
   const newTrainerCommands = { ...gameState.trainerCommands };
   newTrainerCommands[attackerId] = null;
 
@@ -378,12 +529,14 @@ export function resolveRally(
     sets: newSets,
     currentSet: newCurrentSet,
     shuttlePosition: newShuttlePos,
+    shuttleHeight: newShuttleHeight,
     agentPositions: newPositions,
     momentum: newMomentum,
+    fatigue: newFatigue,
     lastAction: attackDecision.action,
     lastAgentId: attackerId,
-    rallyLength: rallyEnds ? 0 : gameState.rallyLength + 1,
-    rallyCount: gameState.rallyCount + (rallyEnds ? 1 : 0),
+    rallyLength:  rallyEnds ? 0 : gameState.rallyLength + 1,
+    rallyCount:   gameState.rallyCount + (rallyEnds ? 1 : 0),
     servingAgentId: rallyEnds && pointWinnerId ? pointWinnerId : gameState.servingAgentId,
     trainerCommands: newTrainerCommands,
     matchOver,
@@ -407,25 +560,36 @@ export function resolveRally(
   };
 }
 
-// ── Score display helper ────────────────────────────────────────────────────────
+// ── Badminton shot label with height context ───────────────────────────────────
+function badmintonShotLabel(action: SportAction, height: number): string {
+  switch (action) {
+    case 'SMASH':  return height >= 2.5 ? 'Power Smash' : height >= 2.0 ? 'Overhead Smash' : 'Rushed Smash';
+    case 'DROP':   return height >= 2.0 ? 'Deceptive Drop' : 'Forced Drop';
+    case 'CLEAR':  return height >= 1.5 ? 'Defensive Clear' : 'Low Clear';
+    case 'LOB':    return 'Lob Lift';
+    case 'DRIVE':  return 'Flat Drive';
+    case 'BLOCK':  return height <= 0.8 ? 'Net Kill' : 'Block Return';
+    case 'SERVE':  return 'Service';
+    case 'SPECIAL': return 'Signature Move';
+    default: return action;
+  }
+}
+
+// ── Score display helper ─────────────────────────────────────────────────────
 export function getScoreDisplay(
   gameState: GameState,
-  agentIds: [string, string]
-): {
-  sets:     { a1: number; a2: number }[];
-  current:  { a1: number; a2: number };
-  setsWon:  { a1: number; a2: number };
-} {
+  agentIds: [string, string],
+): { sets: { a1: number; a2: number }[]; current: { a1: number; a2: number }; setsWon: { a1: number; a2: number } } {
   const sets = gameState.sets.map(s => ({
     a1: s.agentScores[agentIds[0]] ?? 0,
     a2: s.agentScores[agentIds[1]] ?? 0,
   }));
 
-  const countSetsWon = (agentId: string) =>
+  const countSetsWon = (id: string) =>
     gameState.sets.filter((s, i) => {
       if (i >= gameState.currentSet && !gameState.matchOver) return false;
       const vals = Object.values(s.agentScores);
-      return s.agentScores[agentId] === Math.max(...vals) && Math.max(...vals) > 0;
+      return s.agentScores[id] === Math.max(...vals) && Math.max(...vals) > 0;
     }).length;
 
   return {

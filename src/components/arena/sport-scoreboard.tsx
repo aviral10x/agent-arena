@@ -16,7 +16,7 @@ export function SportScoreboard({ gameState, agents, isLive }: SportScoreboardPr
   const score     = getScoreDisplay(gameState, [a1.id, a2.id]);
   const m1        = gameState.momentum[a1.id] ?? 50;
   const m2        = gameState.momentum[a2.id] ?? 50;
-  const setsToWin = gameState.sport === 'table-tennis' ? 3 : 2;
+  const setsToWin = 2; // badminton: first to 2 sets
 
   return (
     <div

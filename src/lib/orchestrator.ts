@@ -97,7 +97,7 @@ export async function runSportCompetitionTick(competitionId: string) {
     let gameState: GameState = (competition as any).gameState
       ? JSON.parse((competition as any).gameState as string)
       : initGameState(
-          ((competition as any).sport as 'badminton' | 'tennis' | 'table-tennis') ?? 'badminton',
+          'badminton' as const,
           agentIds,
           agentIds[0]
         );
