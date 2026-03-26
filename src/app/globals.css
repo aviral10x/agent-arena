@@ -1,39 +1,88 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Bebas+Neue&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Manrope:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Bebas+Neue&family=Rajdhani:wght@500;600;700&family=Chakra+Petch:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   AGENT ARENA — Neo-Tokyo Arena HUD Design System
-   Stitch design spec: neon-cyan/magenta palette, glassmorphic panels,
-   Rajdhani/Chakra Petch fonts, anime score animations
+   AGENT ARENA — ARENA_OS Neo-Tokyo Design System (Stitch v4)
+   Colors, fonts, spacing, animations extracted from Stitch HTML files
 ───────────────────────────────────────────────────────────────────────────── */
 
+/* Material Symbols */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+}
+
 :root {
-  /* Backgrounds — Stitch exact */
-  --bg-void: #0c0e16;
-  --bg-arena: #0c0e16;
-  --bg-surface: #11131d;
-  --bg-raised: #1d1f2b;
-  /* Backward compat aliases */
-  --bg: var(--bg-arena);
-  --bg-soft: #0f111a;
-  --bg-card: var(--bg-surface);
+  /* ── Stitch exact color tokens ── */
+  --color-on-secondary: #48001b;
+  --color-error-dim: #d7383b;
+  --color-on-secondary-fixed-variant: #a20045;
+  --color-outline-variant: #464752;
+  --color-tertiary: #ffe6aa;
+  --color-error: #ff716c;
+  --color-secondary-container: #bc0051;
+  --color-on-secondary-fixed: #6d002c;
+  --color-primary-container: #00eefc;
+  --color-on-error: #490006;
+  --color-on-secondary-container: #fff5f6;
+  --color-tertiary-dim: #efc859;
+  --color-surface-container: #171924;
+  --color-tertiary-container: #ffd666;
+  --color-on-tertiary: #6a5200;
+  --color-tertiary-fixed-dim: #efc859;
+  --color-on-primary-fixed-variant: #005e64;
+  --color-surface-bright: #292b39;
+  --color-surface-container-high: #1d1f2b;
+  --color-inverse-surface: #fbf8ff;
+  --color-on-primary-container: #005359;
+  --color-background: #0c0e16;
+  --color-on-tertiary-fixed: #493800;
+  --color-on-surface-variant: #aaaab6;
+  --color-primary-fixed: #00eefc;
+  --color-on-tertiary-fixed-variant: #6b5300;
+  --color-outline: #747480;
+  --color-on-primary: #005d63;
+  --color-on-error-container: #ffa8a3;
+  --color-on-surface: #eeecfa;
+  --color-on-primary-fixed: #003f43;
+  --color-surface-tint: #8ff5ff;
+  --color-secondary-fixed: #ffc2cc;
+  --color-surface-container-lowest: #000000;
+  --color-inverse-on-surface: #54545f;
+  --color-error-container: #9f0519;
+  --color-primary-fixed-dim: #00deec;
+  --color-primary: #8ff5ff;
+  --color-secondary: #ff6c92;
+  --color-surface: #0c0e16;
+  --color-secondary-dim: #e40a65;
+  --color-surface-dim: #0c0e16;
+  --color-tertiary-fixed: #ffd666;
+  --color-surface-container-highest: #232532;
+  --color-primary-dim: #00deec;
+  --color-surface-container-low: #11131d;
+  --color-inverse-primary: #006a71;
+  --color-on-background: #eeecfa;
+  --color-surface-variant: #232532;
+  --color-secondary-fixed-dim: #ffadbd;
+  --color-on-tertiary-container: #5f4a00;
 
-  /* Panels */
-  --panel-bg: rgba(17, 19, 29, 0.85);
-  --panel-border: rgba(143, 245, 255, 0.08);
-  --panel-glow: rgba(143, 245, 255, 0.03);
-  /* Legacy compat */
-  --panel: var(--panel-bg);
-  --panel-strong: rgba(12, 14, 22, 0.97);
-  --panel-border-strong: rgba(255, 255, 255, 0.14);
-
-  /* Neon accents — Stitch exact */
+  /* ── Neon accents ── */
   --neon-cyan: #8ff5ff;
   --neon-magenta: #ff6c92;
   --neon-green: #00ff87;
   --neon-red: #ff3a50;
   --gold-trophy: #ffd666;
-  /* Backward compat */
+
+  /* ── Backward compat aliases ── */
   --teal: var(--neon-cyan);
   --teal-soft: rgba(143, 245, 255, 0.14);
   --teal-glow: rgba(143, 245, 255, 0.30);
@@ -47,25 +96,35 @@
   --red-soft: rgba(255, 58, 80, 0.12);
   --gold: var(--gold-trophy);
   --gold-soft: rgba(255, 214, 102, 0.14);
-
-  /* Text — Stitch exact */
-  --white-crisp: #e8f0ff;
+  --bg: #0c0e16;
+  --bg-arena: #0c0e16;
+  --bg-void: #0c0e16;
+  --bg-surface: #11131d;
+  --bg-raised: #1d1f2b;
+  --bg-soft: #0f111a;
+  --bg-card: #171924;
+  --panel-bg: rgba(17, 19, 29, 0.85);
+  --panel-border: rgba(143, 245, 255, 0.08);
+  --panel-glow: rgba(143, 245, 255, 0.03);
+  --panel: var(--panel-bg);
+  --panel-strong: rgba(12, 14, 22, 0.97);
+  --panel-border-strong: rgba(255, 255, 255, 0.14);
+  --white-crisp: #eeecfa;
   --grey-data: #464752;
   --grey-ghost: #2a2c38;
-  --text-primary: #e8f0ff;
-  --text-secondary: #9ba8c4;
+  --text-primary: #eeecfa;
+  --text-secondary: #aaaab6;
   --text-muted: #464752;
 
-  /* Fonts — Stitch exact */
+  /* ── Fonts ── */
   --font-display: 'Space Grotesk', 'Rajdhani', sans-serif;
-  --font-body: 'Space Grotesk', 'Chakra Petch', sans-serif;
-  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
-  --font-drama: 'Bebas Neue', 'Anton', sans-serif;
-  /* Legacy */
+  --font-body: 'Manrope', 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-drama: 'Bebas Neue', sans-serif;
   --font-display-family: var(--font-display);
   --font-mono-family: var(--font-mono);
 
-  /* Shadows */
+  /* ── Shadows ── */
   --shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 24px rgba(143, 245, 255, 0.15);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.40);
@@ -73,11 +132,11 @@
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.60);
   --shadow-teal: 0 0 24px rgba(143, 245, 255, 0.20);
 
-  /* Easing */
+  /* ── Easing ── */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* Agent default colors */
+  /* ── Agent colors ── */
   --agent-1: #66e3ff;
   --agent-2: #b0a4ff;
   --agent-3: #49f3a6;
@@ -92,6 +151,7 @@
 }
 
 * { box-sizing: border-box; }
+
 html {
   scroll-behavior: smooth;
   background: var(--bg-void);
@@ -102,21 +162,76 @@ html {
 
 body {
   margin: 0;
-  background: var(--bg-void);
+  background: var(--color-background, #0c0e16);
   color: var(--text-primary);
-  font-family: var(--font-body), sans-serif;
-  background-image:
-    radial-gradient(ellipse 120% 60% at 50% -20%, rgba(143, 245, 255, 0.04) 0%, transparent 70%);
+  font-family: 'Manrope', 'Space Grotesk', sans-serif;
+  background-image: radial-gradient(ellipse 120% 60% at 50% -20%, rgba(143, 245, 255, 0.04) 0%, transparent 70%);
+  overflow-x: hidden;
 }
 
 a { color: inherit; text-decoration: none; }
 
 ::selection {
-  background: rgba(143, 245, 255, 0.25);
-  color: white;
+  background: var(--color-primary, #8ff5ff);
+  color: var(--color-on-primary, #005d63);
 }
 
-/* ── Arena Panel base class ── */
+/* ── Scanline effects ── */
+.scanline {
+  background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.05) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+}
+
+.scanline-overlay {
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+              linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+  background-size: 100% 4px, 3px 100%;
+  pointer-events: none;
+}
+
+/* ── Clip path utilities ── */
+.clipped-corner {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+}
+
+.clip-corner {
+  clip-path: polygon(0 0, 100% 0, 100% 70%, 95% 100%, 0 100%);
+}
+
+.agent-card-clip {
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 85% 100%, 0 100%);
+}
+
+.skew-box {
+  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+}
+
+.clipped-tag {
+  clip-path: polygon(0 0, 90% 0, 100% 100%, 10% 100%);
+}
+
+/* ── Glitch hover ── */
+.glitch-hover:hover {
+  text-shadow: 2px 0 #ff6c92, -2px 0 #8ff5ff;
+}
+
+/* ── Glass panel ── */
+.glass-panel {
+  background: rgba(35, 37, 50, 0.6);
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 0 rgba(143, 245, 255, 0.15);
+}
+
+.glass-panel-strong {
+  background: rgba(17, 19, 29, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px rgba(143, 245, 255, 0.03), 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ── Arena panel ── */
 .arena-panel {
   background: var(--panel-bg);
   backdrop-filter: blur(16px);
@@ -125,35 +240,23 @@ a { color: inherit; text-decoration: none; }
   box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-/* Neon glow on hover for interactive panels */
 .arena-panel-hover:hover {
   border-color: rgba(143, 245, 255, 0.2);
   box-shadow: var(--shadow-panel), 0 0 20px rgba(143, 245, 255, 0.08);
 }
 
-/* Glass card */
-.glass-panel, .glass-panel-strong {
-  background: rgba(17, 19, 29, 0.85);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  box-shadow: 0 0 0 1px rgba(143, 245, 255, 0.03), 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-/* Standard card — used everywhere */
+/* ── Card variants ── */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--panel-border);
-  border-radius: 1rem;
 }
 
 .card-raised {
   background: var(--bg-raised);
   border: 1px solid var(--panel-border);
-  border-radius: 1rem;
 }
 
-/* ── Grid background (very subtle) ── */
+/* ── Arena grid ── */
 .arena-grid {
   background-image:
     linear-gradient(rgba(143, 245, 255, 0.02) 1px, transparent 1px),
@@ -161,16 +264,12 @@ a { color: inherit; text-decoration: none; }
   background-size: 64px 64px;
 }
 
-/* ── Scanline overlay (Stitch Agent Builder) ── */
-.scanline-overlay {
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 1px,
-    rgba(0, 0, 0, 0.15) 1px,
-    rgba(0, 0, 0, 0.15) 2px
-  );
-  pointer-events: none;
+.arena-overlay-grid {
+  background-image:
+    linear-gradient(rgba(143, 245, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 245, 255, 0.04) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.8), transparent 90%);
 }
 
 /* ── Typography ── */
@@ -188,28 +287,27 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: -0.02em;
 }
 
+.font-display { font-family: 'Bebas Neue', sans-serif; }
+
+/* ── Data table alternating rows ── */
+.data-table-row:nth-child(even) {
+  background-color: #11131d;
+}
+.data-table-row:nth-child(odd) {
+  background-color: #0c0e16;
+}
+
 /* ── Status pills ── */
-.status-live {
-  color: var(--neon-green);
-  background: var(--green-soft);
-}
+.status-live   { color: var(--neon-green);   background: var(--green-soft); }
+.status-open   { color: var(--gold-trophy);  background: var(--gold-soft); }
+.status-settled { color: var(--text-muted);  background: rgba(255, 255, 255, 0.06); }
 
-.status-open {
-  color: var(--gold-trophy);
-  background: var(--gold-soft);
-}
-
-.status-settled {
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-/* ── Profit / Loss colors ── */
-.profit { color: var(--neon-green); }
-.loss   { color: var(--neon-red); }
+/* ── P&L colors ── */
+.profit  { color: var(--neon-green); }
+.loss    { color: var(--neon-red); }
 .neutral { color: var(--text-secondary); }
 
-/* ── Neon glow button ── */
+/* ── Buttons ── */
 .btn-primary {
   background: var(--neon-cyan);
   color: #005d63;
@@ -244,12 +342,7 @@ a { color: inherit; text-decoration: none; }
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.85); }
-}
-
-/* ── Scanline shimmer (cards) ── */
+/* ── Signal line shimmer ── */
 .signal-line {
   position: relative;
   overflow: hidden;
@@ -262,10 +355,6 @@ a { color: inherit; text-decoration: none; }
   animation: sweep 10s linear infinite;
 }
 
-@keyframes sweep {
-  to { transform: translateX(160%); }
-}
-
 /* ── Row hover ── */
 .row-hover {
   transition: background 0.12s;
@@ -275,7 +364,49 @@ a { color: inherit; text-decoration: none; }
   background: rgba(143, 245, 255, 0.03);
 }
 
-/* ── Animations ── */
+/* ── Text clamp ── */
+.text-clamp-1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.text-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.text-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+h1, h2, h3, h4 { text-wrap: balance; }
+p { text-wrap: pretty; }
+
+/* ── Pill ── */
+.pill {
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ── Mobile bottom nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 2px solid rgba(143, 245, 255, 0.2);
+  display: flex;
+  height: 80px;
+  align-items: stretch;
+  overflow: hidden;
+  box-shadow: 0 -5px 15px rgba(143, 245, 255, 0.2);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   KEYFRAME ANIMATIONS
+───────────────────────────────────────────────────────────────────────────── */
+
+@keyframes sweep {
+  to { transform: translateX(160%); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
 @keyframes rise {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -295,29 +426,6 @@ a { color: inherit; text-decoration: none; }
 .flash-profit { animation: flash-green 1.2s ease; }
 .flash-loss   { animation: flash-red 1.2s ease; }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar       { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-void); }
-::-webkit-scrollbar-thumb {
-  background: rgba(143, 245, 255, 0.15);
-  border-radius: 999px;
-}
-::-webkit-scrollbar-thumb:hover { background: rgba(143, 245, 255, 0.25); }
-
-/* ── Mobile bottom nav ── */
-.bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 50;
-  background: rgba(12, 14, 22, 0.96);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(143, 245, 255, 0.08);
-  display: flex;
-  padding: 6px 0 max(10px, env(safe-area-inset-bottom));
-}
-
-/* ── Price flash (ticker updates) ── */
 @keyframes tick-up {
   0%   { color: var(--neon-green); }
   100% { color: inherit; }
@@ -329,113 +437,109 @@ a { color: inherit; text-decoration: none; }
 .tick-up   { animation: tick-up   0.8s ease; }
 .tick-down { animation: tick-down 0.8s ease; }
 
-/* ── Pill ── */
-.pill {
-  border: 1px solid var(--panel-border);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-/* ── Responsive text-wrap helpers ── */
-.text-clamp-1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.text-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.text-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-
-h1, h2, h3, h4 { text-wrap: balance; }
-p { text-wrap: pretty; }
-
-@media (max-width: 360px) {
-  .arena-grid { --safe-px: 12px; }
-}
-
-/* ── Overlay grid (hero sections) ── */
-.arena-overlay-grid {
-  background-image:
-    linear-gradient(rgba(143, 245, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(143, 245, 255, 0.04) 1px, transparent 1px);
-  background-size: 80px 80px;
-  mask-image: linear-gradient(180deg, rgba(0,0,0,0.8), transparent 90%);
-}
-
-/* ── Sport arena animations ────────────────────────────────────────────────── */
 @keyframes score-blast {
   0%   { transform: scale(1); filter: brightness(1); }
   20%  { transform: scale(1.4); filter: brightness(2.5) saturate(2); }
   50%  { transform: scale(1.15); filter: brightness(1.5); }
   100% { transform: scale(1); filter: brightness(1); }
 }
+
 @keyframes impact-flash {
   0%   { opacity: 0; transform: scale(0.5); }
   15%  { opacity: 1; transform: scale(1.2); }
   40%  { opacity: 0.6; transform: scale(1); }
   100% { opacity: 0; }
 }
+
 @keyframes slide-in-left {
   from { opacity: 0; transform: translateX(-24px); }
   to   { opacity: 1; transform: translateX(0); }
 }
+
 @keyframes live-breathe {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,135,0.5); }
   50%       { opacity: 0.7; box-shadow: 0 0 0 8px rgba(0,255,135,0); }
 }
+
 @keyframes float-score {
   0%   { opacity: 1; transform: translateY(0) scale(1); }
   100% { opacity: 0; transform: translateY(-48px) scale(1.5); }
 }
+
 @keyframes glow-pulse {
   0%, 100% { filter: drop-shadow(0 0 4px currentColor); }
   50%       { filter: drop-shadow(0 0 16px currentColor) drop-shadow(0 0 32px currentColor); }
 }
+
 @keyframes speed-line {
   from { opacity: 0.6; transform: scaleX(0) translateX(-10px); transform-origin: left; }
   to   { opacity: 0; transform: scaleX(1) translateX(0); transform-origin: left; }
 }
+
 @keyframes winner-entrance {
   0%   { opacity: 0; transform: scale(0.7) rotate(-3deg); }
   60%  { transform: scale(1.08) rotate(1deg); }
   100% { opacity: 1; transform: scale(1) rotate(0deg); }
 }
 
-/* ── Neo-Tokyo keyframe animations ── */
 @keyframes neon-pulse {
   0%, 100% { box-shadow: 0 0 5px #8ff5ff, 0 0 10px #8ff5ff; }
-  50% { box-shadow: 0 0 20px #8ff5ff, 0 0 40px #8ff5ff; }
+  50%       { box-shadow: 0 0 20px #8ff5ff, 0 0 40px #8ff5ff; }
 }
+
 @keyframes live-ping {
-  0% { transform: scale(1); opacity: 1; }
+  0%        { transform: scale(1); opacity: 1; }
   75%, 100% { transform: scale(2); opacity: 0; }
 }
+
 @keyframes scan-line {
-  0% { transform: translateY(-100%); }
+  0%   { transform: translateY(-100%); }
   100% { transform: translateY(100vh); }
 }
+
 @keyframes agent-enter {
   from { opacity: 0; transform: translateX(-40px) scale(0.95); }
-  to { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
 }
+
 @keyframes score-counter {
-  0% { transform: scale(1.4); filter: brightness(2) saturate(2); }
+  0%   { transform: scale(1.4); filter: brightness(2) saturate(2); }
   100% { transform: scale(1); filter: brightness(1) saturate(1); }
 }
+
 @keyframes smash-impact {
-  0% { opacity: 0; transform: scale(0.3) rotate(-5deg); }
-  30% { opacity: 1; transform: scale(1.15) rotate(2deg); }
-  60% { transform: scale(1) rotate(0deg); }
+  0%   { opacity: 0; transform: scale(0.3) rotate(-5deg); }
+  30%  { opacity: 1; transform: scale(1.15) rotate(2deg); }
+  60%  { transform: scale(1) rotate(0deg); }
   100% { opacity: 0; transform: scale(0.8) rotate(0deg); }
 }
+
 @keyframes momentum-fire {
   0%, 100% { opacity: 0.7; transform: scaleY(1); }
-  50% { opacity: 1; transform: scaleY(1.05); }
+  50%       { opacity: 1; transform: scaleY(1.05); }
 }
+
 @keyframes vs-slam {
-  0% { opacity: 0; transform: scale(2) translateY(-20px); }
-  60% { transform: scale(0.95) translateY(2px); }
+  0%   { opacity: 0; transform: scale(2) translateY(-20px); }
+  60%  { transform: scale(0.95) translateY(2px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
+
 @keyframes match-point-pulse {
   0%, 100% { border-color: var(--gold-trophy); box-shadow: 0 0 10px var(--gold-trophy); }
-  50% { border-color: var(--neon-magenta); box-shadow: 0 0 30px var(--neon-magenta); }
+  50%       { border-color: var(--neon-magenta); box-shadow: 0 0 30px var(--neon-magenta); }
 }
+
 @keyframes float-point {
-  0% { opacity: 1; transform: translateY(0) scale(1); }
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
   100% { opacity: 0; transform: translateY(-60px) scale(1.5); }
 }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-void); }
+::-webkit-scrollbar-thumb {
+  background: rgba(143, 245, 255, 0.15);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(143, 245, 255, 0.25); }

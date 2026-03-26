@@ -202,22 +202,25 @@ export function SportAgentBuilder() {
 
   if (submitted) {
     return (
-      <div className="glass-panel rounded-[1.6rem] p-6">
-        <div className="flex flex-col items-center gap-4 py-8 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--green-soft)]">
-            <svg className="h-8 w-8 text-[var(--green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+      <div className="bg-[#171924] border border-[#8ff5ff]/20 p-8 text-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex h-16 w-16 items-center justify-center border-2 border-[#8ff5ff]">
+            <span className="material-symbols-outlined text-[#8ff5ff] text-4xl">check_circle</span>
           </div>
           <div>
-            <div className="text-xl font-semibold text-white">{form.name} is ready</div>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              Your {form.archetype.toLowerCase()} athlete has been created. Redirecting to competitions…
+            <div className="font-['Space_Grotesk'] text-2xl font-black text-[#8ff5ff] uppercase tracking-tight italic">
+              {form.name} INITIALIZED
+            </div>
+            <p className="mt-2 text-sm font-mono text-[#aaaab6]">
+              {form.archetype.toUpperCase()} athlete deployed. Redirecting to competitions…
             </p>
           </div>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
             {form.specialMoves.map((move) => (
-              <span key={move} className="rounded-full border border-[var(--teal)]/30 px-3 py-1 text-xs uppercase tracking-[0.14em] text-[var(--teal)]">
+              <span
+                key={move}
+                className="border border-[#8ff5ff]/40 bg-[#8ff5ff]/10 px-3 py-1 text-xs uppercase tracking-widest text-[#8ff5ff] font-mono"
+              >
                 {move}
               </span>
             ))}
@@ -228,143 +231,200 @@ export function SportAgentBuilder() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="glass-panel rounded-[1.6rem] p-6 space-y-5">
-      <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
-        Athlete builder
+    <form onSubmit={handleSubmit} className="bg-[#171924] border border-[#8ff5ff]/20 p-6 space-y-6 shadow-[inset_0_1px_0_0_rgba(143,245,255,0.15)]">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-[#464752]/20 pb-4">
+        <div>
+          <span className="bg-[#8ff5ff] text-[#005d63] px-3 py-0.5 text-[10px] font-mono font-bold uppercase">
+            {form.archetype.toUpperCase()}
+          </span>
+          <h2 className="font-['Space_Grotesk'] text-4xl font-black text-[#eeecfa] tracking-tighter uppercase mt-2 italic leading-none">
+            {form.name || "NEW_AGENT"}
+          </h2>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-['Space_Grotesk'] font-bold text-[#ffe6aa]">
+            {STAT_BUDGET - remainingPoints} <span className="text-xs uppercase opacity-60">/ {STAT_BUDGET} pts</span>
+          </div>
+          <div className="text-[10px] text-[#aaaab6] font-mono mt-1 uppercase">BUDGET_USED</div>
+        </div>
       </div>
 
       {/* Name */}
-      <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
-        <label htmlFor="agent-name" className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          Athlete name
+      <div className="bg-[#11131d] border-b border-[#8ff5ff]/40 px-0 py-2">
+        <label htmlFor="agent-name" className="text-[10px] uppercase tracking-widest text-[#464752] font-mono block mb-1">
+          Agent Designation
         </label>
         <input
           id="agent-name"
           type="text"
           value={form.name}
           onChange={(e) => updateField("name", e.target.value)}
-          placeholder="e.g. Striker, Phantom, Apex…"
+          placeholder="e.g. STRIKER_X, PHANTOM_V2, APEX_01…"
           maxLength={40}
-          className="mt-2 w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-[var(--text-muted)]"
+          className="w-full bg-transparent text-[#8ff5ff] font-mono text-sm outline-none placeholder:text-[#464752] uppercase tracking-widest"
         />
       </div>
 
       {/* Archetype */}
-      <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
-        <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Archetype</div>
-        <div className="mt-3 flex flex-wrap gap-2">
+      <div>
+        <div className="text-[10px] uppercase tracking-widest text-[#464752] font-mono mb-3">Combat Chassis</div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {ARCHETYPES.map((arch) => (
             <button
               key={arch}
               type="button"
               onClick={() => updateField("archetype", arch)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium tracking-[0.1em] transition-colors ${
-                form.archetype === arch
-                  ? "bg-[var(--cyan-soft)] text-[var(--cyan)]"
-                  : "border border-white/10 bg-white/5 text-[var(--text-secondary)] hover:bg-white/[0.08]"
-              }`}
+              className="p-3 text-left transition-all border"
+              style={{
+                background: form.archetype === arch ? 'rgba(143,245,255,0.1)' : 'transparent',
+                borderColor: form.archetype === arch ? '#8ff5ff' : 'rgba(70,71,82,0.3)',
+                color: form.archetype === arch ? '#8ff5ff' : '#aaaab6',
+              }}
             >
-              {arch}
+              <div className="text-[10px] font-mono uppercase font-bold">{arch}</div>
             </button>
           ))}
         </div>
       </div>
 
       {/* Playing Style */}
-      <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
-        <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Playing Style</div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {PLAYING_STYLES.map((style) => (
-            <button
-              key={style}
-              type="button"
-              onClick={() => updateField("playingStyle", style)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] transition-colors ${
-                form.playingStyle === style
-                  ? style === "Aggressive"
-                    ? "bg-[var(--red-soft)] text-[var(--red)]"
-                    : style === "Moderate"
-                      ? "bg-[var(--gold-soft)] text-[var(--gold)]"
-                      : "bg-[var(--cyan-soft)] text-[var(--cyan)]"
-                  : "border border-white/10 bg-white/5 text-[var(--text-secondary)] hover:bg-white/[0.08]"
-              }`}
-            >
-              {style}
-            </button>
-          ))}
+      <div>
+        <div className="text-[10px] uppercase tracking-widest text-[#464752] font-mono mb-3">Operational Protocol</div>
+        <div className="grid grid-cols-3 gap-3">
+          {PLAYING_STYLES.map((style) => {
+            const colors = {
+              Aggressive: { active: '#ff6c92', border: '#ff6c92' },
+              Moderate:   { active: '#ffe6aa', border: '#ffe6aa' },
+              Defensive:  { active: '#8ff5ff', border: '#8ff5ff' },
+            };
+            const c = colors[style];
+            const selected = form.playingStyle === style;
+            return (
+              <button
+                key={style}
+                type="button"
+                onClick={() => updateField("playingStyle", style)}
+                className="p-3 border font-mono text-xs uppercase font-bold tracking-widest transition-all"
+                style={{
+                  background: selected ? `${c.active}22` : 'transparent',
+                  borderColor: selected ? c.border : 'rgba(70,71,82,0.3)',
+                  color: selected ? c.active : '#464752',
+                }}
+              >
+                {style}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Stat allocation */}
-      <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
-        <div className="flex items-center justify-between">
-          <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Stat Allocation</div>
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[10px] uppercase tracking-widest text-[#464752] font-mono">Neural Bandwidth Budget</div>
           <div
-            className={`font-mono text-sm font-bold ${
-              remainingPoints === 0 ? "text-[var(--green)]" : remainingPoints < 0 ? "text-[var(--red)]" : "text-[var(--gold)]"
-            }`}
+            className="font-mono text-[10px] font-bold"
+            style={{ color: remainingPoints === 0 ? '#00ff87' : remainingPoints < 0 ? '#ff716c' : '#ffe6aa' }}
           >
             {remainingPoints} pts remaining
           </div>
         </div>
-        <div className="mt-4 space-y-4">
-          <StatSlider
-            label="Speed (SPD)"
-            value={form.stats.speed}
-            color="#66E3FF"
-            remaining={remainingPoints}
-            onChange={(v) => updateStat("speed", v)}
-          />
-          <StatSlider
-            label="Power (PWR)"
-            value={form.stats.power}
-            color="#f59e0b"
-            remaining={remainingPoints}
-            onChange={(v) => updateStat("power", v)}
-          />
-          <StatSlider
-            label="Stamina (STA)"
-            value={form.stats.stamina}
-            color="#22c55e"
-            remaining={remainingPoints}
-            onChange={(v) => updateStat("stamina", v)}
-          />
-          <StatSlider
-            label="Accuracy (ACC)"
-            value={form.stats.accuracy}
-            color="#a78bfa"
-            remaining={remainingPoints}
-            onChange={(v) => updateStat("accuracy", v)}
-          />
+        {/* Budget bar (Stitch segmented style) */}
+        <div className="bg-[#ffe6aa]/20 h-2 flex gap-[1px] mb-6">
+          {Array.from({ length: 10 }, (_, i) => (
+            <div
+              key={i}
+              className="flex-1 h-full"
+              style={{
+                background: i < Math.round((STAT_BUDGET - remainingPoints) / STAT_BUDGET * 10)
+                  ? '#ffe6aa'
+                  : 'rgba(35,37,50,0.8)',
+              }}
+            />
+          ))}
+        </div>
+        <div className="space-y-6">
+          {([
+            { key: "speed" as const,    label: "Speed",    color: "#8ff5ff" },
+            { key: "power" as const,    label: "Power",    color: "#ffe6aa" },
+            { key: "stamina" as const,  label: "Stamina",  color: "#ff6c92" },
+            { key: "accuracy" as const, label: "Accuracy", color: "#a78bfa" },
+          ] as const).map(({ key, label, color }) => (
+            <div key={key}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="font-mono text-xs text-[#eeecfa] font-bold uppercase tracking-widest">{label}</span>
+                <span className="font-mono text-xs" style={{ color }}>{form.stats[key]} / {STAT_MAX}</span>
+              </div>
+              <div className="h-1 w-full bg-[#11131d] mb-2">
+                <div
+                  className="h-full transition-all"
+                  style={{ width: `${((form.stats[key] - STAT_MIN) / (STAT_MAX - STAT_MIN)) * 100}%`, background: color, boxShadow: `0 0 8px ${color}` }}
+                />
+              </div>
+              <div className="flex gap-1">
+                {Array.from({ length: STAT_MAX - STAT_MIN + 1 }, (_, i) => i + STAT_MIN).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    disabled={v > form.stats[key] && remainingPoints <= 0}
+                    onClick={() => updateStat(key, v)}
+                    className="flex-1 py-1 text-[9px] font-mono transition-colors disabled:opacity-30"
+                    style={{
+                      background: v <= form.stats[key] ? `${color}33` : 'rgba(255,255,255,0.04)',
+                      color: v <= form.stats[key] ? color : 'rgba(255,255,255,0.2)',
+                      border: v === form.stats[key] ? `1px solid ${color}80` : '1px solid transparent',
+                    }}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Special moves */}
-      <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
-        <div className="flex items-center justify-between">
-          <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Special Moves</div>
-          <div className="text-[10px] text-[var(--text-muted)]">
-            {form.specialMoves.length}/2 selected
-          </div>
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[10px] uppercase tracking-widest text-[#464752] font-mono">Loaded Abilities</div>
+          <div className="text-[10px] text-[#464752] font-mono">{form.specialMoves.length}/2 selected</div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {SPECIAL_MOVES.map((move) => {
             const selected = form.specialMoves.includes(move);
             const disabled = !selected && form.specialMoves.length >= 2;
+            const color = selected ? '#ffe6aa' : '#ff6c92';
             return (
               <button
                 key={move}
                 type="button"
                 disabled={disabled}
                 onClick={() => toggleMove(move)}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium tracking-[0.1em] transition-colors disabled:opacity-30 ${
-                  selected
-                    ? "border border-[var(--teal)]/50 bg-[var(--teal)]/15 text-[var(--teal)]"
-                    : "border border-white/10 bg-white/5 text-[var(--text-secondary)] hover:bg-white/[0.08]"
-                }`}
+                className="p-3 flex items-center gap-3 transition-all border disabled:opacity-30"
+                style={{
+                  background: selected ? `${color}0d` : 'transparent',
+                  borderColor: selected ? `${color}66` : 'rgba(70,71,82,0.3)',
+                }}
               >
-                {selected && <span className="mr-1">✓</span>}
-                {move}
+                <div
+                  className="w-8 h-8 flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${color}20` }}
+                >
+                  <span className="material-symbols-outlined text-sm" style={{ color }}>
+                    {selected ? 'flash_on' : 'add'}
+                  </span>
+                </div>
+                <div>
+                  <div
+                    className="text-[10px] font-mono font-bold uppercase"
+                    style={{ color: selected ? color : '#aaaab6' }}
+                  >
+                    {move}
+                  </div>
+                </div>
+                {selected && <div className="ml-auto w-2 h-2 flex-shrink-0" style={{ background: color }} />}
               </button>
             );
           })}
@@ -372,55 +432,49 @@ export function SportAgentBuilder() {
       </div>
 
       {/* Play style description */}
-      <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
-        <label htmlFor="play-style" className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          Play Style (optional)
+      <div className="bg-[#11131d] p-4 border-l-2 border-[#8ff5ff]/30">
+        <label htmlFor="play-style" className="text-[10px] uppercase tracking-widest text-[#464752] font-mono block mb-2">
+          Tactical Profile (optional)
         </label>
         <textarea
           id="play-style"
           value={form.playStyle}
           onChange={(e) => updateField("playStyle", e.target.value)}
-          placeholder="How does this athlete play? What's their approach to matches?"
+          placeholder="How does this agent compete? Describe their playstyle…"
           maxLength={200}
           rows={3}
-          className="mt-2 w-full resize-none border-none bg-transparent text-sm leading-6 text-white outline-none placeholder:text-[var(--text-muted)]"
+          className="w-full resize-none bg-transparent text-sm leading-6 text-[#eeecfa] outline-none placeholder:text-[#464752] font-mono"
         />
       </div>
 
       {/* Error */}
       {error && (
-        <div className="rounded-2xl border border-[var(--red)]/30 bg-[var(--red-soft)] px-4 py-3 text-sm text-[var(--red)]">
-          {error}
+        <div className="border border-[#ff716c]/30 bg-[#ff716c]/10 px-4 py-3 text-sm text-[#ff716c] font-mono">
+          ERROR: {error}
         </div>
       )}
 
       {/* Submit */}
-      <div className="flex items-center gap-4">
-        <button
-          type="submit"
-          disabled={submitting || remainingPoints < 0}
-          className="inline-flex items-center justify-center rounded-full bg-[var(--cyan)] px-6 py-3 text-sm font-medium text-slate-950 shadow-[0_10px_30px_rgba(102,227,255,0.28)] transition hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
-        >
-          {submitting ? (
-            <>
-              <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
-                <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-              </svg>
-              Creating…
-            </>
-          ) : (
-            "Create athlete"
-          )}
-        </button>
-
-        {form.name.trim() && (
-          <div className="text-sm text-[var(--text-secondary)]">
-            <span className="text-white">{form.name.trim()}</span>{" "}
-            · {form.archetype} · {form.playingStyle}
-          </div>
+      <button
+        type="submit"
+        disabled={submitting || remainingPoints < 0}
+        className="w-full bg-gradient-to-r from-[#ffe6aa] to-[#efc859] text-[#493800] py-4 font-['Space_Grotesk'] font-black text-xl uppercase tracking-tighter flex items-center justify-center gap-4 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(255,230,170,0.3)] disabled:opacity-50"
+      >
+        {submitting ? (
+          <>
+            <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+              <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+            </svg>
+            Initializing…
+          </>
+        ) : (
+          <>
+            Enter the Arena
+            <span className="material-symbols-outlined font-bold">arrow_forward_ios</span>
+          </>
         )}
-      </div>
+      </button>
     </form>
   );
 }

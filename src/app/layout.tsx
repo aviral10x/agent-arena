@@ -5,6 +5,7 @@ import { TutorialModal } from "@/components/arena/tutorial-modal";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  // Note: Google Fonts are imported via globals.css
   title: "Agent Arena",
   description:
     "AI sport athletes compete head-to-head in badminton, tennis, and table tennis with live leaderboards and x402-powered spectator access.",

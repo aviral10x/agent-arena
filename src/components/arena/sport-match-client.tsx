@@ -417,313 +417,366 @@ export function SportMatchClient({
   }, [lastAction, a1score, a2score, mounted]);
 
   return (
-    <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-5">
+    <div className="h-[calc(100vh-64px)] flex flex-col bg-[#0c0e16] overflow-hidden">
+      {/* ── Scanline overlay ── */}
+      <div className="scanline-overlay absolute inset-0 z-10 pointer-events-none" />
 
-      {/* ── Score Banner — Neo-Tokyo HUD ── */}
-      <div
-        className="relative overflow-hidden rounded-2xl mb-4 select-none"
-        style={{
-          background: `linear-gradient(to right, ${a1color}30 0%, #05060e 35%, #05060e 65%, ${a2color}30 100%)`,
-          border: '1px solid rgba(0,240,255,0.1)',
-          boxShadow: `0 0 40px ${a1color}18, 0 0 40px ${a2color}18`,
-        }}
-      >
-        {/* Colored side bleed strips */}
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl" style={{ background: a1color, boxShadow: `4px 0 20px ${a1color}88` }} />
-        <div className="absolute right-0 top-0 bottom-0 w-1.5 rounded-r-2xl" style={{ background: a2color, boxShadow: `-4px 0 20px ${a2color}88` }} />
+      {/* ── 3-column Stitch layout: agent-left | arena | agent-right ── */}
+      <div className="flex-1 grid grid-cols-12 gap-0 overflow-hidden relative z-20">
 
-        <div className="px-6 py-5 flex items-center">
-          {/* Left agent */}
-          <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full shrink-0" style={{ background: a1color, boxShadow: `0 0 10px ${a1color}` }} />
-              <span
-                className="text-base truncate"
-                style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: a1color, textTransform: 'uppercase', letterSpacing: '0.1em' }}
-              >
-                {a1name}{gameState?.winner === a1?.id && ' 🏆'}
-              </span>
-            </div>
-            {/* Set dots */}
-            {score && (
-              <div className="flex gap-1 pl-5">
-                {Array.from({ length: gameState?.sport === 'table-tennis' ? 3 : 2 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-2.5 h-2.5 rounded-full transition-all duration-300"
-                    style={{
-                      background: i < score.setsWon.a1 ? a1color : 'rgba(255,255,255,0.1)',
-                      boxShadow: i < score.setsWon.a1 ? `0 0 6px ${a1color}` : 'none',
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+        {/* ── LEFT SIDEBAR: Agent A Panel ── */}
+        <aside className="col-span-3 bg-[#11131d] border-r border-[#8ff5ff]/10 flex flex-col overflow-y-auto">
+          <div className="p-6 space-y-8">
 
-          {/* Center: scores */}
-          <div className="flex items-center gap-4 px-4 shrink-0">
-            <div
-              key={`${a1score}-blast`}
-              className="tabular-nums leading-none"
-              style={{
-                fontFamily: 'var(--font-drama)',
-                fontSize: '5rem',
-                fontWeight: 700,
-                animation: mounted ? 'score-blast 0.5s ease-out' : 'none',
-                color: '#8ff5ff',
-                textShadow: '0 0 30px #8ff5ff88, 0 0 60px #8ff5ff44',
-              }}
-            >
-              {a1score}
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              {/* Vertical neon cyan separator */}
-              <div style={{ width: '2px', height: '48px', background: '#8ff5ff', boxShadow: '0 0 8px #8ff5ff, 0 0 16px rgba(143,245,255,0.4)', borderRadius: '1px' }} />
-              {score && score.sets.length > 1 && (
-                <div className="flex flex-col items-center gap-0.5">
-                  {score.sets.slice(0, gameState?.currentSet).map((s, i) => (
-                    <span key={i} className="text-[9px] text-white/25" style={{ fontFamily: 'var(--font-mono)' }}>{s.a1}–{s.a2}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div
-              key={`${a2score}-blast`}
-              className="tabular-nums leading-none"
-              style={{
-                fontFamily: 'var(--font-drama)',
-                fontSize: '5rem',
-                fontWeight: 700,
-                animation: mounted ? 'score-blast 0.5s ease-out' : 'none',
-                color: '#8ff5ff',
-                textShadow: '0 0 30px #8ff5ff88, 0 0 60px #8ff5ff44',
-              }}
-            >
-              {a2score}
-            </div>
-          </div>
-
-          {/* Right agent */}
-          <div className="flex-1 min-w-0 flex flex-col gap-1.5 items-end">
-            <div className="flex items-center gap-2">
-              <span
-                className="text-base truncate"
-                style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: a2color, textTransform: 'uppercase', letterSpacing: '0.1em' }}
-              >
-                {gameState?.winner === a2?.id && '🏆 '}{a2name}
-              </span>
-              <div className="w-3 h-3 rounded-full shrink-0" style={{ background: a2color, boxShadow: `0 0 10px ${a2color}` }} />
-            </div>
-            {score && (
-              <div className="flex gap-1 pr-5">
-                {Array.from({ length: gameState?.sport === 'table-tennis' ? 3 : 2 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-2.5 h-2.5 rounded-full transition-all duration-300"
-                    style={{
-                      background: i < score.setsWon.a2 ? a2color : 'rgba(255,255,255,0.1)',
-                      boxShadow: i < score.setsWon.a2 ? `0 0 6px ${a2color}` : 'none',
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Momentum bars — 4px glowing fills */}
-        <div className="px-6 pb-4 grid grid-cols-2 gap-3">
-          {([
-            { agent: a1, m: m1, label: a1name, color: a1color },
-            { agent: a2, m: m2, label: a2name, color: a2color },
-          ] as { agent: Agent | undefined; m: number; label: string; color: string }[]).map(({ m, label }) => {
-            return (
-              <div key={label} className="flex items-center gap-2">
-                <span className="text-[9px] uppercase tracking-widest w-12 truncate shrink-0" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.3)' }}>{label}</span>
-                <div className="flex-1 overflow-hidden rounded-full" style={{ height: '2px', background: 'rgba(255,255,255,0.08)' }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${m}%`, background: '#8ff5ff', boxShadow: '0 0 10px #8ff5ff', animation: 'momentum-fire 2s ease-in-out infinite' }}
-                  />
-                </div>
-                <span className="text-[9px] tabular-nums w-6 text-right" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.3)' }}>{Math.round(m)}</span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Status badges */}
-        <div className="absolute top-3 right-4 flex items-center gap-2">
-          {/* Mute toggle */}
-          <button
-            onClick={() => { (window as any).__arenaMuted = !(window as any).__arenaMuted; }}
-            className="text-[11px] hover:text-white/50 transition-colors"
-            style={{ color: 'rgba(255,255,255,0.2)' }}
-            title="Toggle SFX"
-          >
-            {(typeof window !== 'undefined' && (window as any).__arenaMuted) ? '🔇' : '🔊'}
-          </button>
-          {isLive && (
-            <span
-              className="flex items-center gap-1.5 text-[10px] font-black tracking-widest px-2 py-0.5 rounded-full"
-              style={{
-                fontFamily: 'var(--font-mono)',
-                background: '#8ff5ff',
-                color: '#005d63',
-                animation: 'live-breathe 2s infinite',
-              }}
-            >
-              <span className="relative">
-                <span className="w-1.5 h-1.5 rounded-full block" style={{ background: '#005d63' }} />
-                <span className="absolute inset-0 rounded-full" style={{ background: '#005d63', animation: 'live-ping 1.5s ease-in-out infinite' }} />
-              </span>
-              LIVE
-            </span>
-          )}
-          {!isLive && status === 'settled' && (
-            <span
-              className="text-[10px] font-black tracking-widest text-yellow-400 px-2 py-0.5 rounded-full"
-              style={{ background: 'rgba(250,204,21,0.12)' }}
-            >
-              FINAL
-            </span>
-          )}
-          {gameState && (
-            <span className="text-[9px] font-mono text-white/20">Rally #{gameState.rallyCount}</span>
-          )}
-        </div>
-
-        {/* Last action badge */}
-        {lastAction && (
-          <div className="absolute bottom-3 right-4">
-            <span
-              className="text-[10px] font-bold px-2 py-0.5 rounded"
-              style={{
-                background: `${ACTION_COLORS[lastAction] ?? '#888'}22`,
-                color: ACTION_COLORS[lastAction] ?? '#888',
-              }}
-            >
-              {ACTION_EMOJI[lastAction] ?? ''} {lastAction}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* ── MAIN LAYOUT ── */}
-      <div className="grid gap-4 lg:grid-cols-[55fr_45fr]">
-
-        {/* ── LEFT COL ── */}
-        <div className="flex flex-col gap-4">
-
-          {/* Court + Impact Overlay */}
-          {gameState ? (
-            <div className="relative">
-              <CourtCanvas
-                gameState={gameState}
-                agentNames={agentNames}
-                agentColors={agentColors}
-                className="w-full"
-              />
-              {/* Impact overlay */}
-              <div
-                key={`${gameState.lastAction}-${gameState.rallyCount}`}
-                className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                style={{ animation: mounted ? 'impact-flash 0.8s ease-out forwards' : 'none' }}
-              >
-                <span
-                  className="text-4xl font-black"
+            {/* Agent A Profile */}
+            {a1 && (
+              <div className="space-y-4">
+                {/* Avatar area */}
+                <div
+                  className="relative w-full bg-black overflow-hidden border-2"
                   style={{
-                    color: ACTION_COLORS[gameState.lastAction ?? ''] ?? 'white',
-                    textShadow: `0 0 20px ${ACTION_COLORS[gameState.lastAction ?? ''] ?? 'white'}`,
+                    aspectRatio: '1/1',
+                    borderColor: `${a1color}66`,
+                    boxShadow: `0 0 20px ${a1color}33`,
                   }}
                 >
-                  {ACTION_EMOJI[gameState.lastAction ?? '']} {gameState.lastAction}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="rounded-xl border border-white/10 w-full flex items-center justify-center"
-              style={{ aspectRatio: '4/5', minHeight: 300, background: '#060d1a' }}
-            >
-              <div className="flex flex-col items-center gap-3 text-white/30">
-                <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-                <span className="text-xs">Loading court…</span>
-              </div>
-            </div>
-          )}
-
-          {/* Trainer Consoles */}
-          {status === 'live' && agents.map(a => (
-            <TrainerConsole
-              key={a.id}
-              competitionId={competitionId}
-              agentId={a.id}
-              agentName={a.name}
-              agentOwner={a.owner}
-            />
-          ))}
-
-          {/* Play-by-Play Feed */}
-          <div
-            className="rounded-xl border border-white/10 flex flex-col overflow-hidden"
-            style={{ background: '#0d1829' }}
-          >
-            <div
-              className="flex items-center justify-between px-4 py-2.5"
-              style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-widest font-semibold text-white/40">
-                  Play-by-Play
-                </span>
-                {isLive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
-              </div>
-              <span className="text-[9px] font-mono text-white/20">{events.length} events</span>
-            </div>
-
-            <div className="overflow-y-auto max-h-64 flex flex-col divide-y divide-white/5">
-              {visibleEvents.length === 0 ? (
-                <div className="px-4 py-6 text-center text-white/30 text-xs">
-                  No events yet — match starting soon.
+                  {/* Color fill */}
+                  <div className="absolute inset-0" style={{ background: `${a1color}11` }} />
+                  <div className="absolute bottom-0 left-0 w-full p-4"
+                    style={{ background: `linear-gradient(to top, ${a1color}33, transparent)` }}
+                  >
+                    <h2
+                      className="font-['Bebas_Neue'] text-4xl tracking-wider uppercase"
+                      style={{ color: a1color }}
+                    >
+                      {a1name}{gameState?.winner === a1.id && ' 🏆'}
+                    </h2>
+                    <p className="font-mono text-[10px]" style={{ color: `${a1color}99` }}>
+                      NEURAL_SYNC: {Math.round(m1)}% // {m1 > 65 ? 'OPTIMAL' : 'FLUCTUATING'}
+                    </p>
+                  </div>
                 </div>
+
+                {/* Stats grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-black p-3 border-l-2 border-[#8ff5ff]">
+                    <p className="text-[10px] font-['Space_Grotesk'] text-[#747480] uppercase tracking-tighter">Momentum</p>
+                    <p className="font-mono text-xl text-[#8ff5ff]">{Math.round(m1)}%</p>
+                  </div>
+                  <div className="bg-black p-3 border-l-2 border-[#ffe6aa]">
+                    <p className="text-[10px] font-['Space_Grotesk'] text-[#747480] uppercase tracking-tighter">Score</p>
+                    <p className="font-mono text-xl text-[#ffe6aa]">{a1score}</p>
+                  </div>
+                </div>
+
+                {/* Momentum bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-end">
+                    <span className="font-mono text-[10px]" style={{ color: a1color }}>MOMENTUM_ENGINE</span>
+                    <span className="font-mono text-lg" style={{ color: a1color }}>{Math.round(m1)}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-black overflow-hidden">
+                    <div
+                      className="h-full transition-all duration-500"
+                      style={{
+                        width: `${m1}%`,
+                        background: a1color,
+                        boxShadow: `0 0 10px ${a1color}`,
+                        animation: 'momentum-fire 2s ease-in-out infinite',
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Agent A stats from duel card */}
+            {a1 && (
+              <div className="space-y-4">
+                <h3 className="font-['Space_Grotesk'] text-xs font-bold text-[#464752] uppercase border-b border-[#464752]/20 pb-2">
+                  Active_Tactics
+                </h3>
+                <AgentDuelCard
+                  agent={a1}
+                  oppAgent={a2}
+                  gameState={gameState}
+                  isWinner={winnerId === a1.id}
+                  agentStats={agentStats}
+                />
+              </div>
+            )}
+          </div>
+        </aside>
+
+        {/* ── CENTER: Arena Canvas ── */}
+        <div className="col-span-6 bg-black relative flex flex-col overflow-hidden">
+
+          {/* Top Live Score bar */}
+          <div className="h-20 flex items-stretch border-b border-[#8ff5ff]/5 z-30 shrink-0">
+            <div
+              className="flex-1 flex flex-col items-center justify-center px-4"
+              style={{ background: `linear-gradient(to right, ${a1color}1a, transparent)` }}
+            >
+              <span className="font-mono text-[10px]" style={{ color: `${a1color}99` }}>Challenger_A</span>
+              <span className="font-['Bebas_Neue'] text-2xl" style={{ color: a1color }}>{a1name}</span>
+            </div>
+            <div className="w-48 bg-[#0c0e16] p-2 flex flex-col items-center justify-center border-x border-[#8ff5ff]/20">
+              <div className="flex items-center gap-6">
+                <span
+                  key={`${a1score}-score`}
+                  className="font-['Bebas_Neue'] text-5xl"
+                  style={{
+                    color: '#8ff5ff',
+                    animation: mounted ? 'score-blast 0.5s ease-out' : 'none',
+                  }}
+                >
+                  {a1score}
+                </span>
+                <div className="flex flex-col items-center">
+                  {isLive && (
+                    <span
+                      className="font-mono text-[10px] text-[#ffe6aa] animate-pulse uppercase"
+                    >
+                      {gameState?.currentSet ? `SET ${gameState.currentSet + 1}` : 'LIVE'}
+                    </span>
+                  )}
+                  {!isLive && status === 'settled' && (
+                    <span className="font-mono text-[10px] text-[#ffe6aa] uppercase">FINAL</span>
+                  )}
+                  <span className="font-['Space_Grotesk'] text-xl text-[#464752]">
+                    {gameState?.rallyCount ? `R${gameState.rallyCount}` : 'VS'}
+                  </span>
+                </div>
+                <span
+                  key={`${a2score}-score`}
+                  className="font-['Bebas_Neue'] text-5xl"
+                  style={{
+                    color: '#ff6c92',
+                    animation: mounted ? 'score-blast 0.5s ease-out' : 'none',
+                  }}
+                >
+                  {a2score}
+                </span>
+              </div>
+            </div>
+            <div
+              className="flex-1 flex flex-col items-center justify-center px-4"
+              style={{ background: `linear-gradient(to left, ${a2color}1a, transparent)` }}
+            >
+              <span className="font-mono text-[10px]" style={{ color: `${a2color}99` }}>Defender_B</span>
+              <span className="font-['Bebas_Neue'] text-2xl" style={{ color: a2color }}>{a2name}</span>
+            </div>
+          </div>
+
+          {/* Arena Canvas */}
+          <div className="flex-1 relative overflow-hidden">
+            {/* Dot grid */}
+            <div
+              className="absolute inset-0 opacity-10 pointer-events-none"
+              style={{
+                backgroundImage: 'radial-gradient(#8ff5ff 0.5px, transparent 0.5px)',
+                backgroundSize: '32px 32px',
+              }}
+            />
+
+            {/* Court/Canvas */}
+            {gameState ? (
+              <div className="relative w-full h-full">
+                <CourtCanvas
+                  gameState={gameState}
+                  agentNames={agentNames}
+                  agentColors={agentColors}
+                  className="w-full h-full"
+                />
+                {/* Impact overlay */}
+                <div
+                  key={`${gameState.lastAction}-${gameState.rallyCount}`}
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                  style={{ animation: mounted ? 'impact-flash 0.8s ease-out forwards' : 'none' }}
+                >
+                  <span
+                    className="font-['Bebas_Neue'] text-8xl italic drop-shadow-[0_0_20px_rgba(255,108,146,0.8)] leading-none"
+                    style={{ color: ACTION_COLORS[gameState.lastAction ?? ''] ?? 'white' }}
+                  >
+                    {gameState.lastAction}!
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3 text-[#464752]">
+                  <div className="w-6 h-6 border-2 border-[#464752] border-t-[#8ff5ff] rounded-full animate-spin" />
+                  <span className="font-mono text-xs">Loading court…</span>
+                </div>
+              </div>
+            )}
+
+            {/* Corner indicators */}
+            <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-[#ff716c] opacity-40 pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-[#ff716c] opacity-40 pointer-events-none" />
+
+            {/* Status top-right */}
+            <div className="absolute top-3 right-4 flex items-center gap-2 z-20">
+              <button
+                onClick={() => { (window as any).__arenaMuted = !(window as any).__arenaMuted; }}
+                className="text-[11px] hover:text-[#aaaab6] transition-colors font-mono"
+                style={{ color: 'rgba(255,255,255,0.2)' }}
+                title="Toggle SFX"
+              >
+                {(typeof window !== 'undefined' && (window as any).__arenaMuted) ? '🔇' : '🔊'}
+              </button>
+              {isLive && (
+                <span
+                  className="flex items-center gap-1.5 text-[10px] font-black tracking-widest px-2 py-0.5 font-mono"
+                  style={{ background: '#8ff5ff', color: '#005d63', animation: 'live-breathe 2s infinite' }}
+                >
+                  <span className="w-1.5 h-1.5 block" style={{ background: '#005d63' }} />
+                  LIVE
+                </span>
+              )}
+            </div>
+
+            {/* Last action badge */}
+            {lastAction && (
+              <div className="absolute bottom-3 right-4 z-20">
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 font-mono"
+                  style={{
+                    background: `${ACTION_COLORS[lastAction] ?? '#888'}22`,
+                    color: ACTION_COLORS[lastAction] ?? '#888',
+                  }}
+                >
+                  {ACTION_EMOJI[lastAction] ?? ''} {lastAction}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Trainer Console (Stitch bottom center) */}
+          <div className="h-24 bg-[#0c0e16] border-t border-[#8ff5ff]/20 p-4 flex items-center gap-4 z-30 shrink-0">
+            <div className="w-12 h-12 flex items-center justify-center bg-[#8ff5ff]/10 text-[#8ff5ff] border border-[#8ff5ff]/30">
+              <span className="material-symbols-outlined">terminal</span>
+            </div>
+            <div className="flex-1">
+              {status === 'live' && a1 ? (
+                <TrainerConsole
+                  competitionId={competitionId}
+                  agentId={a1.id}
+                  agentName={a1.name}
+                  agentOwner={a1.owner}
+                />
               ) : (
-                visibleEvents.map(ev => (
-                  <FeedItem
-                    key={ev.id}
-                    ev={ev}
-                    getAgentName={getAgentName}
-                    getAgentColor={getAgentColor}
-                  />
-                ))
+                <div className="font-mono text-sm text-[#464752] uppercase tracking-widest">
+                  AWAITING_TRAINER_OVERRIDE_COMMAND...
+                </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* ── RIGHT COL ── */}
-        <div className="flex flex-col gap-4">
+        {/* ── RIGHT SIDEBAR: Agent B Panel ── */}
+        <aside className="col-span-3 bg-[#11131d] border-l border-[#8ff5ff]/10 flex flex-col overflow-y-auto">
+          <div className="p-6 space-y-8">
 
-          {/* ESPN Scoreboard Strip */}
-          {gameState && (
-            <SportScoreboard
-              gameState={gameState}
-              agents={agents}
-              isLive={isLive}
-            />
-          )}
+            {/* Agent B Profile */}
+            {a2 && (
+              <div className="space-y-4">
+                {/* Avatar */}
+                <div
+                  className="relative w-full bg-black overflow-hidden border-2"
+                  style={{
+                    aspectRatio: '1/1',
+                    borderColor: `${a2color}66`,
+                    boxShadow: `0 0 20px ${a2color}33`,
+                  }}
+                >
+                  <div className="absolute inset-0" style={{ background: `${a2color}11` }} />
+                  <div
+                    className="absolute bottom-0 left-0 w-full p-4 text-right"
+                    style={{ background: `linear-gradient(to top, ${a2color}33, transparent)` }}
+                  >
+                    <h2
+                      className="font-['Bebas_Neue'] text-4xl tracking-wider uppercase"
+                      style={{ color: a2color }}
+                    >
+                      {gameState?.winner === a2.id && '🏆 '}{a2name}
+                    </h2>
+                    <p className="font-mono text-[10px]" style={{ color: `${a2color}99` }}>
+                      NEURAL_SYNC: {Math.round(m2)}% // {m2 > 65 ? 'OPTIMAL' : 'FLUCTUATING'}
+                    </p>
+                  </div>
+                </div>
 
-          {/* Agent Duel Cards */}
-          {a1 && a2 && (
-            <div className="grid grid-cols-2 gap-3">
-              <AgentDuelCard
-                agent={a1}
-                oppAgent={a2}
-                gameState={gameState}
-                isWinner={winnerId === a1.id}
-                agentStats={agentStats}
-              />
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-black p-3 border-r-2 border-[#ff6c92] text-right">
+                    <p className="text-[10px] font-['Space_Grotesk'] text-[#747480] uppercase tracking-tighter">Momentum</p>
+                    <p className="font-mono text-xl text-[#ff6c92]">{Math.round(m2)}%</p>
+                  </div>
+                  <div className="bg-black p-3 border-r-2 border-[#ffe6aa] text-right">
+                    <p className="text-[10px] font-['Space_Grotesk'] text-[#747480] uppercase tracking-tighter">Score</p>
+                    <p className="font-mono text-xl text-[#ffe6aa]">{a2score}</p>
+                  </div>
+                </div>
+
+                {/* Momentum bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-end">
+                    <span className="font-mono text-[10px]" style={{ color: a2color }}>STRESS_LOAD</span>
+                    <span className="font-mono text-lg" style={{ color: a2color }}>{Math.round(m2)}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-black overflow-hidden">
+                    <div
+                      className="h-full transition-all duration-500"
+                      style={{
+                        width: `${m2}%`,
+                        background: a2color,
+                        boxShadow: `0 0 10px ${a2color}`,
+                        animation: 'momentum-fire 2s ease-in-out infinite',
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Rally Telemetry */}
+            <div className="space-y-4">
+              <h3 className="font-['Space_Grotesk'] text-xs font-bold text-[#464752] uppercase border-b border-[#464752]/20 pb-2">
+                Rally_Telemetry
+              </h3>
+              <div className="space-y-2 font-mono text-[11px] max-h-48 overflow-y-auto">
+                {visibleEvents.length === 0 ? (
+                  <p className="text-[#464752] text-[10px]">No events yet…</p>
+                ) : (
+                  visibleEvents.slice(0, 5).map(ev => {
+                    const agentColor = getAgentColor(ev.agentId);
+                    const agentName  = getAgentName(ev.agentId);
+                    const color      = ACTION_COLORS[ev.type] ?? '#aaaab6';
+                    return (
+                      <div
+                        key={ev.id}
+                        className="p-2 bg-black border-l"
+                        style={{ borderColor: `${agentColor}66` }}
+                      >
+                        <span style={{ color: agentColor }}>
+                          [{new Date(ev.timestamp).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}]
+                        </span>{' '}
+                        <span className="text-[#eeecfa]">{agentName}</span>
+                        <div className="mt-1 flex gap-2">
+                          <span className="px-1" style={{ background: `${color}33`, color }}>
+                            {ev.type}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Agent B duel card */}
+            {a2 && (
               <AgentDuelCard
                 agent={a2}
                 oppAgent={a1}
@@ -731,20 +784,36 @@ export function SportMatchClient({
                 isWinner={winnerId === a2.id}
                 agentStats={agentStats}
               />
+            )}
+          </div>
+        </aside>
+
+        {/* ── Bottom overlay: Betting ── */}
+        <div className="absolute bottom-24 left-0 w-full z-40 p-4 grid grid-cols-12 gap-4 pointer-events-none">
+          {/* Betting Panel */}
+          <div className="col-span-3 glass-panel p-4 pointer-events-auto border border-[#8ff5ff]/20">
+            <BettingPanelClient
+              competitionId={competitionId}
+              agents={agents.map(a => ({
+                id: a.id, name: a.name, color: a.color, ownerWallet: a.owner,
+              }))}
+              bettingOpen={bettingOpen}
+              totalBetUsdc={totalBetUsdc}
+              winnerId={winnerId}
+              status={status}
+            />
+          </div>
+          <div className="col-span-6" />
+          {/* Scoreboard bottom-right */}
+          {gameState && (
+            <div className="col-span-3 glass-panel p-4 pointer-events-auto border border-[#464752]/30">
+              <SportScoreboard
+                gameState={gameState}
+                agents={agents}
+                isLive={isLive}
+              />
             </div>
           )}
-
-          {/* Betting Panel */}
-          <BettingPanelClient
-            competitionId={competitionId}
-            agents={agents.map(a => ({
-              id: a.id, name: a.name, color: a.color, ownerWallet: a.owner,
-            }))}
-            bettingOpen={bettingOpen}
-            totalBetUsdc={totalBetUsdc}
-            winnerId={winnerId}
-            status={status}
-          />
         </div>
       </div>
     </div>

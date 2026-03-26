@@ -6,25 +6,14 @@ import { CompetitionRow } from "@/components/arena/competition-row";
 
 export const dynamic = "force-dynamic";
 
-function sportEmoji(sport: string | undefined) {
-  if (sport === "tennis") return "🎾";
-  if (sport === "table-tennis") return "🏓";
-  return "🏸";
-}
-
 export default async function Home() {
-  const [liveCount, agentCount, volResult, recentTrades, topAgents, competitions] =
+  const [liveCount, agentCount, volResult, topAgents, competitions] =
     await Promise.all([
       prisma.competition.count({ where: { status: "live" } }),
       prisma.agent.count(),
       prisma.competition.aggregate({ _sum: { volumeUsd: true } }),
-      prisma.trade.findMany({
-        take: 20,
-        orderBy: { timestamp: "desc" },
-        include: { agent: { select: { name: true, color: true } } },
-      }),
       prisma.agentStats.findMany({
-        take: 5,
+        take: 3,
         orderBy: { rankAllTime: "asc" },
         where: { totalCompetitions: { gte: 1 } },
         include: { agent: { select: { id: true, name: true, color: true, archetype: true } } },
@@ -45,250 +34,303 @@ export default async function Home() {
     ...competitions.filter(c => c.status === "settled"),
   ];
 
+  const liveComps   = competitions.filter(c => c.status === "live").length;
+  const openComps   = competitions.filter(c => c.status === "open").length;
+
   return (
-    <SiteChrome activeHref="/">
-      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 sm:pt-6">
-
-        {/* ── Hero ──────────────────────────────────────────────────── */}
-        <div className="mb-8 text-center px-4 relative">
-          {/* Scan-line effect behind hero */}
-          <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-30" aria-hidden>
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '2px',
-              background: 'linear-gradient(90deg, transparent, var(--neon-cyan), transparent)',
-              animation: 'scan-line 6s linear infinite',
-            }} />
+    <SiteChrome activeHref="/" liveCount={liveCount}>
+      {/* ── Live Stats Bar ── */}
+      <header className="bg-black/50 border-b border-[#464752]/10 px-6 py-2">
+        <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center font-mono text-[10px] tracking-widest text-[#aaaab6]">
+          <div className="flex space-x-8">
+            <span className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-[#8ff5ff] rounded-full animate-ping" />
+              MATCHES_LIVE: <span className="text-[#8ff5ff] font-bold ml-1">{liveCount}</span>
+            </span>
+            <span className="flex items-center gap-2">
+              AGENTS_ONLINE: <span className="text-[#8ff5ff] font-bold ml-1">{agentCount}</span>
+            </span>
+            <span className="flex items-center gap-2">
+              TOTAL_SETTLED: <span className="text-[#8ff5ff] font-bold ml-1">{settledCount}</span>
+            </span>
           </div>
-          <h1 className="text-4xl sm:text-5xl" style={{
-            fontFamily: 'var(--font-display)',
-            fontWeight: 700,
-            background: 'linear-gradient(135deg, #8ff5ff 0%, #ffffff 45%, #ff6c92 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>
-            AI Athletes. Live Matches. Real Stakes.
-          </h1>
-          <p className="mt-3 text-base max-w-xl mx-auto" style={{ fontFamily: 'var(--font-body)', color: 'var(--text-muted)' }}>
-            Watch autonomous AI agents battle in real-time badminton. Bet on outcomes. Build your athlete.
-          </p>
-        </div>
-
-        {/* ── Stat bar ──────────────────────────────────────────────── */}
-        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 pb-4 sm:mb-6 sm:gap-x-6 sm:pb-5" style={{ borderBottom: '1px solid rgba(143,245,255,0.08)' }}>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-x-6">
-            {/* Live */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className="live-dot" />
-              <span className="tabular-nums text-lg font-black sm:text-xl" style={{ fontFamily: 'var(--font-mono)', color: '#8ff5ff' }}>
-                {liveCount}
-              </span>
-              <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
-                Live
-              </span>
-            </div>
-
-            <div className="hidden h-3.5 w-px bg-white/10 sm:block" />
-
-            {/* Athletes */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="tabular-nums text-lg font-black sm:text-xl" style={{ fontFamily: 'var(--font-mono)', color: '#8ff5ff' }}>
-                {agentCount}
-              </span>
-              <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
-                Athletes
-              </span>
-            </div>
-
-            <div className="hidden h-3.5 w-px bg-white/10 sm:block" />
-
-            {/* Volume */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="tabular-nums text-lg font-black sm:text-xl" style={{ fontFamily: 'var(--font-mono)', color: '#8ff5ff' }}>
-                {formatVolume(totalVolume)}
-              </span>
-              <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
-                Volume
-              </span>
-            </div>
-
-            <div className="hidden h-3.5 w-px bg-white/10 sm:block" />
-
-            {/* Settled */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="tabular-nums text-lg font-black text-white sm:text-xl" style={{ fontFamily: 'var(--font-mono)' }}>
-                {settledCount}
-              </span>
-              <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
-                Settled
-              </span>
-            </div>
-          </div>
-
-          {/* CTAs */}
-          <div className="ml-auto flex items-center gap-2">
-            <Link
-              href="/arena"
-              className="rounded-full border border-white/10 px-3 py-1.5 text-[10px] font-semibold text-[var(--text-secondary)] transition hover:bg-white/5 hover:text-white sm:px-4 sm:text-xs"
-            >
-              All matches →
-            </Link>
-            <Link
-              href="/agents/create"
-              className="btn-primary px-3 py-1.5 text-[10px] sm:px-4 sm:text-xs"
-            >
-              ⚡ Build athlete
-            </Link>
+          <div className="hidden lg:block">
+            <span>24H_VOLUME: <span className="text-[#ffe6aa] font-bold">{formatVolume(totalVolume)}</span></span>
           </div>
         </div>
+      </header>
 
-        {/* ── Main layout ──────────────────────────────────────────── */}
-        <div className="grid gap-5 sm:gap-6 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_300px]">
+      <div className="p-6 space-y-8 max-w-[1600px] mx-auto">
 
-          {/* ── Left: competition rows ── */}
-          <div>
-            <div className="mb-2.5 flex items-center gap-2 sm:mb-3 sm:gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-1 h-5 rounded-full" style={{ background: 'var(--neon-cyan)', boxShadow: '0 0 8px var(--neon-cyan)' }} />
-                <span className="text-base sm:text-lg" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--white-crisp)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  Live Matches
-                </span>
-              </div>
-              <div className="ml-auto flex items-center gap-2 text-[8px] uppercase tracking-widest text-[var(--text-muted)] sm:gap-3 sm:text-[9px]">
-                <span className="hidden w-[90px] text-left sm:block sm:w-[140px] lg:w-[160px]">
-                  Athlete A
-                </span>
-                <span className="hidden sm:block">Score</span>
-                <span className="hidden w-[90px] text-right sm:block sm:w-[140px] lg:w-[160px]">
-                  Athlete B
-                </span>
-                <span className="hidden w-[4.5rem] text-right sm:block lg:w-20">Timer</span>
-                <span className="w-12 text-right sm:w-16">Action</span>
-              </div>
+        {/* ── Hero Section ── */}
+        <section className="relative h-[400px] sm:h-[500px] bg-black overflow-hidden group">
+          <div className="absolute inset-0 opacity-40 scanline" />
+          {/* Mock Court Canvas */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[80%] h-[70%] border-2 border-[#8ff5ff]/20 relative">
+              <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-[#8ff5ff]/20" />
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-[#8ff5ff]/20 rounded-full" />
             </div>
-
-            {/* Rows */}
-            <div className="space-y-1.5">
-              {sorted.length === 0 ? (
-                <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] p-10 text-center sm:p-12">
-                  <div className="mb-3 text-3xl">🏟️</div>
-                  <p className="text-sm text-[var(--text-muted)]">No matches yet.</p>
-                  <Link
-                    href="/agents/create"
-                    className="btn-primary mt-4 inline-block px-5 py-2 text-sm"
-                  >
-                    Create the first athlete →
-                  </Link>
+          </div>
+          {/* Score Overlay */}
+          <div className="absolute inset-0 flex flex-col justify-between p-8">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <div className="bg-[#8ff5ff] px-3 py-1 font-['Space_Grotesk'] font-black text-[#005d63] italic -skew-x-12 mb-2 inline-block">ARENA_OS</div>
+                  <div className="font-['Bebas_Neue'] text-5xl text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">{liveComps}</div>
                 </div>
-              ) : (
-                sorted.map(comp => {
+                <div className="font-['Bebas_Neue'] text-3xl text-[#8ff5ff]/40 pt-4">LIVE</div>
+                <div className="text-center">
+                  <div className="bg-[#ff6c92] px-3 py-1 font-['Space_Grotesk'] font-black text-[#48001b] italic skew-x-12 mb-2 inline-block">OPEN</div>
+                  <div className="font-['Bebas_Neue'] text-5xl text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">{openComps}</div>
+                </div>
+              </div>
+              <div className="bg-black/60 backdrop-blur-md p-4 border-l-4 border-[#8ff5ff]">
+                <div className="font-mono text-xs text-[#8ff5ff] mb-1">AGENTS_DEPLOYED</div>
+                <div className="font-mono text-2xl font-bold">{agentCount}</div>
+                <div className="mt-2 text-[10px] text-[#aaaab6] uppercase tracking-widest">Total Athletes</div>
+              </div>
+            </div>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div className="max-w-xl">
+                <h1 className="font-['Bebas_Neue'] text-5xl md:text-7xl tracking-tight leading-none mb-4">
+                  AGENT ARENA<br />
+                  <span className="text-[#8ff5ff] italic">NEURAL SPORTS // LIVE</span>
+                </h1>
+                <p className="font-mono text-sm text-[#aaaab6] max-w-md">
+                  AI athletes compete in badminton, tennis &amp; table tennis. Watch live. Bet on outcomes. Build your athlete.
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <Link
+                  href="/arena"
+                  className="bg-[#8ff5ff] text-[#005d63] px-8 py-3 font-['Space_Grotesk'] font-black uppercase text-lg hover:skew-x-[-6deg] transition-all group-hover:shadow-[0_0_30px_rgba(143,245,255,0.4)]"
+                >
+                  Watch Live
+                </Link>
+                <Link
+                  href="/agents/create"
+                  className="border border-[#8ff5ff]/40 text-[#8ff5ff] px-6 py-3 font-['Space_Grotesk'] font-black uppercase text-lg hover:bg-[#8ff5ff]/10 transition-all"
+                >
+                  Enter Arena
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Main Content: Cards + Sidebar ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+
+          {/* ── Match List ── */}
+          <div className="xl:col-span-8 space-y-6">
+            <div className="flex items-center justify-between border-b border-[#464752]/20 pb-4">
+              <h2 className="font-['Bebas_Neue'] text-3xl tracking-widest uppercase">Active_Terminals</h2>
+              <div className="flex gap-2">
+                <span className="px-4 py-1 text-[10px] font-mono border border-[#8ff5ff] text-[#8ff5ff] bg-[#8ff5ff]/10 uppercase">
+                  {liveComps} Live
+                </span>
+                <span className="px-4 py-1 text-[10px] font-mono border border-[#464752] text-[#464752] uppercase">
+                  {openComps} Open
+                </span>
+                <span className="px-4 py-1 text-[10px] font-mono border border-[#464752] text-[#464752] uppercase">
+                  {settledCount} Settled
+                </span>
+              </div>
+            </div>
+
+            {sorted.length === 0 ? (
+              <div className="bg-[#171924] border-l-2 border-[#8ff5ff]/30 p-10 text-center">
+                <div className="mb-3 text-3xl">🏟️</div>
+                <p className="text-sm text-[#aaaab6] font-mono mb-4">No matches running.</p>
+                <Link
+                  href="/agents/create"
+                  className="bg-[#8ff5ff] text-[#005d63] px-6 py-2 font-bold uppercase text-xs inline-block"
+                >
+                  Initialize_First_Match →
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sorted.map(comp => {
                   const isSport = (comp as any).type === "sport";
+                  const isLive  = comp.status === "live";
+                  const isOpen  = comp.status === "open";
                   const sport   = (comp as any).sport;
+
+                  const ca1 = comp.agents[0];
+                  const ca2 = comp.agents[1];
+                  const a1Name  = ca1?.agent?.name ?? "???";
+                  const a2Name  = ca2?.agent?.name ?? "???";
+                  const a1Color = ca1?.agent?.color ?? "#8ff5ff";
+                  const a2Color = ca2?.agent?.color ?? "#ff6c92";
+                  const a1Score = isSport ? (ca1?.score ?? 0) : 0;
+                  const a2Score = isSport ? (ca2?.score ?? 0) : 0;
+
                   return (
-                    <CompetitionRow key={comp.id} competition={{
-                      ...comp,
-                      type: (comp as any).type,
-                      sport: (comp as any).sport,
-                      agents: comp.agents.map((ca: any) => ({
-                        id:        ca.agent.id,
-                        name:      ca.agent.name,
-                        color:     ca.agent.color,
-                        archetype: ca.agent.archetype,
-                        pnl:       ca.pnl,
-                        pnlPct:    ca.pnlPct,
-                        portfolio: ca.portfolio,
-                        trades:    ca.trades,
-                        score:     isSport ? ca.score : undefined,
-                      })),
-                    } as any} />
+                    <Link
+                      key={comp.id}
+                      href={`/competitions/${comp.id}`}
+                      className={`bg-[#171924] hover:bg-[#1d1f2b] transition-colors p-5 relative group overflow-hidden block border-l-2 ${
+                        isLive ? "border-[#8ff5ff]" : isOpen ? "border-[#464752]/30" : "border-[#464752]/20"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-6">
+                        <span className={`text-[10px] px-2 py-0.5 font-mono uppercase tracking-tighter border ${
+                          isLive
+                            ? "bg-[#8ff5ff]/10 text-[#8ff5ff] border-[#8ff5ff]/20"
+                            : isOpen
+                            ? "bg-[#464752]/10 text-[#aaaab6] border-[#464752]/20"
+                            : "bg-[#464752]/10 text-[#464752] border-[#464752]/20"
+                        }`}>
+                          {isLive ? "Live_Processing" : isOpen ? "Waiting_Players" : "Settled"}
+                        </span>
+                        <div className="flex items-center gap-1 text-[10px] font-mono text-[#aaaab6]">
+                          <span className="material-symbols-outlined text-xs">
+                            {isLive ? "visibility" : "timer"}
+                          </span>
+                          {isLive ? "LIVE" : isOpen ? "OPEN" : "DONE"}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex flex-col items-center">
+                          <div
+                            className="w-12 h-12 mb-2 p-1 border flex items-center justify-center"
+                            style={{ background: `${a1Color}22`, borderColor: `${a1Color}40` }}
+                          >
+                            <span className="font-['Bebas_Neue'] text-2xl" style={{ color: a1Color }}>
+                              {a1Name.slice(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="font-['Space_Grotesk'] text-[10px] uppercase font-bold" style={{ color: a1Color }}>
+                            {a1Name.slice(0, 10)}
+                          </div>
+                        </div>
+
+                        <div className="text-center">
+                          {isSport && isLive ? (
+                            <>
+                              <div className="font-['Bebas_Neue'] text-3xl">{a1Score} - {a2Score}</div>
+                              <div className="font-mono text-[9px] text-[#aaaab6] uppercase mt-1">
+                                {sport || "Sport"}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="font-['Bebas_Neue'] text-2xl text-[#464752]">VS</div>
+                              <div className="font-mono text-[9px] text-[#aaaab6] uppercase mt-1">
+                                {sport || "Match"}
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-center">
+                          <div
+                            className="w-12 h-12 mb-2 p-1 border flex items-center justify-center"
+                            style={{ background: `${a2Color}22`, borderColor: `${a2Color}40` }}
+                          >
+                            <span className="font-['Bebas_Neue'] text-2xl" style={{ color: a2Color }}>
+                              {a2Name.slice(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="font-['Space_Grotesk'] text-[10px] uppercase font-bold" style={{ color: a2Color }}>
+                            {a2Name.slice(0, 10)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-4 border-t border-[#464752]/10">
+                        <div className="font-mono text-[10px] text-[#aaaab6]">
+                          STATUS: <span className={isLive ? "text-[#8ff5ff]" : "text-[#aaaab6]"}>{comp.status.toUpperCase()}</span>
+                        </div>
+                        {isOpen ? (
+                          <span className="bg-[#8ff5ff]/20 text-[#8ff5ff] px-3 py-1 uppercase text-[10px] font-bold">
+                            Join_Terminal →
+                          </span>
+                        ) : (
+                          <span className="text-[#8ff5ff] uppercase text-[10px] font-bold">
+                            {isLive ? "Watch_Live →" : "View_Results →"}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </div>
 
-          {/* ── Right sidebar ── */}
-          <div className="space-y-4 sm:space-y-5">
+          {/* ── Sidebar ── */}
+          <aside className="xl:col-span-4 space-y-8">
 
-            {/* Top athletes */}
+            {/* Top Agents Leaderboard */}
             {topAgents.length > 0 && (
-              <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] p-3 sm:p-4">
-                <div className="mb-2.5 flex items-center justify-between sm:mb-3">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)] sm:text-xs">
-                    Top athletes
-                  </span>
-                  <Link
-                    href="/leaderboard"
-                    className="text-[9px] text-[var(--teal)] hover:underline sm:text-[10px]"
-                  >
-                    All →
-                  </Link>
-                </div>
-                <div className="space-y-1.5 sm:space-y-2">
+              <div className="bg-[#1d1f2b] p-6 border-r-2 border-[#8ff5ff]/40 relative">
+                <h3 className="font-['Space_Grotesk'] font-black text-sm uppercase tracking-widest text-[#8ff5ff] mb-6 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-lg">military_tech</span>
+                  Leaderboard_T3
+                </h3>
+                <div className="space-y-4">
                   {topAgents.map((s, i) => (
                     <Link
                       key={s.agentId}
                       href={`/agents/${s.agentId}`}
-                      className="flex items-center gap-2 rounded-xl px-2.5 py-2 transition row-hover sm:gap-3 sm:px-3 sm:py-2.5"
+                      className="flex items-center justify-between p-3 bg-black border-l-2 hover:bg-[#171924] transition-colors block"
+                      style={{ borderColor: i === 0 ? '#ffe6aa' : '#464752' }}
                     >
-                      <span className="w-5 text-center font-mono text-[10px] text-[var(--text-muted)] sm:text-xs">
-                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
-                      </span>
-                      <div
-                        className="h-5 w-5 flex-shrink-0 rounded-full sm:h-6 sm:w-6"
-                        style={{
-                          background: s.agent.color,
-                          boxShadow: `0 0 8px ${s.agent.color}60`,
-                        }}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[11px] font-semibold text-white sm:text-xs">
-                          {s.agent.name}
+                      <div className="flex items-center gap-4">
+                        <span className="font-mono font-bold" style={{ color: i === 0 ? '#ffe6aa' : '#aaaab6' }}>
+                          0{i + 1}
+                        </span>
+                        <div
+                          className="w-8 h-8 flex items-center justify-center font-['Space_Grotesk'] font-black text-sm"
+                          style={{ background: s.agent.color, color: '#000' }}
+                        >
+                          {s.agent.name.slice(0, 1)}
                         </div>
-                        <div className="text-[9px] text-[var(--text-muted)] sm:text-[10px]">
-                          {s.agent.archetype}
+                        <div className="font-['Space_Grotesk'] text-xs font-bold uppercase">
+                          {s.agent.name.slice(0, 12)}
                         </div>
                       </div>
-                      <div className="shrink-0 text-right">
-                        <div
-                          className="font-mono text-[11px] font-semibold sm:text-xs"
-                          style={{ color: s.winRate >= 0.5 ? "var(--green)" : "var(--red)" }}
-                        >
-                          {(s.winRate * 100).toFixed(0)}%
-                        </div>
-                        <div className="text-[9px] text-[var(--text-muted)] sm:text-[10px]">W</div>
+                      <div className="font-mono text-[10px]" style={{ color: i === 0 ? '#ffe6aa' : '#aaaab6' }}>
+                        {(s.winRate * 100).toFixed(1)}% WR
                       </div>
                     </Link>
                   ))}
                 </div>
+                <div className="mt-4 pt-4 border-t border-[#464752]/20">
+                  <Link href="/leaderboard" className="text-[#8ff5ff] text-[10px] font-mono uppercase hover:underline">
+                    View Full Rankings →
+                  </Link>
+                </div>
               </div>
             )}
 
-            {/* Live activity feed */}
-            
-
-            {/* CTA card */}
-            <div className="rounded-2xl border border-[var(--teal)]/20 bg-[var(--teal)]/5 p-4 text-center sm:p-5">
-              <div className="mb-2 text-2xl">🏸</div>
-              <p className="text-sm font-semibold text-white mb-1">Build your athlete</p>
-              <p className="text-[11px] text-[var(--text-muted)] mb-3 sm:mb-4 sm:text-xs">
-                60 seconds. Pick a play style. Enter the arena.
-              </p>
-              <Link
-                href="/agents/create"
-                className="btn-primary block w-full py-2 text-xs text-center sm:py-2.5 sm:text-sm"
-              >
-                Start building
-              </Link>
+            {/* CTA Card: Build Agent */}
+            <div className="relative bg-[#8ff5ff] p-1 clipped-corner">
+              <div className="bg-black p-6 flex flex-col items-center text-center">
+                <div className="w-20 h-20 mb-4 flex items-center justify-center border-2 border-[#8ff5ff] border-dashed p-4">
+                  <span className="material-symbols-outlined text-[#8ff5ff] text-5xl">memory</span>
+                </div>
+                <h4 className="font-['Space_Grotesk'] font-black text-xl text-[#8ff5ff] italic mb-2 tracking-tighter">
+                  BUILD_YOUR_AGENT
+                </h4>
+                <p className="text-[#aaaab6] text-[10px] uppercase font-mono mb-6 leading-relaxed">
+                  Design your neural combatant. Define tactics. Dominate the arena.
+                </p>
+                <Link
+                  href="/agents/create"
+                  className="w-full bg-[#8ff5ff] text-[#005d63] font-['Space_Grotesk'] font-black py-3 uppercase text-xs hover:bg-[#00eefc] transition-colors block text-center"
+                >
+                  Initialize_Lab
+                </Link>
+              </div>
             </div>
-          </div>
+          </aside>
         </div>
-
-        {/* bottom spacing for mobile nav */}
-        <div className="h-4 md:hidden" />
       </div>
     </SiteChrome>
   );
