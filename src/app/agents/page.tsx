@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { SiteChrome } from "@/components/arena/site-chrome";
-import { ButtonLink, Surface, StatusPill } from "@/components/arena/ui";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +8,11 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
   const pct = Math.min(100, Math.max(0, (value / 10) * 100));
   return (
     <div className="flex items-center gap-2">
-      <span className="w-7 text-[9px] uppercase tracking-[0.14em]" style={{ color: 'var(--grey-data)', fontFamily: 'var(--font-mono)' }}>{label}</span>
-      <div className="flex-1 overflow-hidden rounded-full" style={{ height: '4px', background: 'rgba(255,255,255,0.08)' }}>
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color, boxShadow: `0 0 4px ${color}66` }} />
+      <span className="w-7 text-[9px] font-mono uppercase tracking-widest text-[#464752]">{label}</span>
+      <div className="flex-1 overflow-hidden" style={{ height: "3px", background: "rgba(70,71,82,0.3)" }}>
+        <div className="h-full" style={{ width: `${pct}%`, background: color }} />
       </div>
-      <span className="w-4 text-[9px] text-right" style={{ fontFamily: 'var(--font-mono)', color: 'var(--grey-data)' }}>{value.toFixed(0)}</span>
+      <span className="w-4 text-[9px] text-right font-mono text-[#464752]">{value.toFixed(0)}</span>
     </div>
   );
 }
@@ -49,45 +48,63 @@ export default async function AgentsPage() {
   });
 
   return (
-    <SiteChrome activeHref="/agents/create">
-      <section className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-10 lg:px-8 lg:pb-28 lg:pt-16">
+    <SiteChrome activeHref="/agents">
+      <div className="scanline fixed inset-0 z-10 opacity-10 pointer-events-none" />
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="fade-up mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between sm:gap-5">
-          <div className="min-w-0 flex-1">
-            {/* Eyebrow pill */}
-            <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.24em] text-[var(--teal)] sm:px-4 sm:py-2 sm:text-xs">
-              Athlete roster
-            </div>
+      <main className="pt-4 pb-24 px-4 md:px-8 max-w-[1600px] mx-auto min-h-screen">
 
-            <h1 className="mt-3 text-[clamp(1.4rem,4vw,2.25rem)] font-semibold tracking-[-0.05em] text-white sm:mt-4">
-              All agents
-            </h1>
+        {/* ── Hero Header ── */}
+        <section className="mb-10 relative">
+          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#8ff5ff]" />
+          <h1
+            className="font-['Space_Grotesk'] text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-2 text-[#8ff5ff]"
+            style={{ textShadow: "0 0 30px rgba(143,245,255,0.4)" }}
+          >
+            Agent_Roster
+          </h1>
+          <div className="flex items-center gap-4 text-xs font-mono text-[#464752]">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-[#8ff5ff] animate-pulse" />
+              SYSTEM_LIVE
+            </span>
+            <span>•</span>
+            <span>{agents.length} AGENTS_ENROLLED</span>
+          </div>
+        </section>
 
-            <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--text-secondary)] sm:mt-3 sm:text-base sm:leading-7">
-              {agents.length} agent{agents.length !== 1 ? "s" : ""} in the arena.{" "}
-              Each one is an AI sport athlete with a unique play style and physical stats.
+        {/* ── Stats + CTA Row ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-10">
+          <div className="lg:col-span-3 bg-[#11131d] p-4 border border-[#464752]/10">
+            <p className="font-mono text-sm text-[#aaaab6] leading-relaxed">
+              AI sport athletes competing for dominance. Each agent has a unique play style, physical profile, and combat history.
             </p>
           </div>
-
-          <div className="shrink-0">
-            <ButtonLink href="/agents/create">Build new agent</ButtonLink>
+          <div className="flex items-center">
+            <Link
+              href="/agents/create"
+              className="w-full bg-[#8ff5ff] text-[#005d63] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all text-center block"
+            >
+              Build_Agent →
+            </Link>
           </div>
         </div>
 
-        {/* ── Empty state ────────────────────────────────────────────── */}
+        {/* ── Empty state ── */}
         {agents.length === 0 && (
-          <Surface>
-            <div className="flex flex-col items-center gap-4 py-12 text-center">
-              <div className="text-4xl">🏸</div>
-              <p className="text-sm text-[var(--text-muted)]">No athletes yet. Be the first to build one.</p>
-              <ButtonLink href="/agents/create">Create athlete</ButtonLink>
-            </div>
-          </Surface>
+          <div className="bg-[#171924] border-l-2 border-[#464752]/30 p-16 text-center">
+            <div className="text-4xl mb-4">🤖</div>
+            <p className="text-[#aaaab6] font-mono text-sm mb-6">No athletes yet. Be the first to build one.</p>
+            <Link
+              href="/agents/create"
+              className="bg-[#8ff5ff] text-[#005d63] px-6 py-3 font-bold uppercase text-xs inline-block"
+            >
+              Create_Agent →
+            </Link>
+          </div>
         )}
 
-        {/* ── Agent grid ─────────────────────────────────────────────── */}
-        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+        {/* ── Agent grid ── */}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {agents.map((agent: any) => {
             const comp = agent.latestCompetition;
             const ca   = comp;
@@ -97,86 +114,67 @@ export default async function AgentsPage() {
               <Link
                 key={agent.id}
                 href={`/agents/${agent.id}`}
-                className="group flex flex-col rounded-[1.4rem] p-4 sm:rounded-[1.6rem] sm:p-5 lg:p-6"
-                style={{
-                  background: 'var(--bg-surface)',
-                  border: `1px solid rgba(255,255,255,0.06)`,
-                  borderLeft: `3px solid ${agent.color}`,
-                  transition: 'box-shadow 0.2s, border-color 0.2s',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = `0 0 20px ${agent.color}22, 0 8px 32px rgba(0,0,0,0.4)`;
-                  (e.currentTarget as HTMLElement).style.borderColor = `${agent.color}66`;
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = '';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
-                  (e.currentTarget as HTMLElement).style.borderLeftColor = agent.color;
-                }}
+                className="group flex flex-col bg-[#171924] border-l-[3px] p-4 hover:bg-[#1d1f2b] transition-colors block"
+                style={{ borderLeftColor: agent.color }}
               >
-                {/* ── Avatar + name + win rate ──────────────────── */}
-                <div className="flex items-start justify-between gap-2 sm:gap-3">
-                  <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+                {/* ── Avatar + name + win rate ── */}
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div
-                      className="h-9 w-9 shrink-0 rounded-full sm:h-10 sm:w-10"
-                      style={{
-                        background: `radial-gradient(circle at 35% 35%, ${agent.color}cc, ${agent.color}44)`,
-                      }}
-                    />
+                      className="h-10 w-10 shrink-0 flex items-center justify-center font-['Bebas_Neue'] text-lg"
+                      style={{ background: `${agent.color}22`, border: `1px solid ${agent.color}66`, color: agent.color }}
+                    >
+                      {agent.name.slice(0, 2).toUpperCase()}
+                    </div>
                     <div className="min-w-0">
-                      <h2 className="truncate text-sm font-bold sm:text-base" style={{ fontFamily: 'var(--font-display)', color: agent.color }}>
+                      <h2
+                        className="truncate font-['Space_Grotesk'] font-black text-sm uppercase"
+                        style={{ color: agent.color }}
+                      >
                         {agent.name}
                       </h2>
-                      <p className="truncate text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.18em]" style={{ fontFamily: 'var(--font-body)', color: 'var(--grey-data)' }}>
+                      <p className="truncate text-[10px] font-mono uppercase tracking-widest text-[#464752]">
                         {agent.archetype}
                       </p>
                     </div>
                   </div>
 
-                  {/* Rally Win Rate */}
+                  {/* Win Rate */}
                   <div className="shrink-0 text-right">
-                    <div className="text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)] sm:text-[10px] sm:tracking-[0.18em]">
-                      Rally W/R
-                    </div>
-                    <div className="font-mono text-xs text-white sm:text-sm">
+                    <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752]">W/R</div>
+                    <div className="font-mono text-sm text-[#eeecfa]">
                       {agent.stats
                         ? `${(agent.stats.winRate * 100).toFixed(0)}%`
                         : agent.rallyWinRate}
                     </div>
                     {agent.totalMatches > 0 && (
-                      <div className="text-[9px] text-[var(--text-muted)] sm:text-[10px]">
-                        {agent.wins}W / {agent.totalMatches - agent.wins}L
+                      <div className="text-[9px] font-mono text-[#464752]">
+                        {agent.wins}W·{agent.totalMatches - agent.wins}L
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* ── Play style bio ────────────────────────────── */}
-                <p className="mt-3 text-xs leading-5 text-[var(--text-secondary)] line-clamp-2 sm:mt-4 sm:text-sm sm:leading-6">
+                {/* ── Bio ── */}
+                <p className="text-xs font-mono leading-5 text-[#aaaab6] line-clamp-2 mb-3">
                   {agent.bio || agent.strategy}
                 </p>
 
-                {/* ── Sport stats bars ──────────────────────────── */}
-                <div className="mt-3 space-y-1 sm:mt-4">
-                  <StatBar label="SPD" value={agent.speed ?? 7} color="#66E3FF" />
-                  <StatBar label="PWR" value={agent.power ?? 7} color="#f59e0b" />
-                  <StatBar label="STA" value={agent.stamina ?? 7} color="#22c55e" />
-                  <StatBar label="ACC" value={agent.accuracy ?? 7} color="#a78bfa" />
+                {/* ── Sport stats bars ── */}
+                <div className="space-y-1 mb-3">
+                  <StatBar label="SPD" value={agent.speed ?? 7} color="#8ff5ff" />
+                  <StatBar label="PWR" value={agent.power ?? 7} color="#ffe6aa" />
+                  <StatBar label="STA" value={agent.stamina ?? 7} color="#00ff87" />
+                  <StatBar label="ACC" value={agent.accuracy ?? 7} color="#ff6c92" />
                 </div>
 
-                {/* ── Special moves ─────────────────────────────── */}
+                {/* ── Special moves ── */}
                 {agent.specialMoves && agent.specialMoves.length > 0 && (
-                  <div className="mt-2.5 flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1 mb-3">
                     {agent.specialMoves.slice(0, 2).map((move: string) => (
                       <span
                         key={move}
-                        className="rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[0.12em]"
-                        style={{
-                          border: '1px solid rgba(0,240,255,0.3)',
-                          background: 'rgba(0,240,255,0.08)',
-                          color: 'var(--neon-cyan)',
-                          fontFamily: 'var(--font-body)',
-                        }}
+                        className="px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest border border-[#8ff5ff]/30 bg-[#8ff5ff]/08 text-[#8ff5ff]"
                       >
                         {move}
                       </span>
@@ -184,30 +182,22 @@ export default async function AgentsPage() {
                   </div>
                 )}
 
-                {/* ── Latest competition ────────────────────────── */}
+                {/* ── Latest competition ── */}
                 {comp && (
-                  <div className="mt-4 flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 sm:mt-5 sm:rounded-2xl sm:px-4 sm:py-3">
+                  <div className="mt-auto flex items-center justify-between bg-[#11131d] border border-[#464752]/20 px-3 py-2">
                     <div className="min-w-0 flex-1 pr-2">
-                      <div className="text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)] sm:text-[10px] sm:tracking-[0.18em]">
-                        Last match
-                      </div>
-                      <div className="mt-0.5 truncate text-[11px] font-semibold text-white sm:text-xs">
+                      <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752]">Last_Match</div>
+                      <div className="truncate text-[11px] font-mono text-[#eeecfa]">
                         {comp.competition?.title ?? "—"}
                       </div>
                     </div>
-
-                    <div className="flex shrink-0 items-center gap-2 text-right sm:gap-3">
-                      <div>
-                        <div className="text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)] sm:text-[10px] sm:tracking-[0.18em]">
-                          Score
-                        </div>
-                        <div className="font-mono text-[11px] sm:text-sm text-white">
-                          {isSport
-                            ? `${ca.score ?? 0} pts`
-                            : `${(ca.pnlPct ?? ca.pnl ?? 0) >= 0 ? "+" : ""}${(ca.pnlPct ?? ca.pnl ?? 0).toFixed(1)}%`}
-                        </div>
+                    <div className="shrink-0 text-right">
+                      <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752]">Score</div>
+                      <div className="font-mono text-[11px] text-[#8ff5ff]">
+                        {isSport
+                          ? `${ca.score ?? 0} pts`
+                          : `${(ca.pnlPct ?? ca.pnl ?? 0) >= 0 ? "+" : ""}${(ca.pnlPct ?? ca.pnl ?? 0).toFixed(1)}%`}
                       </div>
-                      <StatusPill status={comp.competition?.status ?? "settled"} />
                     </div>
                   </div>
                 )}
@@ -215,7 +205,7 @@ export default async function AgentsPage() {
             );
           })}
         </div>
-      </section>
+      </main>
     </SiteChrome>
   );
 }

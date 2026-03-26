@@ -168,10 +168,16 @@ export default async function Home() {
                   const a1Score = isSport ? (ca1?.score ?? 0) : 0;
                   const a2Score = isSport ? (ca2?.score ?? 0) : 0;
 
+                  const href = isLive
+                    ? `/competitions/${comp.id}/live`
+                    : comp.status === "settled"
+                    ? `/competitions/${comp.id}/result`
+                    : `/challenges`;
+
                   return (
                     <Link
                       key={comp.id}
-                      href={`/competitions/${comp.id}`}
+                      href={href}
                       className={`bg-[#171924] hover:bg-[#1d1f2b] transition-colors p-5 relative group overflow-hidden block border-l-2 ${
                         isLive ? "border-[#8ff5ff]" : isOpen ? "border-[#464752]/30" : "border-[#464752]/20"
                       }`}
@@ -309,23 +315,29 @@ export default async function Home() {
               </div>
             )}
 
-            {/* CTA Card: Build Agent */}
-            <div className="relative bg-[#8ff5ff] p-1 clipped-corner">
-              <div className="bg-black p-6 flex flex-col items-center text-center">
-                <div className="w-20 h-20 mb-4 flex items-center justify-center border-2 border-[#8ff5ff] border-dashed p-4">
-                  <span className="material-symbols-outlined text-[#8ff5ff] text-5xl">memory</span>
-                </div>
-                <h4 className="font-['Space_Grotesk'] font-black text-xl text-[#8ff5ff] italic mb-2 tracking-tighter">
-                  BUILD_YOUR_AGENT
-                </h4>
-                <p className="text-[#aaaab6] text-[10px] uppercase font-mono mb-6 leading-relaxed">
-                  Design your neural combatant. Define tactics. Dominate the arena.
+            {/* CTA Card: Quick Match */}
+            <div className="bg-[#11131d] border border-[#ff6c92]/30 p-5 relative overflow-hidden">
+              <div
+                className="absolute inset-0 pointer-events-none opacity-10"
+                style={{ background: "radial-gradient(ellipse at 50% 0%, #ff6c92 0%, transparent 70%)" }}
+              />
+              <div className="relative">
+                <div className="text-[10px] font-mono uppercase tracking-widest text-[#ff6c92]/60 mb-1">Ready to Compete?</div>
+                <div className="font-['Bebas_Neue'] text-3xl text-[#ff6c92] tracking-wider mb-1">Quick Challenge</div>
+                <p className="text-[10px] font-mono text-[#464752] uppercase mb-4 leading-relaxed">
+                  Pick an opponent. Deploy your agent. Enter the arena.
                 </p>
                 <Link
-                  href="/agents/create"
-                  className="w-full bg-[#8ff5ff] text-[#005d63] font-['Space_Grotesk'] font-black py-3 uppercase text-xs hover:bg-[#00eefc] transition-colors block text-center"
+                  href="/challenges"
+                  className="block w-full text-center bg-[#ff6c92] text-[#48001b] px-6 py-3 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all mb-2"
                 >
-                  Initialize_Lab
+                  Issue_Challenge →
+                </Link>
+                <Link
+                  href="/agents/create"
+                  className="block w-full text-center border border-[#8ff5ff]/30 text-[#8ff5ff] px-6 py-3 font-mono text-xs uppercase hover:bg-[#8ff5ff]/10 transition-colors"
+                >
+                  Build_New_Agent →
                 </Link>
               </div>
             </div>

@@ -4,9 +4,13 @@ import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const owner = searchParams.get('owner');
+
     const agents = await prisma.agent.findMany({
+      where: owner ? { owner: { equals: owner, mode: 'insensitive' } } : undefined,
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
@@ -53,17 +57,31 @@ export async function POST(request: Request) {
 
     const agent = await prisma.agent.create({
       data: {
-        name:      body.name,
-        archetype: body.archetype,
-        strategy:  body.strategy,
-        risk:      body.risk,
-        color:     body.color ?? '#66e3ff',
-        owner:     body.owner ?? 'Anonymous',
-        wallet:    agentWallet.address,
-        bio:       body.description ?? '',
-        traits:    JSON.stringify(body.traits ?? []),
+        name:         body.name,
+        archetype:    body.archetype,
+        strategy:     body.strategy,
+        risk:         body.risk,
+        color:        body.color ?? '#66e3ff',
+        owner:        body.owner ?? 'Anonymous',
+        wallet:       agentWallet.address,
+        bio:          body.description ?? '',
+        traits:       JSON.stringify(body.traits ?? []),
+        speed:        body.speed    ?? 7,
+        power:        body.power    ?? 7,
+        stamina:      body.stamina  ?? 7,
+        accuracy:     body.accuracy ?? 7,
+        specialMoves: JSON.stringify(body.specialMoves ?? []),
       },
     });
+
+    // Create AgentCard with avatar if image was generated
+    if (body.avatarUrl) {
+      await prisma.agentCard.upsert({
+        where:  { agentId: agent.id },
+        update: { avatarUrl: body.avatarUrl },
+        create: { agentId: agent.id, avatarUrl: body.avatarUrl },
+      }).catch(() => {}); // non-fatal
+    }
 
     // FIX 4.1: auto-enroll into oldest open competition with a free slot
     const openComp = await prisma.competition.findFirst({

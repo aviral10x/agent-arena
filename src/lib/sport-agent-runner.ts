@@ -132,55 +132,136 @@ Tactical guidelines:
   return generateMockShotDecision(agent, gameState, specialMovesArr);
 }
 
-// ── Mock fallback (no API key or LLM failure) ──────────────────────────────────
+// ── Stat-driven mock fallback (no API key or LLM failure) ─────────────────────
+// Every decision is deterministic from stats + game state + small noise.
+// No random pools — the agent's skills genuinely drive what shot they pick.
 function generateMockShotDecision(
   agent: SportAgent,
   gameState: GameState,
   specialMoves: string[]
 ): ShotDecision {
-  const momentum     = gameState.momentum[agent.id] ?? 50;
-  const shuttleY     = gameState.shuttlePosition.y;
-  const rallyLen     = gameState.rallyLength;
-  const isAggressive = agent.risk === 'Aggressive';
-  const isDefensive  = agent.risk === 'Defensive' || agent.risk === 'Conservative';
+  const momentum   = gameState.momentum[agent.id] ?? 50;
+  const shuttlePos = gameState.shuttlePosition;
+  const myPos      = gameState.agentPositions[agent.id] ?? { x: 50, y: 50 };
+  const rallyLen   = gameState.rallyLength;
 
-  // Special move on hot streak
-  if (momentum > 78 && specialMoves.length > 0 && Math.random() < 0.25) {
+  // ── 1. Special move: only when hot AND high enough combined stat ───────────
+  const specialThreshold = 75 + (10 - Math.max(agent.power, agent.accuracy)) * 1.5;
+  if (momentum >= specialThreshold && specialMoves.length > 0) {
+    const pick = specialMoves[Math.floor(Math.random() * specialMoves.length)];
     return {
       action:      'SPECIAL',
-      targetZone:  Math.floor(Math.random() * 9) + 1,
-      specialMove: specialMoves[Math.floor(Math.random() * specialMoves.length)],
-      rationale:   `Unleashing special move — momentum at ${momentum.toFixed(0)}, closing this rally!`,
+      targetZone:  bestAttackZone(agent, myPos),
+      specialMove: pick,
+      rationale:   `${pick}! Momentum at ${momentum.toFixed(0)} — unleashing signature move.`,
     };
   }
 
-  // Weighted action pool based on game situation
-  const pool: SportAction[] = [];
-  if (shuttleY > 65 && !isDefensive) pool.push('SMASH', 'SMASH', 'DRIVE');
-  if (shuttleY < 30)                   pool.push('DROP', 'BLOCK', 'DRIVE');
-  if (rallyLen > 10)                   pool.push('CLEAR', 'LOB', 'CLEAR');
-  if (momentum < 35)                   pool.push('CLEAR', 'LOB', 'BLOCK');
-  if (isAggressive)                    pool.push('SMASH', 'DRIVE', 'DROP');
-  if (isDefensive)                     pool.push('CLEAR', 'LOB', 'BLOCK', 'DROP');
-  // Always ensure all actions are reachable
-  pool.push('SMASH', 'DROP', 'CLEAR', 'DRIVE', 'LOB', 'BLOCK');
+  // ── 2. Score and decide based on stats, position, shuttle position ─────────
+  const distX = Math.abs(shuttlePos.x - myPos.x);
+  const distY = Math.abs(shuttlePos.y - myPos.y);
+  const totalDist = Math.sqrt(distX ** 2 + distY ** 2);
 
-  const action     = pool[Math.floor(Math.random() * pool.length)];
-  const targetZone = Math.floor(Math.random() * 9) + 1;
+  // Stamina check: if tired (long rally + low stamina), play safe
+  const tiredThreshold = 8 + agent.stamina * 0.8;
+  const isTired = rallyLen > tiredThreshold;
 
-  const rationales: Record<string, string> = {
-    SMASH:  `Shuttle is high — smashing to zone ${targetZone} for a winner.`,
-    DROP:   `Precise drop to zone ${targetZone} — catching them off guard.`,
-    CLEAR:  `Clearing deep to reset, buying time to reposition.`,
-    DRIVE:  `Flat drive to zone ${targetZone} — fast and flat.`,
-    LOB:    `Lobbing high to push opponent deep into the back court.`,
-    BLOCK:  `Tight defensive block — neutralizing the attack.`,
-    SERVE:  `Serving into zone ${targetZone}.`,
-  };
+  // Can't smash if shuttle is near the net or low
+  const shuttleHigh = shuttlePos.y < 35; // low y = high/deep in our coordinate system
+  const shuttleNearNet = shuttlePos.y > 70;
 
-  return {
-    action,
-    targetZone,
-    rationale: rationales[action] ?? 'Tactical decision.',
-  };
+  // Well-positioned: agent is close to where they need to be
+  const inPosition = totalDist < 25;
+
+  // Determine primary action from stats
+  let action: SportAction;
+  let targetZone: number;
+  let rationale: string;
+
+  if (isTired || momentum < 30) {
+    // Tired or cold: play defensive safe shots
+    if (shuttleNearNet && agent.accuracy >= 7) {
+      action     = 'BLOCK';
+      targetZone = deepZone(myPos);
+      rationale  = `Fatigue setting in — tight block to stay in the rally.`;
+    } else {
+      action     = 'CLEAR';
+      targetZone = deepZone(myPos);
+      rationale  = `Low on stamina (rally ${rallyLen}) — clearing deep to reset.`;
+    }
+  } else if (shuttleHigh && inPosition && agent.power >= 7) {
+    // High shuttle + high power + in position → SMASH
+    action     = 'SMASH';
+    targetZone = bestAttackZone(agent, myPos);
+    rationale  = `Shuttle is high and I'm in position — power smash (PWR ${agent.power})!`;
+  } else if (shuttleNearNet && agent.accuracy >= 7 && inPosition) {
+    // Net shot opportunity → DROP
+    action     = 'DROP';
+    targetZone = Math.random() < 0.5 ? 7 : 9; // front corners
+    rationale  = `Net opportunity — delicate drop to the corner (ACC ${agent.accuracy}).`;
+  } else if (agent.speed >= 8 && !isTired && momentum >= 50) {
+    // Fast agent drives the rally
+    action     = 'DRIVE';
+    targetZone = bestAttackZone(agent, myPos);
+    rationale  = `Aggressive flat drive — speed advantage (SPD ${agent.speed}).`;
+  } else if (agent.power >= 8 && shuttleHigh) {
+    // Power player smashes when shuttle is elevated
+    action     = 'SMASH';
+    targetZone = bestAttackZone(agent, myPos);
+    rationale  = `Power smash — shuttle elevated, committing (PWR ${agent.power}).`;
+  } else if (agent.accuracy >= 8 && momentum >= 45) {
+    // Precise player drops or drives to corners
+    action     = Math.random() < 0.6 ? 'DROP' : 'DRIVE';
+    targetZone = bestAttackZone(agent, myPos);
+    rationale  = `Precision placement to the weak side (ACC ${agent.accuracy}).`;
+  } else if (!inPosition && agent.speed < 6) {
+    // Slow agent out of position — must lob/clear to buy time
+    action     = rallyLen < 5 ? 'CLEAR' : 'LOB';
+    targetZone = deepZone(myPos);
+    rationale  = `Out of position, buying recovery time (SPD ${agent.speed}).`;
+  } else {
+    // Balanced default: mix of clear/drive based on stats
+    const powerBias  = agent.power    / 10;
+    const speedBias  = agent.speed    / 10;
+    const accBias    = agent.accuracy / 10;
+    const roll = Math.random();
+    if (roll < powerBias * 0.4 && shuttleHigh) {
+      action = 'SMASH'; targetZone = bestAttackZone(agent, myPos);
+      rationale = `Power attack opportunity — smashing (PWR ${agent.power}).`;
+    } else if (roll < speedBias * 0.7) {
+      action = 'DRIVE'; targetZone = bestAttackZone(agent, myPos);
+      rationale = `Driving fast — keeping pressure on (SPD ${agent.speed}).`;
+    } else if (roll < accBias * 0.85) {
+      action = 'DROP'; targetZone = Math.random() < 0.5 ? 7 : 9;
+      rationale = `Precise drop shot to the front (ACC ${agent.accuracy}).`;
+    } else {
+      action = 'CLEAR'; targetZone = deepZone(myPos);
+      rationale = `Resetting the rally — clearing deep.`;
+    }
+  }
+
+  return { action, targetZone, rationale, specialMove: null };
+}
+
+// Pick best zone to attack based on agent style and court position
+function bestAttackZone(
+  agent: { speed: number; power: number; accuracy: number; stamina: number; risk?: string },
+  _myPos: { x: number; y: number }
+): number {
+  // High-accuracy agents aim for corners (1, 3, 7, 9)
+  // High-power agents aim for the body/center (2, 5, 8)
+  const corners = [1, 3, 7, 9];
+  const center  = [2, 5, 8];
+  const mid     = [4, 6];
+  const acc = agent.accuracy;
+  const pwr = agent.power;
+  if (acc >= 8)       return corners[Math.floor(Math.random() * corners.length)];
+  if (pwr >= 8)       return center[Math.floor(Math.random() * center.length)];
+  if (acc >= 6)       return mid[Math.floor(Math.random() * mid.length)];
+  return Math.ceil(Math.random() * 9); // fallback
+}
+
+// Deep zones for defensive shots
+function deepZone(_myPos: { x: number; y: number }): number {
+  return [1, 2, 3][Math.floor(Math.random() * 3)]; // push to back court
 }

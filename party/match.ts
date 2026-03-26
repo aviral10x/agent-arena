@@ -1,0 +1,351 @@
+/**
+ * PartyKit Match Server
+ *
+ * One room per competition (room ID = competitionId).
+ * Handles:
+ *   - Player WebSocket connections (identified by userId + agentId)
+ *   - 2.5s command window per rally for human trainer input
+ *   - AI fallback via Groq when no command received
+ *   - Rally resolution via game-engine.ts
+ *   - Broadcasting game state to all clients (players + spectators)
+ *   - Persisting match result to Next.js API on completion
+ */
+
+import type * as Party from "partykit/server";
+import {
+  initGameState,
+  resolveRally,
+  type GameState,
+  type ShotDecision,
+  type SportAction,
+} from "../src/lib/game-engine";
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface PlayerInfo {
+  userId: string;
+  agentId: string;
+  agentName: string;
+  agentColor: string;
+  side: "a" | "b";
+  stats: { speed: number; power: number; stamina: number; accuracy: number };
+  strategy: string;
+  risk: string;
+  specialMoves: string[];
+}
+
+// Messages client → server
+type ClientMsg =
+  | { type: "join"; userId: string; agentId: string; agentName: string; agentColor: string; side: "a" | "b"; stats: PlayerInfo["stats"]; strategy: string; risk: string; specialMoves: string[] }
+  | { type: "spectate"; userId: string }
+  | { type: "command"; text: string };
+
+// Messages server → client
+type ServerMsg =
+  | { type: "connected"; side: "a" | "b" | "spectator"; gameState: GameState | null; players: Partial<Record<"a" | "b", { agentId: string; agentName: string; agentColor: string }>> }
+  | { type: "waiting"; message: string }
+  | { type: "match_start"; gameState: GameState }
+  | { type: "tick_open"; timeMs: number; rallyCount: number }
+  | { type: "tick_close" }
+  | { type: "rally"; gameState: GameState; description: string; action: string; attackerSide: "a" | "b"; rallyLength: number; pointWon: boolean; pointWinnerId: string }
+  | { type: "match_over"; winnerId: string; winnerName: string; gameState: GameState }
+  | { type: "error"; message: string };
+
+const COMMAND_WINDOW_MS = 2500;
+const TICK_INTERVAL_MS = 3000; // time between rallies
+
+// ── Room state ───────────────────────────────────────────────────────────────
+
+export default class MatchRoom implements Party.Server {
+  options: Party.ServerOptions = { hibernate: false };
+
+  gameState: GameState | null = null;
+  sport: "badminton" | "tennis" | "table-tennis" = "badminton";
+  players: Map<string, PlayerInfo> = new Map(); // userId → PlayerInfo
+  connections: Map<string, Party.Connection> = new Map(); // userId → socket
+  pendingCommands: Map<string, string> = new Map(); // agentId → command text
+  tickTimer: ReturnType<typeof setTimeout> | null = null;
+  commandTimer: ReturnType<typeof setTimeout> | null = null;
+  isRunning = false;
+  matchOver = false;
+
+  constructor(readonly room: Party.Room) {}
+
+  // ── Connection lifecycle ──────────────────────────────────────────────────
+
+  onConnect(conn: Party.Connection) {
+    // Send current state immediately on connect
+    conn.send(JSON.stringify({
+      type: "connected",
+      side: "spectator",
+      gameState: this.gameState,
+      players: this.getPlayerSummary(),
+    } satisfies ServerMsg));
+  }
+
+  onClose(conn: Party.Connection) {
+    // Find and remove disconnected user
+    for (const [userId, c] of this.connections.entries()) {
+      if (c.id === conn.id) {
+        this.connections.delete(userId);
+        break;
+      }
+    }
+  }
+
+  // ── Message handling ──────────────────────────────────────────────────────
+
+  async onMessage(raw: string, conn: Party.Connection) {
+    let msg: ClientMsg;
+    try { msg = JSON.parse(raw); } catch { return; }
+
+    if (msg.type === "join") {
+      this.handleJoin(msg, conn);
+    } else if (msg.type === "spectate") {
+      this.connections.set(msg.userId, conn);
+      conn.send(JSON.stringify({
+        type: "connected",
+        side: "spectator",
+        gameState: this.gameState,
+        players: this.getPlayerSummary(),
+      } satisfies ServerMsg));
+    } else if (msg.type === "command") {
+      // Find which agent this connection belongs to
+      for (const [userId, c] of this.connections.entries()) {
+        if (c.id === conn.id) {
+          const player = this.players.get(userId);
+          if (player) this.pendingCommands.set(player.agentId, msg.text);
+          break;
+        }
+      }
+    }
+  }
+
+  // ── Join ─────────────────────────────────────────────────────────────────
+
+  handleJoin(msg: Extract<ClientMsg, { type: "join" }>, conn: Party.Connection) {
+    const player: PlayerInfo = {
+      userId: msg.userId,
+      agentId: msg.agentId,
+      agentName: msg.agentName,
+      agentColor: msg.agentColor,
+      side: msg.side,
+      stats: msg.stats,
+      strategy: msg.strategy,
+      risk: msg.risk,
+      specialMoves: msg.specialMoves,
+    };
+    this.players.set(msg.userId, player);
+    this.connections.set(msg.userId, conn);
+
+    conn.send(JSON.stringify({
+      type: "connected",
+      side: msg.side,
+      gameState: this.gameState,
+      players: this.getPlayerSummary(),
+    } satisfies ServerMsg));
+
+    // Broadcast updated player list to all
+    this.broadcast({ type: "connected", side: msg.side, gameState: this.gameState, players: this.getPlayerSummary() });
+
+    const playerCount = [...this.players.values()].filter(p => p.side === "a" || p.side === "b").length;
+
+    if (playerCount === 1) {
+      this.broadcast({ type: "waiting", message: "Waiting for opponent..." });
+    } else if (playerCount >= 2 && !this.isRunning && !this.matchOver) {
+      this.startMatch();
+    }
+  }
+
+  // ── Match lifecycle ───────────────────────────────────────────────────────
+
+  startMatch() {
+    const playerA = [...this.players.values()].find(p => p.side === "a");
+    const playerB = [...this.players.values()].find(p => p.side === "b");
+    if (!playerA || !playerB) return;
+
+    this.gameState = initGameState(this.sport, [playerA.agentId, playerB.agentId], playerA.agentId);
+    this.isRunning = true;
+
+    this.broadcast({ type: "match_start", gameState: this.gameState });
+    this.scheduleNextTick();
+  }
+
+  scheduleNextTick() {
+    if (this.tickTimer) clearTimeout(this.tickTimer);
+    this.tickTimer = setTimeout(() => this.openCommandWindow(), TICK_INTERVAL_MS);
+  }
+
+  openCommandWindow() {
+    if (!this.isRunning || this.matchOver || !this.gameState) return;
+    const rallyCount = this.gameState.rallyCount;
+
+    this.broadcast({ type: "tick_open", timeMs: COMMAND_WINDOW_MS, rallyCount });
+
+    this.commandTimer = setTimeout(() => this.resolveNextRally(), COMMAND_WINDOW_MS);
+  }
+
+  async resolveNextRally() {
+    if (!this.isRunning || this.matchOver || !this.gameState) return;
+
+    this.broadcast({ type: "tick_close" });
+
+    const playerA = [...this.players.values()].find(p => p.side === "a")!;
+    const playerB = [...this.players.values()].find(p => p.side === "b")!;
+
+    // Inject pending trainer commands into game state
+    const gs = { ...this.gameState };
+    gs.trainerCommands = {
+      [playerA.agentId]: this.pendingCommands.get(playerA.agentId) ?? null,
+      [playerB.agentId]: this.pendingCommands.get(playerB.agentId) ?? null,
+    };
+    this.pendingCommands.clear();
+
+    // Get AI decisions for both agents
+    const [decA, decB] = await Promise.all([
+      this.getDecision(playerA, gs, playerB.agentId, playerB.agentName),
+      this.getDecision(playerB, gs, playerA.agentId, playerA.agentName),
+    ]);
+
+    const decisions = { [playerA.agentId]: decA, [playerB.agentId]: decB };
+    const agentStats = {
+      [playerA.agentId]: playerA.stats,
+      [playerB.agentId]: playerB.stats,
+    };
+
+    const result = resolveRally(gs, decisions, agentStats);
+    this.gameState = result.newGameState;
+
+    const attackerSide: "a" | "b" =
+      result.attackerId === playerA.agentId ? "a" : "b";
+
+    this.broadcast({
+      type: "rally",
+      gameState: this.gameState,
+      description: result.description,
+      action: result.action,
+      attackerSide,
+      rallyLength: result.rallyLength,
+      pointWon: result.isWinner,
+      pointWinnerId: result.pointWinnerId,
+    });
+
+    if (result.matchOver || this.gameState.matchOver) {
+      this.matchOver = true;
+      this.isRunning = false;
+      const winner = this.gameState.winner === playerA.agentId ? playerA : playerB;
+      this.broadcast({ type: "match_over", winnerId: winner.agentId, winnerName: winner.agentName, gameState: this.gameState });
+      // Persist to DB via Next.js API
+      this.persistResult(winner.agentId).catch(console.error);
+    } else {
+      this.scheduleNextTick();
+    }
+  }
+
+  // ── AI decision ───────────────────────────────────────────────────────────
+
+  async getDecision(
+    player: PlayerInfo,
+    gameState: GameState,
+    opponentId: string,
+    opponentName: string,
+  ): Promise<ShotDecision> {
+    const myScore = gameState.sets[gameState.currentSet]?.agentScores[player.agentId] ?? 0;
+    const oppScore = gameState.sets[gameState.currentSet]?.agentScores[opponentId] ?? 0;
+    const momentum = gameState.momentum[player.agentId] ?? 50;
+    const trainerCmd = gameState.trainerCommands[player.agentId];
+
+    const prompt = `You are a ${gameState.sport} AI agent.
+Name: ${player.agentName} | Style: ${player.strategy}
+Stats: Speed ${player.stats.speed}/10, Power ${player.stats.power}/10, Accuracy ${player.stats.accuracy}/10, Stamina ${player.stats.stamina}/10
+Score: You ${myScore} – ${oppScore} ${opponentName} | Set ${gameState.currentSet + 1}
+Momentum: ${momentum.toFixed(0)}/100${momentum > 65 ? " 🔥" : momentum < 35 ? " 🥶" : ""}
+Shuttle: (${gameState.shuttlePosition.x.toFixed(0)}, ${gameState.shuttlePosition.y.toFixed(0)}) | Rally length: ${gameState.rallyLength}
+Last action: ${gameState.lastAction}
+${trainerCmd ? `TRAINER: "${trainerCmd}" — FOLLOW THIS NOW!` : ""}`;
+
+    const groqKey = this.room.env.GROQ_API_KEY as string | undefined;
+
+    if (groqKey) {
+      try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              { role: "system", content: `You are a ${gameState.sport} agent. Reply ONLY with JSON: {"action":"SMASH"|"DROP"|"CLEAR"|"DRIVE"|"LOB"|"BLOCK"|"SERVE"|"SPECIAL","targetZone":1-9,"specialMove":null,"rationale":"one sentence"}` },
+              { role: "user", content: prompt },
+            ],
+            temperature: 0.7,
+            max_tokens: 100,
+            response_format: { type: "json_object" },
+          }),
+        });
+        const data = await res.json() as any;
+        const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
+        const validActions = ["SERVE","SMASH","DROP","CLEAR","DRIVE","LOB","BLOCK","SPECIAL"];
+        if (validActions.includes(parsed.action)) {
+          return {
+            action: parsed.action as SportAction,
+            targetZone: Math.max(1, Math.min(9, Number(parsed.targetZone) || 5)),
+            specialMove: parsed.specialMove ?? null,
+            rationale: parsed.rationale ?? "Tactical decision.",
+          };
+        }
+      } catch (e) {
+        console.warn("[match] Groq failed, using mock:", e);
+      }
+    }
+
+    return this.mockDecision(player, gameState);
+  }
+
+  mockDecision(player: PlayerInfo, gameState: GameState): ShotDecision {
+    const momentum = gameState.momentum[player.agentId] ?? 50;
+    const shuttleY = gameState.shuttlePosition.y;
+    const pool: SportAction[] = [];
+    if (shuttleY > 65 && player.risk !== "Defensive") pool.push("SMASH", "SMASH", "DRIVE");
+    if (shuttleY < 30) pool.push("DROP", "BLOCK");
+    if (gameState.rallyLength > 8) pool.push("CLEAR", "LOB");
+    if (momentum < 35) pool.push("CLEAR", "LOB", "BLOCK");
+    if (player.risk === "Aggressive") pool.push("SMASH", "DRIVE", "DROP");
+    if (player.risk === "Defensive") pool.push("CLEAR", "LOB", "BLOCK");
+    pool.push("SMASH", "DROP", "CLEAR", "DRIVE", "LOB", "BLOCK");
+    const action = pool[Math.floor(Math.random() * pool.length)];
+    return { action, targetZone: Math.floor(Math.random() * 9) + 1, specialMove: null, rationale: "Tactical decision." };
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  broadcast(msg: ServerMsg) {
+    const str = JSON.stringify(msg);
+    for (const conn of this.room.getConnections()) {
+      try { conn.send(str); } catch {}
+    }
+  }
+
+  getPlayerSummary(): Partial<Record<"a" | "b", { agentId: string; agentName: string; agentColor: string }>> {
+    const result: Partial<Record<"a" | "b", { agentId: string; agentName: string; agentColor: string }>> = {};
+    for (const p of this.players.values()) {
+      result[p.side] = { agentId: p.agentId, agentName: p.agentName, agentColor: p.agentColor };
+    }
+    return result;
+  }
+
+  async persistResult(winnerId: string) {
+    const baseUrl = this.room.env.NEXT_PUBLIC_BASE_URL as string ?? "http://localhost:3000";
+    const secret = this.room.env.CRON_SECRET as string ?? "";
+    try {
+      await fetch(`${baseUrl}/api/competitions/${this.room.id}/settle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-cron-secret": secret },
+        body: JSON.stringify({ winnerId, gameState: this.gameState }),
+      });
+    } catch (e) {
+      console.error("[match] Failed to persist result:", e);
+    }
+  }
+}
+
+MatchRoom satisfies Party.Worker;

@@ -59,69 +59,104 @@ const SCORING_RULES = {
   'table-tennis': { pointsPerSet: 11, setsToWin: 3, totalSets: 5, deuceAt: 10, maxPoints: 15 },
 };
 
-// ── Attack success probability ──────────────────────────────────────────────────
+// ── Distance between two court positions ──────────────────────────────────────
+function courtDistance(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+// ── Zone landing positions (0=center, 1–9 as grid) ───────────────────────────
+const ZONE_POS: { x: number; y: number }[] = [
+  { x: 50, y: 50 }, // 0: center (unused sentinel)
+  { x: 20, y: 10 }, // 1: back-left
+  { x: 50, y: 10 }, // 2: back-center
+  { x: 80, y: 10 }, // 3: back-right
+  { x: 20, y: 50 }, // 4: mid-left
+  { x: 50, y: 50 }, // 5: center
+  { x: 80, y: 50 }, // 6: mid-right
+  { x: 20, y: 85 }, // 7: front-left
+  { x: 50, y: 85 }, // 8: front-center
+  { x: 80, y: 85 }, // 9: front-right
+];
+
+// ── Attack success probability (stats + position penalty if out-of-position) ──
 function attackSuccessProb(
   action: SportAction,
   stats: { speed: number; power: number; accuracy: number; stamina: number },
   momentum: number,
   rallyLength: number,
+  distanceToShuttle: number, // how far attacker had to run to reach shuttle
 ): number {
-  const momentumBonus = (momentum - 50) / 600; // ±0.083
-  // Stamina decay: longer rallies tire agents with low stamina
-  const staminaDecay = Math.max(0, 1 - (rallyLength * (1 - stats.stamina / 12)) / 40);
+  const momentumBonus = (momentum - 50) / 500; // ±0.10
+  // Stamina decay — stronger effect than before
+  const staminaDecay = Math.max(0.4, 1 - (rallyLength * (1 - stats.stamina / 11)) / 25);
+  // Position penalty: if agent had to run far, shot quality drops (mitigated by speed)
+  const reachPenalty = Math.max(0, (distanceToShuttle - 20) / 100) * Math.max(0.2, 1 - stats.speed / 12);
 
   const base: Record<SportAction, number> = {
-    SERVE:   0.92,
+    SERVE:   0.94,
     CLEAR:   0.88,
-    LOB:     0.83,
-    BLOCK:   0.80,
-    DRIVE:   0.75,
-    DROP:    0.72,
-    SMASH:   0.65,
-    SPECIAL: 0.58,
+    LOB:     0.84,
+    BLOCK:   0.82,
+    DRIVE:   0.76,
+    DROP:    0.70,
+    SMASH:   0.62,
+    SPECIAL: 0.55,
   };
 
+  // Stat modifier — wider range so stats matter more
   const statMod =
-    action === 'SMASH'   ? (stats.power - 5) / 60 :
-    action === 'DROP'    ? (stats.accuracy - 5) / 60 :
-    action === 'DRIVE'   ? (stats.speed - 5) / 60 :
-    action === 'CLEAR'   ? (stats.stamina - 5) / 60 :
-    action === 'SPECIAL' ? Math.max(stats.power, stats.accuracy, stats.speed - 5) / 80 :
+    action === 'SMASH'   ? (stats.power    - 5) / 40 :
+    action === 'DROP'    ? (stats.accuracy - 5) / 40 :
+    action === 'DRIVE'   ? (stats.speed    - 5) / 40 :
+    action === 'CLEAR'   ? (stats.stamina  - 5) / 50 :
+    action === 'LOB'     ? (stats.stamina  - 5) / 60 :
+    action === 'BLOCK'   ? (stats.speed    - 5) / 60 :
+    action === 'SPECIAL' ? (Math.max(stats.power, stats.accuracy) - 5) / 50 :
     0;
 
-  return Math.min(0.95, Math.max(0.25,
-    base[action] + statMod + momentumBonus
+  return Math.min(0.96, Math.max(0.15,
+    base[action] + statMod + momentumBonus - reachPenalty
   )) * staminaDecay;
 }
 
 // ── Defense (return) probability ────────────────────────────────────────────────
-// Can the OTHER agent return this shot?
+// Core mechanic: defender must physically REACH the shuttle landing zone.
+// If they're too slow or too far away, they can't return it.
 function defenseReturnProb(
   attackAction: SportAction,
+  targetZone: number,
+  defenderPos: { x: number; y: number },
   defenderStats: { speed: number; power: number; accuracy: number; stamina: number },
   defenderMomentum: number,
   rallyLength: number,
 ): number {
-  const momentumBonus = (defenderMomentum - 50) / 600;
-  const staminaDecay = Math.max(0, 1 - (rallyLength * (1 - defenderStats.stamina / 12)) / 40);
+  const momentumBonus = (defenderMomentum - 50) / 500;
+  const staminaDecay = Math.max(0.4, 1 - (rallyLength * (1 - defenderStats.stamina / 11)) / 25);
 
-  // How hard is each shot to return?
+  // How hard each shot type is to return (base difficulty)
   const difficulty: Record<SportAction, number> = {
-    SMASH:   0.40, // hardest to return
-    SPECIAL: 0.42,
-    DROP:    0.50,
-    DRIVE:   0.58,
-    LOB:     0.70,
-    CLEAR:   0.75,
-    BLOCK:   0.72,
-    SERVE:   0.80,
+    SMASH:   0.35, // hardest — fast and steep
+    SPECIAL: 0.38,
+    DRIVE:   0.50,
+    DROP:    0.48, // requires good positioning
+    LOB:     0.72,
+    CLEAR:   0.76,
+    BLOCK:   0.70,
+    SERVE:   0.82,
   };
 
-  const speedBonus  = (defenderStats.speed - 5) / 50;
-  const reflexBonus = (defenderStats.accuracy - 5) / 80; // reads the shot
+  // Distance the defender must cover to reach landing zone
+  const landingPos = ZONE_POS[Math.max(1, Math.min(9, targetZone))] ?? ZONE_POS[5];
+  const dist = courtDistance(defenderPos, landingPos);
+  // Reach factor: speed-10 agent barely needs to move; speed-1 agent struggles
+  // Each 10 units of distance reduces return prob by (1 - speed/12) * 0.08
+  const reachPenalty = (dist / 10) * Math.max(0.01, 1 - defenderStats.speed / 12) * 0.12;
 
-  return Math.min(0.90, Math.max(0.20,
-    difficulty[attackAction] + speedBonus + reflexBonus + momentumBonus
+  const speedBonus  = (defenderStats.speed    - 5) / 45;
+  const reflexBonus = (defenderStats.accuracy - 5) / 70;
+
+  return Math.min(0.92, Math.max(0.10,
+    difficulty[attackAction] + speedBonus + reflexBonus + momentumBonus - reachPenalty
   )) * staminaDecay;
 }
 
@@ -173,15 +208,27 @@ export function resolveRally(
   const attackMomentum = gameState.momentum[attackerId] ?? 50;
   const defenderMomentum = gameState.momentum[defenderId] ?? 50;
 
+  // How far did the attacker have to run to reach the shuttle?
+  const attackerPos = gameState.agentPositions[attackerId] ?? { x: 50, y: 50 };
+  const distToShuttle = courtDistance(attackerPos, gameState.shuttlePosition);
+
   // Step 1: Does the attacker execute their shot successfully?
   const attackProb = attackSuccessProb(
-    attackDecision.action, attackStats, attackMomentum, gameState.rallyLength
+    attackDecision.action, attackStats, attackMomentum, gameState.rallyLength, distToShuttle
   );
   const attackSuccess = Math.random() < attackProb;
 
-  // Step 2: If attack succeeds, can the defender return it?
+  // Step 2: If attack succeeds, can the defender physically reach and return it?
+  const defenderPos = gameState.agentPositions[defenderId] ?? { x: 50, y: 50 };
   const defenseProb = attackSuccess
-    ? defenseReturnProb(attackDecision.action, defenderStats, defenderMomentum, gameState.rallyLength)
+    ? defenseReturnProb(
+        attackDecision.action,
+        attackDecision.targetZone,
+        defenderPos,
+        defenderStats,
+        defenderMomentum,
+        gameState.rallyLength,
+      )
     : 1; // attack failed, defender wins by default
   const defenseSuccess = attackSuccess ? Math.random() < defenseProb : true;
 
@@ -269,29 +316,41 @@ export function resolveRally(
     }
   }
 
-  // ── Move shuttle ──────────────────────────────────────────────────────────
-  const zone = attackDecision.targetZone;
-  const zoneX = [50, 20, 50, 80, 20, 50, 80, 20, 50, 80][zone] ?? 50;
-  const zoneY = attackerId === agentIds[0]
-    ? [50, 15, 15, 15, 40, 40, 40, 65, 65, 65][zone] ?? 30
-    : [50, 85, 85, 85, 60, 60, 60, 35, 35, 35][zone] ?? 70;
+  // ── Move shuttle to target zone ───────────────────────────────────────────
+  const zone = Math.max(1, Math.min(9, attackDecision.targetZone));
+  const zoneLanding = ZONE_POS[zone] ?? ZONE_POS[5];
+  // Accuracy-based spread: low accuracy = more scatter around intended zone
+  const spread = Math.max(3, 18 - attackStats.accuracy * 1.5);
   const newShuttlePos = {
-    x: zoneX + (Math.random() - 0.5) * 15,
-    y: rallyEnds ? 50 : zoneY + (Math.random() - 0.5) * 10,
+    x: Math.max(5, Math.min(95, zoneLanding.x + (Math.random() - 0.5) * spread)),
+    y: rallyEnds ? 50 : Math.max(5, Math.min(95, zoneLanding.y + (Math.random() - 0.5) * spread)),
   };
 
-  // ── Move agents toward their shot target ──────────────────────────────────
+  // ── Move agents: attacker recovers to base; defender chases shuttle ────────
   const newPositions = { ...gameState.agentPositions };
+  // Attacker moves to where they hit from, then starts recovering
   newPositions[attackerId] = {
-    x: 30 + Math.random() * 40,
-    y: attackerId === agentIds[0] ? 60 + Math.random() * 25 : 15 + Math.random() * 25,
+    x: attackerPos.x + (50 - attackerPos.x) * 0.4 + (Math.random() - 0.5) * 10,
+    y: attackerId === agentIds[0]
+      ? Math.max(55, Math.min(95, attackerPos.y + (Math.random() - 0.5) * 10))
+      : Math.max(5,  Math.min(45, attackerPos.y + (Math.random() - 0.5) * 10)),
   };
   if (!rallyEnds) {
-    // Defender moves toward the shuttle to return
-    newPositions[defenderId] = {
-      x: newShuttlePos.x + (Math.random() - 0.5) * 20,
-      y: defenderId === agentIds[0] ? 60 + Math.random() * 25 : 15 + Math.random() * 25,
+    // Defender sprints toward the shuttle landing zone
+    // Speed determines how close they can get (high speed = reaches exactly; low speed = arrives late)
+    const coverage = Math.min(1.0, defenderStats.speed / 8);
+    const defTarget = {
+      x: newShuttlePos.x + (defenderPos.x - newShuttlePos.x) * (1 - coverage),
+      y: newShuttlePos.y + (defenderPos.y - newShuttlePos.y) * (1 - coverage),
     };
+    newPositions[defenderId] = {
+      x: Math.max(5, Math.min(95, defTarget.x + (Math.random() - 0.5) * 8)),
+      y: Math.max(5, Math.min(95, defTarget.y + (Math.random() - 0.5) * 8)),
+    };
+  } else {
+    // Reset positions to base after point
+    newPositions[attackerId] = { x: 50, y: attackerId === agentIds[0] ? 75 : 25 };
+    newPositions[defenderId] = { x: 50, y: defenderId === agentIds[0] ? 75 : 25 };
   }
 
   // ── Build description ──────────────────────────────────────────────────────

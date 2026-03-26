@@ -1,0 +1,5 @@
+{
+  "name": "agent-arena",
+  "main": "party/match.ts",
+  "compatibilityDate": "2024-09-23"
+}
