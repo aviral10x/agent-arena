@@ -141,58 +141,105 @@ PHYSICS RULES (must follow):
 
 Reply with JSON only: {"action":"...","targetZone":1-9,"specialMove":null,"rationale":"one sentence"}`;
 
-  const groqKey   = process.env.GROQ_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const SYSTEM_MSG = `You are a badminton AI making shot decisions. CRITICAL: respect shuttle height physics. Reply ONLY with valid JSON: {"action":"SMASH"|"DROP"|"CLEAR"|"DRIVE"|"LOB"|"BLOCK"|"SERVE"|"SPECIAL","targetZone":1-9,"specialMove":null,"rationale":"one sentence"}`;
+  const validActions = ['SERVE','SMASH','DROP','CLEAR','DRIVE','LOB','BLOCK','SPECIAL'];
 
-  if (!groqKey && !openaiKey) {
-    return generateMockDecision(agent, gameState, specialMovesArr);
-  }
-
-  if (groqKey) {
+  function parseAIResponse(raw: string): ShotDecision | null {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const Groq = require('groq-sdk').default ?? require('groq-sdk');
-      const groq = new Groq({ apiKey: groqKey });
-      const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a badminton AI making shot decisions. CRITICAL: respect shuttle height physics. Reply ONLY with valid JSON: {"action":"SMASH"|"DROP"|"CLEAR"|"DRIVE"|"LOB"|"BLOCK"|"SERVE"|"SPECIAL","targetZone":1-9,"specialMove":null,"rationale":"one sentence"}`,
-          },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.6,
-        max_tokens: 120,
-        response_format: { type: 'json_object' },
-      });
-      const raw    = completion.choices[0]?.message?.content ?? '{}';
       const parsed = JSON.parse(raw);
-      const valid  = ['SERVE','SMASH','DROP','CLEAR','DRIVE','LOB','BLOCK','SPECIAL'];
-      if (valid.includes(parsed.action)) {
+      if (validActions.includes(parsed.action)) {
         return {
-          action:     parsed.action as SportAction,
-          targetZone: Math.max(1, Math.min(9, Number(parsed.targetZone) || 5)),
+          action:      parsed.action as SportAction,
+          targetZone:  Math.max(1, Math.min(9, Number(parsed.targetZone) || 5)),
           specialMove: parsed.specialMove ?? null,
-          rationale:  parsed.rationale ?? 'Tactical decision.',
+          rationale:   parsed.rationale ?? 'AI decision.',
         };
       }
-    } catch (err: any) {
-      console.warn(`[sport-agent] Groq error for ${agent.name}: ${err.message?.slice(0,60)}`);
-    }
+    } catch {}
+    return null;
   }
 
+  // ── Primary: OpenAI gpt-4o-mini (fast, reliable, JSON mode) ────────────────
+  const openaiKey = process.env.OPENAI_API_KEY;
   if (openaiKey) {
     try {
-      const { generateObject } = await import('ai');
-      const { openai }         = await import('@ai-sdk/openai');
-      const { object } = await generateObject({ model: openai('gpt-4o-mini'), schema: ShotDecisionSchema, prompt });
-      return object;
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiKey}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: SYSTEM_MSG },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.6,
+          max_tokens: 100,
+          response_format: { type: 'json_object' },
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json() as any;
+        const decision = parseAIResponse(data.choices?.[0]?.message?.content ?? '{}');
+        if (decision) return decision;
+      }
     } catch (err: any) {
-      console.warn(`[sport-agent] OpenAI error for ${agent.name}: ${err.message?.slice(0,60)}`);
+      console.warn(`[sport-agent] OpenAI error for ${agent.name}: ${err.message?.slice(0, 60)}`);
     }
   }
 
+  // ── Secondary: Gemini Flash (very fast, free tier) ─────────────────────────
+  const googleKey = process.env.GOOGLE_AI_API_KEY;
+  if (googleKey) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${SYSTEM_MSG}\n\n${prompt}` }] }],
+          generationConfig: { temperature: 0.6, maxOutputTokens: 100, responseMimeType: 'application/json' },
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json() as any;
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
+        const decision = parseAIResponse(text);
+        if (decision) return decision;
+      }
+    } catch (err: any) {
+      console.warn(`[sport-agent] Gemini error for ${agent.name}: ${err.message?.slice(0, 60)}`);
+    }
+  }
+
+  // ── Tertiary: Groq (if key works) ──────────────────────────────────────────
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: SYSTEM_MSG },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.6,
+          max_tokens: 100,
+          response_format: { type: 'json_object' },
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json() as any;
+        const decision = parseAIResponse(data.choices?.[0]?.message?.content ?? '{}');
+        if (decision) return decision;
+      }
+    } catch (err: any) {
+      console.warn(`[sport-agent] Groq error for ${agent.name}: ${err.message?.slice(0, 60)}`);
+    }
+  }
+
+  // ── Last resort: deterministic fallback (should rarely hit) ────────────────
+  console.warn(`[sport-agent] ALL AI providers failed for ${agent.name} — using physics fallback`);
   return generateMockDecision(agent, gameState, specialMovesArr);
 }
 

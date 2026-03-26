@@ -615,10 +615,10 @@ export function LiveMatchClient({
           ) : !betWallet ? (
             <div className="text-center">
               <button
-                onClick={() => privyLogin()}
+                onClick={() => { if (!user) privyLogin(); }}
                 className="bg-[#ff6c92] text-[#48001b] px-6 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:brightness-110 transition-all"
               >
-                CONNECT_WALLET_TO_BET
+                {user ? 'WALLET_LOADING…' : 'CONNECT_WALLET_TO_BET'}
               </button>
             </div>
           ) : betDone ? (
