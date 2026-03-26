@@ -187,3 +187,66 @@ export default function CreateAgentPage() {
               value={bio}
               onChange={e => setBio(e.target.value)}
               placeholder="DESCRIBE_COMBAT_PROTOCOL..."
+              rows={3}
+              className="w-full bg-transparent border text-sm font-mono px-3 py-2 focus:outline-none resize-none"
+              style={{ borderColor: 'rgba(70,71,82,0.3)', color: '#eeecfa' }}
+            />
+          </div>
+        </section>
+
+        {/* Right: Detail card */}
+        <section className="col-span-12 lg:col-span-5 flex flex-col gap-6">
+          <div className="flex-1 flex flex-col relative overflow-hidden p-6" style={{
+            background: '#171924',
+            border: '1px solid rgba(143,245,255,0.2)',
+            boxShadow: 'inset 0 1px 0 0 rgba(143,245,255,0.15)',
+          }}>
+            <div className="absolute top-0 right-0 w-32 h-64 -rotate-12 translate-x-16 -translate-y-16 pointer-events-none" style={{ background: 'rgba(143,245,255,0.04)' }} />
+
+            <div className="relative z-10 flex flex-col h-full">
+              {/* Agent header */}
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <span className="px-3 py-0.5 text-[10px] font-mono font-bold uppercase" style={{ background: '#8ff5ff', color: '#005d63' }}>
+                    {ARCHETYPES[selectedArchetype].label}
+                  </span>
+                  <h2 className="text-6xl font-black uppercase italic leading-none mt-2 tracking-tighter" style={{ color: '#eeecfa', fontFamily: 'Rajdhani' }}>
+                    {name || "UNNAMED_01"}
+                  </h2>
+                  <p className="text-xs font-mono mt-1" style={{ color: '#8ff5ff' }}>PROTOCOL: {protocol.toUpperCase()}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold" style={{ color: '#ffd666', fontFamily: 'Rajdhani' }}>
+                    {Object.values(stats).reduce((a, b) => a + b, 0) * 10} <span className="text-xs opacity-60">XP</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stat sliders */}
+              <div className="space-y-5 mb-8">
+                {statBars.map(({ key, label }) => (
+                  <div key={key}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#eeecfa', fontFamily: 'Chakra Petch' }}>{label}</span>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setStat(key, stats[key] - 1)} className="w-5 h-5 flex items-center justify-center text-xs font-bold" style={{ color: '#8ff5ff', background: 'rgba(143,245,255,0.1)' }}>−</button>
+                        <span className="font-mono text-xs w-8 text-center" style={{ color: '#8ff5ff' }}>{stats[key]} / 10</span>
+                        <button onClick={() => setStat(key, stats[key] + 1)} className="w-5 h-5 flex items-center justify-center text-xs font-bold" style={{ color: '#8ff5ff', background: 'rgba(143,245,255,0.1)' }}>+</button>
+                      </div>
+                    </div>
+                    <div className="h-1 w-full" style={{ background: '#11131d' }}>
+                      <div className="h-full transition-all duration-300" style={{ width: `${stats[key] * 10}%`, background: '#8ff5ff', boxShadow: '0 0 8px #8ff5ff' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Budget bar */}
+              <div className="p-4 mb-8" style={{ background: '#000000' }}>
+                <div className="flex justify-between items-center mb-2">
+                  <div className="text-[10px] font-mono uppercase font-bold" style={{ color: '#ffd666' }}>Neural Bandwidth Budget</div>
+                  <div className="text-[10px] font-mono" style={{ color: '#ffd666' }}>{BUDGET - remainingPoints} / {BUDGET} MHz</div>
+                </div>
+                <div className="flex gap-[2px] h-2">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <div key={i} className="flex-1 h-full" style={{
