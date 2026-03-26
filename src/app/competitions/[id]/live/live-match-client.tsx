@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { getAgentAvatar } from "@/lib/agent-avatars";
 import { SFX_MAP } from "@/lib/sfx";
 import { SportCourtCanvas } from "@/components/arena/sport-court-canvas";
@@ -186,6 +187,19 @@ export function LiveMatchClient({
   const [trainerInput, setTrainerInput] = useState("");
   const [flashText, setFlashText]   = useState<string | null>(null);
   const [shareMsg, setShareMsg]     = useState<string | null>(null);
+  const [showBetPanel, setShowBetPanel] = useState(false);
+  const [betPick, setBetPick]       = useState<"a" | "b" | null>(null);
+  const [betAmount, setBetAmount]   = useState(5);
+  const [betSubmitting, setBetSubmitting] = useState(false);
+  const [betDone, setBetDone]       = useState(false);
+
+  // Privy wallet for inline betting
+  const { user, login: privyLogin, ready: privyReady } = usePrivy();
+  const { wallets } = useWallets();
+  const betWallet = user?.wallet?.address
+    ?? wallets.find(w => w.walletClientType !== 'privy')?.address
+    ?? wallets[0]?.address
+    ?? '';
   const prevRallyRef = useRef<string | null>(null);
   const [log, setLog] = useState([
     "> SYSTEM: Match initialized",
@@ -380,12 +394,16 @@ export function LiveMatchClient({
           </button>
         </div>
 
-        <Link
-          href={`/competitions/${competitionId}/bet`}
-          className="border border-[#ff6c92]/40 text-[#ff6c92] px-3 py-1 font-mono text-[10px] uppercase hover:bg-[#ff6c92]/10 transition-colors"
+        <button
+          onClick={() => setShowBetPanel(p => !p)}
+          className={`border px-3 py-1 font-mono text-[10px] uppercase transition-colors ${
+            showBetPanel
+              ? "border-[#ff6c92] bg-[#ff6c92]/20 text-[#ff6c92]"
+              : "border-[#ff6c92]/40 text-[#ff6c92] hover:bg-[#ff6c92]/10"
+          }`}
         >
-          Place_Bet
-        </Link>
+          {showBetPanel ? "HIDE_BETS" : "PLACE_BET"}
+        </button>
 
         <button
           onClick={() => setMuted(m => !m)}
@@ -559,31 +577,146 @@ export function LiveMatchClient({
           <span className="text-[10px] font-mono uppercase tracking-widest text-[#ff6c92]">MARKET_LIVE</span>
         </div>
         <div className="flex gap-2">
-          <Link
-            href={`/competitions/${competitionId}/bet?pick=a`}
-            className="px-4 py-2 border font-mono text-xs uppercase hover:brightness-110 transition-colors"
+          <button
+            onClick={() => { setBetPick("a"); setShowBetPanel(true); }}
+            className={`px-4 py-2 border font-mono text-xs uppercase hover:brightness-110 transition-colors ${betPick === "a" ? "ring-1 ring-white/30" : ""}`}
             style={{ background: `${colorA}14`, borderColor: `${colorA}40`, color: colorA }}
           >
             {agentA?.name.slice(0, 8) ?? "A"} · {oddsA}x
-          </Link>
-          <Link
-            href={`/competitions/${competitionId}/bet?pick=b`}
-            className="px-4 py-2 border font-mono text-xs uppercase hover:brightness-110 transition-colors"
+          </button>
+          <button
+            onClick={() => { setBetPick("b"); setShowBetPanel(true); }}
+            className={`px-4 py-2 border font-mono text-xs uppercase hover:brightness-110 transition-colors ${betPick === "b" ? "ring-1 ring-white/30" : ""}`}
             style={{ background: `${colorB}14`, borderColor: `${colorB}40`, color: colorB }}
           >
             {agentB?.name.slice(0, 8) ?? "B"} · {oddsB}x
-          </Link>
+          </button>
         </div>
         <div className="text-[10px] font-mono text-[#464752]">
           Pool: <span className="text-[#ffe6aa]">${totalBetUsdc.toFixed(2)}</span>
         </div>
-        <Link
-          href={`/competitions/${competitionId}/bet`}
+        <button
+          onClick={() => setShowBetPanel(p => !p)}
           className="ml-auto bg-[#ff6c92] text-[#48001b] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all"
         >
-          PLACE_STAKE →
-        </Link>
+          {showBetPanel ? "CLOSE ×" : "PLACE_STAKE →"}
+        </button>
       </div>
+
+      {/* ── Inline Bet Panel (slides up from bottom) ── */}
+      {showBetPanel && (
+        <div
+          className="shrink-0 border-t border-[#ff6c92]/30 px-4 py-4"
+          style={{ background: "rgba(11,13,22,0.95)", backdropFilter: "blur(16px)" }}
+        >
+          {!privyReady ? (
+            <div className="text-center text-[10px] font-mono text-[#464752]">Loading…</div>
+          ) : !betWallet ? (
+            <div className="text-center">
+              <button
+                onClick={() => privyLogin()}
+                className="bg-[#ff6c92] text-[#48001b] px-6 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:brightness-110 transition-all"
+              >
+                CONNECT_WALLET_TO_BET
+              </button>
+            </div>
+          ) : betDone ? (
+            <div className="text-center text-[#00ff87] font-mono text-sm uppercase">
+              Bet placed! Good luck 🏸
+            </div>
+          ) : (
+            <div className="flex items-center gap-4 max-w-3xl mx-auto">
+              {/* Pick side */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setBetPick("a")}
+                  className={`px-3 py-2 border font-mono text-[10px] uppercase transition-all ${
+                    betPick === "a"
+                      ? "border-[#8ff5ff] bg-[#8ff5ff]/15 text-[#8ff5ff]"
+                      : "border-[#464752]/30 text-[#464752] hover:border-[#464752]"
+                  }`}
+                >
+                  {agentA?.name.slice(0, 10) ?? "A"}
+                </button>
+                <button
+                  onClick={() => setBetPick("b")}
+                  className={`px-3 py-2 border font-mono text-[10px] uppercase transition-all ${
+                    betPick === "b"
+                      ? "border-[#ff6c92] bg-[#ff6c92]/15 text-[#ff6c92]"
+                      : "border-[#464752]/30 text-[#464752] hover:border-[#464752]"
+                  }`}
+                >
+                  {agentB?.name.slice(0, 10) ?? "B"}
+                </button>
+              </div>
+
+              {/* Amount */}
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-mono text-[#464752] uppercase">USDC</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={betAmount}
+                  onChange={e => setBetAmount(Math.max(1, Math.min(100, Number(e.target.value))))}
+                  className="w-20 bg-[#11131d] border border-[#464752]/30 px-2 py-1 text-sm font-mono text-[#eeecfa] text-center outline-none focus:border-[#ff6c92]/60"
+                />
+                <div className="flex gap-1">
+                  {[1, 5, 10, 25].map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setBetAmount(v)}
+                      className={`px-2 py-1 text-[9px] font-mono border transition-colors ${
+                        betAmount === v
+                          ? "border-[#ffe6aa]/60 text-[#ffe6aa] bg-[#ffe6aa]/10"
+                          : "border-[#464752]/20 text-[#464752] hover:text-[#aaaab6]"
+                      }`}
+                    >
+                      ${v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payout preview */}
+              <div className="text-center">
+                <div className="text-[9px] font-mono text-[#464752] uppercase">Payout</div>
+                <div className="font-mono text-sm text-[#ffe6aa] font-bold">
+                  ${betPick ? (betAmount * parseFloat(betPick === "a" ? oddsA : oddsB)).toFixed(2) : "—"}
+                </div>
+              </div>
+
+              {/* Commit */}
+              <button
+                onClick={async () => {
+                  if (!betPick || !betWallet) return;
+                  setBetSubmitting(true);
+                  try {
+                    const selectedAgentId = betPick === "a" ? agentA?.id : agentB?.id;
+                    await fetch(`/api/competitions/${competitionId}/bet`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        predictedWinnerId: selectedAgentId,
+                        amountUsdc: betAmount,
+                        betterWallet: betWallet,
+                      }),
+                    });
+                    setBetDone(true);
+                  } catch {
+                    // silently fail for now
+                  }
+                  setBetSubmitting(false);
+                }}
+                disabled={!betPick || betSubmitting}
+                className="bg-[#ff6c92] text-[#48001b] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {betSubmitting ? "PLACING…" : "COMMIT_BET"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
