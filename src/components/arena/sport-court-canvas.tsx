@@ -88,7 +88,7 @@ function drawShuttle(
   // Cork (nose) — white sphere with glow
   const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
   grad.addColorStop(0, "#ffffff");
-  grad.addColorStop(0.5, "#ffd666");
+  grad.addColorStop(0.5, "#ffe6aa");
   grad.addColorStop(1, "#ffb340");
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
@@ -296,7 +296,7 @@ export function SportCourtCanvas({
       s.shuttleSpeed = 0.055;
       spawnBurst(s.particles, ax, ay, attackerIsA ? colorA : colorB, 8, 2.5);
     } else if (lastAction === "POINT") {
-      spawnBurst(s.particles, ax, ay, "#ffd666", 24, 5);
+      spawnBurst(s.particles, ax, ay, "#ffe6aa", 24, 5);
       spawnBurst(s.particles, ax, ay, "#ffffff", 10, 8);
       s.shuttleT = 1; // no flight on point
     } else {

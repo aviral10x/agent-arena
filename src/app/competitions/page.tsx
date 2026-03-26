@@ -46,16 +46,16 @@ export default async function CompetitionsPage() {
 
         {/* ── Hero Header ── */}
         <section className="mb-10 relative">
-          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#00f0ff]" />
+          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#8ff5ff]" />
           <h1
-            className="font-['Space_Grotesk'] text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-2 text-[#00f0ff]"
+            className="font-['Space_Grotesk'] text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-2 text-[#8ff5ff]"
             style={{ textShadow: "0 0 30px rgba(143,245,255,0.4)" }}
           >
             Active_Terminals
           </h1>
           <div className="flex items-center gap-4 text-xs font-mono text-[#464752]">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-[#00f0ff] animate-pulse" />
+              <span className="w-2 h-2 bg-[#8ff5ff] animate-pulse" />
               SYSTEM_LIVE
             </span>
             <span>•</span>
@@ -67,8 +67,8 @@ export default async function CompetitionsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
           <div className="lg:col-span-3 flex flex-wrap items-center gap-4 bg-[#11131d] p-4 border border-[#464752]/10">
             <div className="flex items-center gap-2 text-xs font-mono">
-              <span className="w-1.5 h-1.5 bg-[#00f0ff] rounded-full animate-ping" />
-              <span className="text-[#00f0ff]">LIVE: {liveCount}</span>
+              <span className="w-1.5 h-1.5 bg-[#8ff5ff] rounded-full animate-ping" />
+              <span className="text-[#8ff5ff]">LIVE: {liveCount}</span>
             </div>
             <div className="h-4 w-px bg-[#464752]/30" />
             <span className="text-xs font-mono text-[#aaaab6]">OPEN: {openCount}</span>
@@ -77,15 +77,15 @@ export default async function CompetitionsPage() {
             <div className="ml-auto">
               <Link
                 href="/agents/create"
-                className="bg-[#00f0ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all inline-block"
+                className="bg-[#8ff5ff] text-[#005d63] px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:skew-x-[-6deg] transition-all inline-block"
               >
                 Build_Agent →
               </Link>
             </div>
           </div>
-          <div className="bg-[#1d1f2b] p-4 flex flex-col justify-center border-l-4 border-[#ffd666]">
-            <div className="text-[10px] text-[#ffd666] font-mono uppercase">Total_Terminals</div>
-            <div className="text-2xl font-black font-mono text-[#ffd666]">{competitions.length}</div>
+          <div className="bg-[#1d1f2b] p-4 flex flex-col justify-center border-l-4 border-[#ffe6aa]">
+            <div className="text-[10px] text-[#ffe6aa] font-mono uppercase">Total_Terminals</div>
+            <div className="text-2xl font-black font-mono text-[#ffe6aa]">{competitions.length}</div>
           </div>
         </div>
 
@@ -103,7 +103,7 @@ export default async function CompetitionsPage() {
             </p>
             <Link
               href="/agents/create"
-              className="bg-[#00f0ff] text-[#005d63] px-6 py-3 font-bold uppercase text-xs inline-block"
+              className="bg-[#8ff5ff] text-[#005d63] px-6 py-3 font-bold uppercase text-xs inline-block"
             >
               Initialize_Terminal →
             </Link>
@@ -112,7 +112,7 @@ export default async function CompetitionsPage() {
 
         {/* ── How it works ── */}
         <div className="mt-16 border border-[#464752]/20 bg-[#11131d] p-8">
-          <h3 className="font-['Bebas_Neue'] text-2xl text-[#00f0ff] tracking-widest mb-6 uppercase">
+          <h3 className="font-['Bebas_Neue'] text-2xl text-[#8ff5ff] tracking-widest mb-6 uppercase">
             How_Terminals_Work
           </h3>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -121,9 +121,9 @@ export default async function CompetitionsPage() {
               { icon: "bolt",        label: "02. Deploy",  desc: "Enter an open terminal. Live match starts when both seats fill." },
               { icon: "military_tech", label: "03. Dominate", desc: "Watch your agent compete in real-time. Top performers climb the global rankings." },
             ].map(({ icon, label, desc }) => (
-              <div key={label} className="bg-[#171924] border border-[#464752]/20 p-5 hover:border-[#00f0ff]/30 transition-colors">
-                <span className="material-symbols-outlined text-[#00f0ff] text-2xl mb-3 block">{icon}</span>
-                <div className="font-['Space_Grotesk'] font-black text-xs text-[#00f0ff] uppercase tracking-widest mb-2">{label}</div>
+              <div key={label} className="bg-[#171924] border border-[#464752]/20 p-5 hover:border-[#8ff5ff]/30 transition-colors">
+                <span className="material-symbols-outlined text-[#8ff5ff] text-2xl mb-3 block">{icon}</span>
+                <div className="font-['Space_Grotesk'] font-black text-xs text-[#8ff5ff] uppercase tracking-widest mb-2">{label}</div>
                 <p className="text-xs font-mono text-[#aaaab6] leading-relaxed">{desc}</p>
               </div>
             ))}

@@ -55,15 +55,15 @@ const ACTION_EMOJI: Record<string, string> = {
 };
 
 const ACTION_COLORS: Record<string, string> = {
-  SMASH:   '#ff2d78',   // neon-magenta
+  SMASH:   '#ff6c92',   // neon-magenta
   DROP:    '#c084fc',   // purple
-  CLEAR:   '#00f0ff',   // neon-cyan
-  DRIVE:   '#ffd666',   // amber/gold
+  CLEAR:   '#8ff5ff',   // neon-cyan
+  DRIVE:   '#ffe6aa',   // amber/gold
   LOB:     '#00ff87',   // neon-green
   BLOCK:   '#9ca3af',
   SERVE:   '#e8f0ff',
-  SPECIAL: '#ffd666',
-  POINT:   '#ffd666',
+  SPECIAL: '#ffe6aa',
+  POINT:   '#ffe6aa',
 };
 
 const SPORT_LABELS: Record<string, string> = {
@@ -417,7 +417,7 @@ export function SportMatchClient({
   }, [lastAction, a1score, a2score, mounted]);
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-[#05060e] overflow-hidden">
+    <div className="h-[calc(100vh-64px)] flex flex-col bg-[#0c0e16] overflow-hidden">
       {/* ── Scanline overlay ── */}
       <div className="scanline-overlay absolute inset-0 z-10 pointer-events-none" />
 
@@ -425,7 +425,7 @@ export function SportMatchClient({
       <div className="flex-1 grid grid-cols-12 gap-0 overflow-hidden relative z-20">
 
         {/* ── LEFT SIDEBAR: Agent A Panel ── */}
-        <aside className="col-span-3 bg-[#11131d] border-r border-[#00f0ff]/10 flex flex-col overflow-y-auto">
+        <aside className="col-span-3 bg-[#11131d] border-r border-[#8ff5ff]/10 flex flex-col overflow-y-auto">
           <div className="p-6 space-y-8">
 
             {/* Agent A Profile */}
@@ -459,13 +459,13 @@ export function SportMatchClient({
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-black p-3 border-l-2 border-[#00f0ff]">
+                  <div className="bg-black p-3 border-l-2 border-[#8ff5ff]">
                     <p className="text-[10px] font-['Space_Grotesk'] text-[#747480] uppercase tracking-tighter">Momentum</p>
-                    <p className="font-mono text-xl text-[#00f0ff]">{Math.round(m1)}%</p>
+                    <p className="font-mono text-xl text-[#8ff5ff]">{Math.round(m1)}%</p>
                   </div>
-                  <div className="bg-black p-3 border-l-2 border-[#ffd666]">
+                  <div className="bg-black p-3 border-l-2 border-[#ffe6aa]">
                     <p className="text-[10px] font-['Space_Grotesk'] text-[#747480] uppercase tracking-tighter">Score</p>
-                    <p className="font-mono text-xl text-[#ffd666]">{a1score}</p>
+                    <p className="font-mono text-xl text-[#ffe6aa]">{a1score}</p>
                   </div>
                 </div>
 
@@ -512,7 +512,7 @@ export function SportMatchClient({
         <div className="col-span-6 bg-black relative flex flex-col overflow-hidden">
 
           {/* Top Live Score bar */}
-          <div className="h-20 flex items-stretch border-b border-[#00f0ff]/5 z-30 shrink-0">
+          <div className="h-20 flex items-stretch border-b border-[#8ff5ff]/5 z-30 shrink-0">
             <div
               className="flex-1 flex flex-col items-center justify-center px-4"
               style={{ background: `linear-gradient(to right, ${a1color}1a, transparent)` }}
@@ -520,13 +520,13 @@ export function SportMatchClient({
               <span className="font-mono text-[10px]" style={{ color: `${a1color}99` }}>Challenger_A</span>
               <span className="font-['Bebas_Neue'] text-2xl" style={{ color: a1color }}>{a1name}</span>
             </div>
-            <div className="w-48 bg-[#05060e] p-2 flex flex-col items-center justify-center border-x border-[#00f0ff]/20">
+            <div className="w-48 bg-[#0c0e16] p-2 flex flex-col items-center justify-center border-x border-[#8ff5ff]/20">
               <div className="flex items-center gap-6">
                 <span
                   key={`${a1score}-score`}
                   className="font-['Bebas_Neue'] text-5xl"
                   style={{
-                    color: '#00f0ff',
+                    color: '#8ff5ff',
                     animation: mounted ? 'score-blast 0.5s ease-out' : 'none',
                   }}
                 >
@@ -535,13 +535,13 @@ export function SportMatchClient({
                 <div className="flex flex-col items-center">
                   {isLive && (
                     <span
-                      className="font-mono text-[10px] text-[#ffd666] animate-pulse uppercase"
+                      className="font-mono text-[10px] text-[#ffe6aa] animate-pulse uppercase"
                     >
                       {gameState?.currentSet ? `SET ${gameState.currentSet + 1}` : 'LIVE'}
                     </span>
                   )}
                   {!isLive && status === 'settled' && (
-                    <span className="font-mono text-[10px] text-[#ffd666] uppercase">FINAL</span>
+                    <span className="font-mono text-[10px] text-[#ffe6aa] uppercase">FINAL</span>
                   )}
                   <span className="font-['Space_Grotesk'] text-xl text-[#464752]">
                     {gameState?.rallyCount ? `R${gameState.rallyCount}` : 'VS'}
@@ -551,7 +551,7 @@ export function SportMatchClient({
                   key={`${a2score}-score`}
                   className="font-['Bebas_Neue'] text-5xl"
                   style={{
-                    color: '#ff2d78',
+                    color: '#ff6c92',
                     animation: mounted ? 'score-blast 0.5s ease-out' : 'none',
                   }}
                 >
@@ -574,7 +574,7 @@ export function SportMatchClient({
             <div
               className="absolute inset-0 opacity-10 pointer-events-none"
               style={{
-                backgroundImage: 'radial-gradient(#00f0ff 0.5px, transparent 0.5px)',
+                backgroundImage: 'radial-gradient(#8ff5ff 0.5px, transparent 0.5px)',
                 backgroundSize: '32px 32px',
               }}
             />
@@ -605,7 +605,7 @@ export function SportMatchClient({
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3 text-[#464752]">
-                  <div className="w-6 h-6 border-2 border-[#464752] border-t-[#00f0ff] rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-[#464752] border-t-[#8ff5ff] rounded-full animate-spin" />
                   <span className="font-mono text-xs">Loading court…</span>
                 </div>
               </div>
@@ -628,7 +628,7 @@ export function SportMatchClient({
               {isLive && (
                 <span
                   className="flex items-center gap-1.5 text-[10px] font-black tracking-widest px-2 py-0.5 font-mono"
-                  style={{ background: '#00f0ff', color: '#005d63', animation: 'live-breathe 2s infinite' }}
+                  style={{ background: '#8ff5ff', color: '#005d63', animation: 'live-breathe 2s infinite' }}
                 >
                   <span className="w-1.5 h-1.5 block" style={{ background: '#005d63' }} />
                   LIVE
@@ -653,8 +653,8 @@ export function SportMatchClient({
           </div>
 
           {/* Trainer Console (Stitch bottom center) */}
-          <div className="h-24 bg-[#05060e] border-t border-[#00f0ff]/20 p-4 flex items-center gap-4 z-30 shrink-0">
-            <div className="w-12 h-12 flex items-center justify-center bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/30">
+          <div className="h-24 bg-[#0c0e16] border-t border-[#8ff5ff]/20 p-4 flex items-center gap-4 z-30 shrink-0">
+            <div className="w-12 h-12 flex items-center justify-center bg-[#8ff5ff]/10 text-[#8ff5ff] border border-[#8ff5ff]/30">
               <span className="material-symbols-outlined">terminal</span>
             </div>
             <div className="flex-1">
@@ -675,7 +675,7 @@ export function SportMatchClient({
         </div>
 
         {/* ── RIGHT SIDEBAR: Agent B Panel ── */}
-        <aside className="col-span-3 bg-[#11131d] border-l border-[#00f0ff]/10 flex flex-col overflow-y-auto">
+        <aside className="col-span-3 bg-[#11131d] border-l border-[#8ff5ff]/10 flex flex-col overflow-y-auto">
           <div className="p-6 space-y-8">
 
             {/* Agent B Profile */}
@@ -709,13 +709,13 @@ export function SportMatchClient({
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-black p-3 border-r-2 border-[#ff2d78] text-right">
+                  <div className="bg-black p-3 border-r-2 border-[#ff6c92] text-right">
                     <p className="text-[10px] font-['Space_Grotesk'] text-[#747480] uppercase tracking-tighter">Momentum</p>
-                    <p className="font-mono text-xl text-[#ff2d78]">{Math.round(m2)}%</p>
+                    <p className="font-mono text-xl text-[#ff6c92]">{Math.round(m2)}%</p>
                   </div>
-                  <div className="bg-black p-3 border-r-2 border-[#ffd666] text-right">
+                  <div className="bg-black p-3 border-r-2 border-[#ffe6aa] text-right">
                     <p className="text-[10px] font-['Space_Grotesk'] text-[#747480] uppercase tracking-tighter">Score</p>
-                    <p className="font-mono text-xl text-[#ffd666]">{a2score}</p>
+                    <p className="font-mono text-xl text-[#ffe6aa]">{a2score}</p>
                   </div>
                 </div>
 
@@ -791,7 +791,7 @@ export function SportMatchClient({
         {/* ── Bottom overlay: Betting ── */}
         <div className="absolute bottom-24 left-0 w-full z-40 p-4 grid grid-cols-12 gap-4 pointer-events-none">
           {/* Betting Panel */}
-          <div className="col-span-3 glass-panel p-4 pointer-events-auto border border-[#00f0ff]/20">
+          <div className="col-span-3 glass-panel p-4 pointer-events-auto border border-[#8ff5ff]/20">
             <BettingPanelClient
               competitionId={competitionId}
               agents={agents.map(a => ({

@@ -55,16 +55,16 @@ export default async function AgentsPage() {
 
         {/* ── Hero Header ── */}
         <section className="mb-10 relative">
-          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#00f0ff]" />
+          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#8ff5ff]" />
           <h1
-            className="font-['Space_Grotesk'] text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-2 text-[#00f0ff]"
+            className="font-['Space_Grotesk'] text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-2 text-[#8ff5ff]"
             style={{ textShadow: "0 0 30px rgba(143,245,255,0.4)" }}
           >
             Agent_Roster
           </h1>
           <div className="flex items-center gap-4 text-xs font-mono text-[#464752]">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-[#00f0ff] animate-pulse" />
+              <span className="w-2 h-2 bg-[#8ff5ff] animate-pulse" />
               SYSTEM_LIVE
             </span>
             <span>•</span>
@@ -82,7 +82,7 @@ export default async function AgentsPage() {
           <div className="flex items-center">
             <Link
               href="/agents/create"
-              className="w-full bg-[#00f0ff] text-[#005d63] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all text-center block"
+              className="w-full bg-[#8ff5ff] text-[#005d63] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all text-center block"
             >
               Build_Agent →
             </Link>
@@ -96,7 +96,7 @@ export default async function AgentsPage() {
             <p className="text-[#aaaab6] font-mono text-sm mb-6">No athletes yet. Be the first to build one.</p>
             <Link
               href="/agents/create"
-              className="bg-[#00f0ff] text-[#005d63] px-6 py-3 font-bold uppercase text-xs inline-block"
+              className="bg-[#8ff5ff] text-[#005d63] px-6 py-3 font-bold uppercase text-xs inline-block"
             >
               Create_Agent →
             </Link>
@@ -162,10 +162,10 @@ export default async function AgentsPage() {
 
                 {/* ── Sport stats bars ── */}
                 <div className="space-y-1 mb-3">
-                  <StatBar label="SPD" value={agent.speed ?? 7} color="#00f0ff" />
-                  <StatBar label="PWR" value={agent.power ?? 7} color="#ffd666" />
+                  <StatBar label="SPD" value={agent.speed ?? 7} color="#8ff5ff" />
+                  <StatBar label="PWR" value={agent.power ?? 7} color="#ffe6aa" />
                   <StatBar label="STA" value={agent.stamina ?? 7} color="#00ff87" />
-                  <StatBar label="ACC" value={agent.accuracy ?? 7} color="#ff2d78" />
+                  <StatBar label="ACC" value={agent.accuracy ?? 7} color="#ff6c92" />
                 </div>
 
                 {/* ── Special moves ── */}
@@ -174,7 +174,7 @@ export default async function AgentsPage() {
                     {agent.specialMoves.slice(0, 2).map((move: string) => (
                       <span
                         key={move}
-                        className="px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest border border-[#00f0ff]/30 bg-[#00f0ff]/08 text-[#00f0ff]"
+                        className="px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest border border-[#8ff5ff]/30 bg-[#8ff5ff]/08 text-[#8ff5ff]"
                       >
                         {move}
                       </span>
@@ -193,7 +193,7 @@ export default async function AgentsPage() {
                     </div>
                     <div className="shrink-0 text-right">
                       <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752]">Score</div>
-                      <div className="font-mono text-[11px] text-[#00f0ff]">
+                      <div className="font-mono text-[11px] text-[#8ff5ff]">
                         {isSport
                           ? `${ca.score ?? 0} pts`
                           : `${(ca.pnlPct ?? ca.pnl ?? 0) >= 0 ? "+" : ""}${(ca.pnlPct ?? ca.pnl ?? 0).toFixed(1)}%`}

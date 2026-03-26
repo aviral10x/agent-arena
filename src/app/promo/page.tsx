@@ -48,7 +48,7 @@ export default function PromoPage() {
             fontFamily: 'var(--font-drama)',
             fontSize: 'clamp(3rem, 12vw, 9rem)',
             letterSpacing: '0.04em',
-            background: 'linear-gradient(135deg, #00f0ff 0%, #ffffff 45%, #ff2d78 100%)',
+            background: 'linear-gradient(135deg, #8ff5ff 0%, #ffffff 45%, #ff6c92 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}

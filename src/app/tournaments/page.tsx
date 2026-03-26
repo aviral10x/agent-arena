@@ -26,8 +26,8 @@ function TournamentCard({ t }: { t: any }) {
         ? "Enroll_Now →"
         : "Opens_Soon";
 
-  const borderColor = isLive ? "#00f0ff" : isUpcoming ? "#464752" : "#232532";
-  const statusColor = isLive ? "#00f0ff" : isUpcoming ? "#ffd666" : "#464752";
+  const borderColor = isLive ? "#8ff5ff" : isUpcoming ? "#464752" : "#232532";
+  const statusColor = isLive ? "#8ff5ff" : isUpcoming ? "#ffe6aa" : "#464752";
   const statusLabel = isLive ? "LIVE" : isUpcoming ? (t.status === "enrolling" ? "ENROLLING" : "UPCOMING") : "SETTLED";
 
   return (
@@ -45,12 +45,12 @@ function TournamentCard({ t }: { t: any }) {
             borderColor: `${statusColor}30`,
           }}
         >
-          {isLive && <span className="inline-block w-1.5 h-1.5 bg-[#00f0ff] rounded-full animate-ping mr-1.5 align-middle" />}
+          {isLive && <span className="inline-block w-1.5 h-1.5 bg-[#8ff5ff] rounded-full animate-ping mr-1.5 align-middle" />}
           {statusLabel}
         </span>
 
         {t.isRecurring && (
-          <span className="text-[10px] font-mono text-[#ffd666] border border-[#ffd666]/30 bg-[#ffd666]/10 px-2 py-0.5 uppercase">
+          <span className="text-[10px] font-mono text-[#ffe6aa] border border-[#ffe6aa]/30 bg-[#ffe6aa]/10 px-2 py-0.5 uppercase">
             WEEKLY
           </span>
         )}
@@ -69,9 +69,9 @@ function TournamentCard({ t }: { t: any }) {
             {t.mode.replace("_", " ")} · RAKE {rake}%
           </div>
         </div>
-        <div className="border border-[#00f0ff]/20 bg-[#00f0ff]/5 px-4 py-3 text-center">
+        <div className="border border-[#8ff5ff]/20 bg-[#8ff5ff]/5 px-4 py-3 text-center">
           <div className="text-[9px] font-mono text-[#464752] uppercase tracking-widest">Prize_Pool</div>
-          <div className="text-2xl font-black font-mono text-[#00f0ff]">${t.prizePoolUsdc.toFixed(0)}</div>
+          <div className="text-2xl font-black font-mono text-[#8ff5ff]">${t.prizePoolUsdc.toFixed(0)}</div>
           <div className="text-[9px] font-mono text-[#464752]">USDC</div>
         </div>
       </div>
@@ -141,8 +141,8 @@ function TournamentCard({ t }: { t: any }) {
             href={ctaHref}
             className={`inline-block px-5 py-2 font-['Space_Grotesk'] font-black uppercase text-xs transition-all ${
               isLive
-                ? "bg-[#00f0ff] text-[#005d63] hover:skew-x-[-6deg]"
-                : "border border-[#00f0ff]/40 text-[#00f0ff] hover:bg-[#00f0ff]/10"
+                ? "bg-[#8ff5ff] text-[#005d63] hover:skew-x-[-6deg]"
+                : "border border-[#8ff5ff]/40 text-[#8ff5ff] hover:bg-[#8ff5ff]/10"
             }`}
           >
             {ctaLabel}
@@ -185,41 +185,41 @@ export default async function TournamentsPage() {
 
         {/* ── Hero Header ── */}
         <section className="mb-10 relative">
-          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#00f0ff]" />
+          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#8ff5ff]" />
           <h1
-            className="font-['Space_Grotesk'] text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-2 text-[#00f0ff]"
+            className="font-['Space_Grotesk'] text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-2 text-[#8ff5ff]"
             style={{ textShadow: "0 0 30px rgba(143,245,255,0.4)" }}
           >
             Tournaments
           </h1>
           <div className="flex items-center gap-4 text-xs font-mono text-[#464752]">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-[#00f0ff] animate-pulse" />
+              <span className="w-2 h-2 bg-[#8ff5ff] animate-pulse" />
               SYSTEM_LIVE
             </span>
             <span>•</span>
             <span>{live.length} LIVE · {upcoming.length} UPCOMING · {past.length} SETTLED</span>
             <span>•</span>
-            <span className="text-[#ff2d78]">STRUCTURED_EVENTS</span>
+            <span className="text-[#ff6c92]">STRUCTURED_EVENTS</span>
           </div>
         </section>
 
         {/* ── Filter row ── */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-10">
           <div className="lg:col-span-3 flex flex-wrap items-center gap-2 bg-[#11131d] p-1 border border-[#464752]/10">
-            <button className="px-6 py-2 bg-[#00f0ff] text-[#005d63] text-xs font-bold uppercase tracking-widest">
+            <button className="px-6 py-2 bg-[#8ff5ff] text-[#005d63] text-xs font-bold uppercase tracking-widest">
               All Events
             </button>
-            <button className="px-6 py-2 hover:bg-[#232532] text-[#464752] hover:text-[#00f0ff] text-xs font-bold uppercase tracking-widest transition-all">
+            <button className="px-6 py-2 hover:bg-[#232532] text-[#464752] hover:text-[#8ff5ff] text-xs font-bold uppercase tracking-widest transition-all">
               Weekly
             </button>
-            <button className="px-6 py-2 hover:bg-[#232532] text-[#464752] hover:text-[#00f0ff] text-xs font-bold uppercase tracking-widest transition-all">
+            <button className="px-6 py-2 hover:bg-[#232532] text-[#464752] hover:text-[#8ff5ff] text-xs font-bold uppercase tracking-widest transition-all">
               Monthly
             </button>
           </div>
-          <div className="bg-[#1d1f2b] p-4 flex flex-col justify-center border-l-4 border-[#ffd666]">
-            <div className="text-[10px] text-[#ffd666] font-mono uppercase">Total_Events</div>
-            <div className="text-2xl font-black font-mono text-[#ffd666]">{allCount}</div>
+          <div className="bg-[#1d1f2b] p-4 flex flex-col justify-center border-l-4 border-[#ffe6aa]">
+            <div className="text-[10px] text-[#ffe6aa] font-mono uppercase">Total_Events</div>
+            <div className="text-2xl font-black font-mono text-[#ffe6aa]">{allCount}</div>
           </div>
         </div>
 
@@ -232,7 +232,7 @@ export default async function TournamentsPage() {
             </p>
             <Link
               href="/challenges"
-              className="bg-[#00f0ff] text-[#005d63] px-6 py-3 font-bold uppercase text-xs inline-block"
+              className="bg-[#8ff5ff] text-[#005d63] px-6 py-3 font-bold uppercase text-xs inline-block"
             >
               Start_Competing →
             </Link>
@@ -242,8 +242,8 @@ export default async function TournamentsPage() {
             {live.length > 0 && (
               <section>
                 <div className="flex items-center gap-3 mb-4 border-b border-[#464752]/10 pb-3">
-                  <span className="w-1.5 h-1.5 bg-[#00f0ff] rounded-full animate-ping" />
-                  <h2 className="font-mono text-xs uppercase tracking-widest text-[#00f0ff]">Live_Now</h2>
+                  <span className="w-1.5 h-1.5 bg-[#8ff5ff] rounded-full animate-ping" />
+                  <h2 className="font-mono text-xs uppercase tracking-widest text-[#8ff5ff]">Live_Now</h2>
                 </div>
                 <div className="space-y-3">
                   {live.map((t: any) => <TournamentCard key={t.id} t={t} />)}
@@ -254,7 +254,7 @@ export default async function TournamentsPage() {
             {upcoming.length > 0 && (
               <section>
                 <div className="flex items-center gap-3 mb-4 border-b border-[#464752]/10 pb-3">
-                  <h2 className="font-mono text-xs uppercase tracking-widest text-[#ffd666]">Upcoming_Events</h2>
+                  <h2 className="font-mono text-xs uppercase tracking-widest text-[#ffe6aa]">Upcoming_Events</h2>
                 </div>
                 <div className="space-y-3">
                   {upcoming.map((t: any) => <TournamentCard key={t.id} t={t} />)}
@@ -277,7 +277,7 @@ export default async function TournamentsPage() {
 
         {/* ── How it works ── */}
         <div className="mt-16 border border-[#464752]/20 bg-[#11131d] p-8">
-          <h3 className="font-['Bebas_Neue'] text-2xl text-[#00f0ff] tracking-widest mb-6 uppercase">
+          <h3 className="font-['Bebas_Neue'] text-2xl text-[#8ff5ff] tracking-widest mb-6 uppercase">
             How_Tournaments_Work
           </h3>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -298,9 +298,9 @@ export default async function TournamentsPage() {
                 desc: "90% of the prize pool goes to the winner. 10% platform fee. Payouts in USDC.",
               },
             ].map(({ icon, label, desc }) => (
-              <div key={label} className="bg-[#171924] border border-[#464752]/20 p-5 hover:border-[#00f0ff]/30 transition-colors">
-                <span className="material-symbols-outlined text-[#00f0ff] text-2xl mb-3 block">{icon}</span>
-                <div className="font-['Space_Grotesk'] font-black text-xs text-[#00f0ff] uppercase tracking-widest mb-2">{label}</div>
+              <div key={label} className="bg-[#171924] border border-[#464752]/20 p-5 hover:border-[#8ff5ff]/30 transition-colors">
+                <span className="material-symbols-outlined text-[#8ff5ff] text-2xl mb-3 block">{icon}</span>
+                <div className="font-['Space_Grotesk'] font-black text-xs text-[#8ff5ff] uppercase tracking-widest mb-2">{label}</div>
                 <p className="text-xs font-mono text-[#aaaab6] leading-relaxed">{desc}</p>
               </div>
             ))}

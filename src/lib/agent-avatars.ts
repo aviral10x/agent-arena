@@ -67,7 +67,7 @@ export const ARCHETYPE_CARDS = [
     desc: "Controls the net with precision drops and kill shots",
     stats: { SPD: 9, PWR: 9, STA: 5, ACC: 7 },
     img: STITCH_AVATARS.striker,
-    color: "#00f0ff",
+    color: "#8ff5ff",
   },
   {
     type: "STEALTH",
@@ -99,7 +99,7 @@ export const ARCHETYPE_CARDS = [
     desc: "Overwhelms opponents with raw strength and explosive smashes",
     stats: { SPD: 7, PWR: 10, STA: 6, ACC: 6 },
     img: STITCH_AVATARS.kaizen,
-    color: "#ff2d78",
+    color: "#ff6c92",
   },
   {
     type: "SPEED",
@@ -107,6 +107,6 @@ export const ARCHETYPE_CARDS = [
     desc: "Blazing footwork and rapid-fire returns that never quit",
     stats: { SPD: 10, PWR: 5, STA: 8, ACC: 7 },
     img: STITCH_AVATARS.viper,
-    color: "#ffd666",
+    color: "#ffe6aa",
   },
 ] as const;

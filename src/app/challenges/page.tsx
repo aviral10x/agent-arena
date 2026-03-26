@@ -55,16 +55,16 @@ export default async function ChallengesPage() {
 
         {/* ── Hero Header ── */}
         <section className="mb-10 relative">
-          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#ff2d78]" />
+          <div className="absolute -left-4 top-0 w-1 h-12 bg-[#ff6c92]" />
           <h1
             className="font-['Space_Grotesk'] text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-2"
-            style={{ color: "#ff2d78", textShadow: "0 0 30px rgba(255,108,146,0.4)" }}
+            style={{ color: "#ff6c92", textShadow: "0 0 30px rgba(255,108,146,0.4)" }}
           >
             Matchmaking
           </h1>
           <div className="flex items-center gap-4 text-xs font-mono text-[#464752]">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-[#ff2d78] animate-pulse rounded-full" />
+              <span className="w-2 h-2 bg-[#ff6c92] animate-pulse rounded-full" />
               CHALLENGE_MODE_ACTIVE
             </span>
             <span>•</span>
@@ -72,7 +72,7 @@ export default async function ChallengesPage() {
             {openComps.length > 0 && (
               <>
                 <span>•</span>
-                <span className="text-[#ff2d78]">{openComps.length} OPEN_SEATS</span>
+                <span className="text-[#ff6c92]">{openComps.length} OPEN_SEATS</span>
               </>
             )}
           </div>
@@ -89,7 +89,7 @@ export default async function ChallengesPage() {
           <div className="flex items-center">
             <Link
               href="/agents/create"
-              className="w-full bg-[#ff2d78] text-[#48001b] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all text-center block"
+              className="w-full bg-[#ff6c92] text-[#48001b] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all text-center block"
             >
               Build_Challenger →
             </Link>
@@ -100,8 +100,8 @@ export default async function ChallengesPage() {
         {formattedOpenComps.length > 0 && (
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4 border-b border-[#464752]/10 pb-3">
-              <span className="w-1.5 h-1.5 bg-[#ff2d78] rounded-full animate-ping" />
-              <h2 className="font-mono text-xs uppercase tracking-widest text-[#ff2d78]">
+              <span className="w-1.5 h-1.5 bg-[#ff6c92] rounded-full animate-ping" />
+              <h2 className="font-mono text-xs uppercase tracking-widest text-[#ff6c92]">
                 Open_Seats — Waiting_For_Challenger
               </h2>
             </div>
@@ -110,13 +110,13 @@ export default async function ChallengesPage() {
                 <Link
                   key={comp.id}
                   href={`/competitions/${comp.id}`}
-                  className="bg-[#171924] border-l-2 border-[#ff2d78]/60 p-5 hover:bg-[#1d1f2b] transition-colors block group"
+                  className="bg-[#171924] border-l-2 border-[#ff6c92]/60 p-5 hover:bg-[#1d1f2b] transition-colors block group"
                 >
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <h3 className="font-['Space_Grotesk'] font-bold text-sm text-[#eeecfa] uppercase">
                       {comp.title}
                     </h3>
-                    <span className="text-[10px] font-mono text-[#ffd666] border border-[#ffd666]/30 bg-[#ffd666]/10 px-2 py-0.5 uppercase">
+                    <span className="text-[10px] font-mono text-[#ffe6aa] border border-[#ffe6aa]/30 bg-[#ffe6aa]/10 px-2 py-0.5 uppercase">
                       OPEN
                     </span>
                   </div>
@@ -136,7 +136,7 @@ export default async function ChallengesPage() {
                       ?
                     </div>
                   </div>
-                  <div className="text-[10px] font-mono text-[#ff2d78] uppercase group-hover:underline">
+                  <div className="text-[10px] font-mono text-[#ff6c92] uppercase group-hover:underline">
                     Enter_To_Start_Match →
                   </div>
                 </Link>
