@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useSignTypedData, useAccount } from 'wagmi';
 
 type AgentRow = {
   id: string; name: string; archetype: string; color: string;
@@ -24,10 +25,14 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
     ?? wallets[0]?.address
     ?? '';
 
+  const { signTypedDataAsync } = useSignTypedData();
+  const { address: wagmiAddr } = useAccount();
+
   const [opponentId,   setOpponentId]   = useState<string | null>(null);
   const [myAgentId,    setMyAgentId]    = useState<string>(params.get('myAgentId') ?? '');
   const [myAgents,     setMyAgents]     = useState<AgentRow[]>([]);
   const [loading,      setLoading]      = useState(false);
+  const [paymentStep,  setPaymentStep]  = useState<string | null>(null); // signing | verifying | null
   const [error,        setError]        = useState<string | null>(null);
 
   // Fetch agents owned by the connected wallet.
@@ -49,12 +54,73 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
   const opponent   = agents.find(a => a.id === opponentId);
   const myAgent    = myAgents.find(a => a.id === myAgentId) ?? agents.find(a => a.id === myAgentId);
 
+  const ENTRY_FEE_USDC = 0.10;
+  const USDC_ADDRESS   = '0x74b7f16337b8972027f6196a17a631ac6de26d22' as const;
+  const ARENA_RECEIVER = (process.env.NEXT_PUBLIC_ARENA_WALLET ?? '0x991442af55370b91930c5617b472b0e468e97bb2') as `0x${string}`;
+
   const handleChallenge = async () => {
     if (!opponentId)  { setError('Select an opponent first.');          return; }
     if (!myAgentId)   { setError('Select or create your fighter first.'); return; }
     if (opponentId === myAgentId) { setError('Cannot challenge yourself — pick a different fighter or opponent.'); return; }
-    setLoading(true); setError(null);
+    setLoading(true); setError(null); setPaymentStep(null);
+
+    let payload: any = null;
+
+    // ── Step 1: Sign x402 payment ($0.10 USDC entry fee) ──
+    const signerAddr = wagmiAddr ?? walletAddress;
+    if (signerAddr) {
+      try {
+        setPaymentStep('signing');
+        const amountMicro = BigInt(Math.round(ENTRY_FEE_USDC * 1_000_000)); // 100000 (6 decimals)
+        const nonce       = `0x${crypto.randomUUID().replace(/-/g, '')}` as `0x${string}`;
+        const validBefore = BigInt(Math.floor(Date.now() / 1000) + 300); // 5 min window
+
+        const domain = {
+          name:              'USD Coin',
+          version:           '2',
+          chainId:           196,  // X Layer
+          verifyingContract: USDC_ADDRESS,
+        };
+        const types = {
+          TransferWithAuthorization: [
+            { name: 'from',        type: 'address' },
+            { name: 'to',          type: 'address' },
+            { name: 'value',       type: 'uint256' },
+            { name: 'validAfter',  type: 'uint256' },
+            { name: 'validBefore', type: 'uint256' },
+            { name: 'nonce',       type: 'bytes32' },
+          ],
+        } as const;
+        const message = {
+          from:        signerAddr as `0x${string}`,
+          to:          ARENA_RECEIVER,
+          value:       amountMicro,
+          validAfter:  BigInt(0),
+          validBefore,
+          nonce,
+        };
+
+        const signature = await signTypedDataAsync({ domain, types, primaryType: 'TransferWithAuthorization', message });
+
+        payload = {
+          signature,
+          from:        signerAddr,
+          to:          ARENA_RECEIVER,
+          value:       amountMicro.toString(),
+          validAfter:  '0',
+          validBefore: validBefore.toString(),
+          nonce,
+        };
+      } catch (signErr: any) {
+        // User rejected or wallet unavailable → fallback to demo (free) mode
+        console.warn('[challenge] x402 sign failed, using demo mode:', signErr.message?.slice(0, 60));
+        payload = null;
+      }
+    }
+
+    // ── Step 2: Create competition ──
     try {
+      setPaymentStep(payload ? 'verifying' : null);
       const compRes = await fetch('/api/challenges', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,14 +129,19 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
           challengerAgentId: myAgentId,
           type:              'sport',
           sport:             SPORT,
+          ...(payload ? { payload } : {}),
         }),
       });
-      if (!compRes.ok) throw new Error('Failed to create challenge');
+      if (!compRes.ok) {
+        const data = await compRes.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Failed to create challenge');
+      }
       const comp = await compRes.json();
       router.push(`/competitions/${comp.id}/live?wallet=${encodeURIComponent(walletAddress)}`);
     } catch (err: any) {
       setError(err.message ?? 'Something went wrong');
       setLoading(false);
+      setPaymentStep(null);
     }
   };
 
@@ -252,7 +323,10 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
           disabled={!opponentId || !myAgentId || loading}
           className="w-full bg-[#ff6c92] text-[#48001b] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all disabled:opacity-40 disabled:hover:skew-x-0 disabled:cursor-not-allowed"
         >
-          {loading ? 'Launching_Match…' : '⚔ Issue_Challenge →'}
+          {paymentStep === 'signing' ? 'Sign $0.10 USDC Payment…'
+            : paymentStep === 'verifying' ? 'Verifying Payment…'
+            : loading ? 'Launching_Match…'
+            : '⚔ Issue_Challenge · $0.10 →'}
         </button>
       </div>
 
