@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { playClick, playSelect, playSuccess, playError, playGenerate } from "@/lib/sfx";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -520,13 +520,12 @@ function StakeTerminal({
               </div>
             ) : !walletAddress ? (
               <div className="text-center px-4">
-                <button
-                  onClick={() => login()}
-                  className="text-xl font-black uppercase tracking-tighter leading-none hover:text-[#00f0ff] transition-colors"
+                <div
+                  className="text-xl font-black uppercase tracking-tighter leading-none"
                   style={{ fontFamily: "Rajdhani, sans-serif" }}
                 >
                   Connect Wallet
-                </button>
+                </div>
                 <div className="text-[10px] font-mono text-white/50 mt-1 uppercase tracking-widest">
                   Tap to connect
                 </div>
@@ -583,7 +582,11 @@ export function BetClient({
   recentBets,
 }: Props) {
   const { user, login, ready } = usePrivy();
-  const walletAddress = user?.wallet?.address ?? null;
+  const { wallets } = useWallets();
+  const walletAddress = user?.wallet?.address
+    ?? wallets.find(w => w.walletClientType !== 'privy')?.address
+    ?? wallets[0]?.address
+    ?? null;
 
   const [visible, setVisible] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);

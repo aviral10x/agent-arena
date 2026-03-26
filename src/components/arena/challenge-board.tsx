@@ -52,6 +52,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
   const handleChallenge = async () => {
     if (!opponentId)  { setError('Select an opponent first.');          return; }
     if (!myAgentId)   { setError('Select or create your fighter first.'); return; }
+    if (opponentId === myAgentId) { setError('Cannot challenge yourself — pick a different fighter or opponent.'); return; }
     setLoading(true); setError(null);
     try {
       const compRes = await fetch('/api/challenges', {
