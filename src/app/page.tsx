@@ -7,6 +7,12 @@ import { ActivityFeed } from "@/components/arena/activity-feed";
 
 export const dynamic = "force-dynamic";
 
+function sportEmoji(sport: string | undefined) {
+  if (sport === "tennis") return "🎾";
+  if (sport === "table-tennis") return "🏓";
+  return "🏸";
+}
+
 export default async function Home() {
   const [liveCount, agentCount, volResult, recentTrades, topAgents, competitions] =
     await Promise.all([
@@ -46,8 +52,6 @@ export default async function Home() {
 
         {/* ── Stat bar ──────────────────────────────────────────────── */}
         <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-white/[0.06] pb-4 sm:mb-6 sm:gap-x-6 sm:pb-5">
-
-          {/* Stats — always wrap naturally, never overflow */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-x-6">
             {/* Live */}
             <div className="flex items-center gap-1.5 sm:gap-2">
@@ -62,13 +66,13 @@ export default async function Home() {
 
             <div className="hidden h-3.5 w-px bg-white/10 sm:block" />
 
-            {/* Agents */}
+            {/* Athletes */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="font-mono text-lg font-black text-white tabular-nums sm:text-xl">
                 {agentCount}
               </span>
               <span className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] sm:text-xs">
-                Agents
+                Athletes
               </span>
             </div>
 
@@ -97,7 +101,7 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* CTAs — push to right, but wrap on xs */}
+          {/* CTAs */}
           <div className="ml-auto flex items-center gap-2">
             <Link
               href="/arena"
@@ -109,7 +113,7 @@ export default async function Home() {
               href="/agents/create"
               className="btn-primary px-3 py-1.5 text-[10px] sm:px-4 sm:text-xs"
             >
-              ⚡ Build agent
+              ⚡ Build athlete
             </Link>
           </div>
         </div>
@@ -119,23 +123,19 @@ export default async function Home() {
 
           {/* ── Left: competition rows ── */}
           <div>
-            {/* Section header — column labels align to actual row layout */}
             <div className="mb-2.5 flex items-center gap-2 sm:mb-3 sm:gap-3">
-              {/* Matches label — left side */}
               <span className="w-4 flex-shrink-0 text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)] sm:w-auto sm:text-xs">
               </span>
               <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)] sm:text-xs">
                 Matches
               </span>
-
-              {/* Right-side column labels — mirror row widths exactly */}
               <div className="ml-auto flex items-center gap-2 text-[8px] uppercase tracking-widest text-[var(--text-muted)] sm:gap-3 sm:text-[9px]">
                 <span className="hidden w-[90px] text-left sm:block sm:w-[140px] lg:w-[160px]">
-                  Agent A
+                  Athlete A
                 </span>
-                <span className="hidden sm:block">PnL Gap</span>
+                <span className="hidden sm:block">Score</span>
                 <span className="hidden w-[90px] text-right sm:block sm:w-[140px] lg:w-[160px]">
-                  Agent B
+                  Athlete B
                 </span>
                 <span className="hidden w-[4.5rem] text-right sm:block lg:w-20">Timer</span>
                 <span className="w-12 text-right sm:w-16">Action</span>
@@ -152,38 +152,45 @@ export default async function Home() {
                     href="/agents/create"
                     className="btn-primary mt-4 inline-block px-5 py-2 text-sm"
                   >
-                    Create the first agent →
+                    Create the first athlete →
                   </Link>
                 </div>
               ) : (
-                sorted.map(comp => (
-                  <CompetitionRow key={comp.id} competition={{
-                    ...comp,
-                    agents: comp.agents.map((ca: any) => ({
-                      id:        ca.agent.id,
-                      name:      ca.agent.name,
-                      color:     ca.agent.color,
-                      archetype: ca.agent.archetype,
-                      pnl:       ca.pnl,
-                      pnlPct:    ca.pnlPct,
-                      portfolio: ca.portfolio,
-                      trades:    ca.trades,
-                    })),
-                  } as any} />
-                ))
+                sorted.map(comp => {
+                  const isSport = (comp as any).type === "sport";
+                  const sport   = (comp as any).sport;
+                  return (
+                    <CompetitionRow key={comp.id} competition={{
+                      ...comp,
+                      type: (comp as any).type,
+                      sport: (comp as any).sport,
+                      agents: comp.agents.map((ca: any) => ({
+                        id:        ca.agent.id,
+                        name:      ca.agent.name,
+                        color:     ca.agent.color,
+                        archetype: ca.agent.archetype,
+                        pnl:       ca.pnl,
+                        pnlPct:    ca.pnlPct,
+                        portfolio: ca.portfolio,
+                        trades:    ca.trades,
+                        score:     isSport ? ca.score : undefined,
+                      })),
+                    } as any} />
+                  );
+                })
               )}
             </div>
           </div>
 
-          {/* ── Right sidebar ── stacks below on mobile, beside on lg+ */}
+          {/* ── Right sidebar ── */}
           <div className="space-y-4 sm:space-y-5">
 
-            {/* Top agents */}
+            {/* Top athletes */}
             {topAgents.length > 0 && (
               <div className="rounded-2xl border border-white/[0.06] bg-[var(--bg-card)] p-3 sm:p-4">
                 <div className="mb-2.5 flex items-center justify-between sm:mb-3">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)] sm:text-xs">
-                    Top agents
+                    Top athletes
                   </span>
                   <Link
                     href="/leaderboard"
@@ -237,10 +244,10 @@ export default async function Home() {
 
             {/* CTA card */}
             <div className="rounded-2xl border border-[var(--teal)]/20 bg-[var(--teal)]/5 p-4 text-center sm:p-5">
-              <div className="mb-2 text-2xl">⚡</div>
-              <p className="text-sm font-semibold text-white mb-1">Build your agent</p>
+              <div className="mb-2 text-2xl">🏸</div>
+              <p className="text-sm font-semibold text-white mb-1">Build your athlete</p>
               <p className="text-[11px] text-[var(--text-muted)] mb-3 sm:mb-4 sm:text-xs">
-                60 seconds. Pick a strategy. Enter the arena.
+                60 seconds. Pick a play style. Enter the arena.
               </p>
               <Link
                 href="/agents/create"

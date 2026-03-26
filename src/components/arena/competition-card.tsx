@@ -13,7 +13,16 @@ function formatPnl(v: number) {
   return `${v > 0 ? "+" : ""}${v.toFixed(1)}%`;
 }
 
+function sportEmoji(sport: string | undefined) {
+  if (sport === "tennis") return "🎾";
+  if (sport === "table-tennis") return "🏓";
+  return "🏸";
+}
+
 export function CompetitionCard({ competition }: { competition: Competition }) {
+  const isSport = (competition as any).type === "sport";
+  const sport   = (competition as any).sport;
+
   return (
     <div className="glass-panel signal-line overflow-hidden rounded-[1.6rem] p-4 sm:p-6 transition hover:-translate-y-0.5">
 
@@ -26,6 +35,11 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
             <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs uppercase tracking-[0.18em] text-[var(--gold)]">
               {competition.mode}
             </span>
+            {isSport && (
+              <span className="rounded-full border border-[var(--teal)]/25 bg-[var(--teal)]/8 px-2.5 py-0.5 text-xs text-[var(--teal)]">
+                {sportEmoji(sport)} {sport ?? "badminton"}
+              </span>
+            )}
           </div>
           <h3 className="text-lg font-semibold tracking-[-0.03em] text-white sm:text-xl">
             {competition.title}
@@ -36,7 +50,6 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
         </div>
         <div className="shrink-0 min-w-0 rounded-[1.1rem] border border-white/10 bg-white/5 px-3 py-2.5 sm:px-4 sm:py-3 sm:text-right">
           <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Countdown</div>
-          {/* Constrain countdown so long strings like "Awaiting settlement" never blow out the card */}
           <div className="max-w-[160px] sm:max-w-none">
             <LiveCountdown targetText={competition.countdown} status={competition.status} />
           </div>
@@ -46,9 +59,9 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
       {/* Stats grid */}
       <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
         {[
-          { label: "Entry fee",   value: competition.entryFee,   color: "var(--cyan)" },
-          { label: "Prize pool",  value: competition.prizePool,  color: "var(--gold)" },
-          { label: "Spectators",  value: null,                   color: "white"        },
+          { label: "Entry fee",  value: competition.entryFee,  color: "var(--cyan)" },
+          { label: "Prize pool", value: competition.prizePool, color: "var(--gold)" },
+          { label: "Spectators", value: null,                  color: "white"       },
         ].map(({ label, value, color }) => (
           <div key={label} className="rounded-[1.1rem] border border-white/10 bg-white/5 p-3">
             <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</div>
@@ -74,13 +87,28 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
                 </div>
                 <div className="mt-0.5 text-xs text-[var(--text-secondary)] truncate">{agent.archetype}</div>
               </div>
-              <div className="shrink-0 font-mono text-sm" style={{ color: pnlColor((agent as any).pnlPct ?? agent.pnl) }}>
-                {formatPnl((agent as any).pnlPct ?? agent.pnl)}
-              </div>
+              {isSport ? (
+                <div className="shrink-0 font-mono text-sm text-[var(--teal)]">
+                  {(agent as any).score ?? 0} pts
+                </div>
+              ) : (
+                <div className="shrink-0 font-mono text-sm" style={{ color: pnlColor((agent as any).pnlPct ?? agent.pnl) }}>
+                  {formatPnl((agent as any).pnlPct ?? agent.pnl)}
+                </div>
+              )}
             </div>
             <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
-              <span>{agent.trades} trades</span>
-              <span>${agent.portfolio.toFixed(2)} NAV</span>
+              {isSport ? (
+                <>
+                  <span>{agent.trades} rallies</span>
+                  <span>{(agent as any).score ?? 0} points</span>
+                </>
+              ) : (
+                <>
+                  <span>{agent.trades} trades</span>
+                  <span>${agent.portfolio.toFixed(2)} NAV</span>
+                </>
+              )}
             </div>
           </div>
         ))}
@@ -89,9 +117,23 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
       {/* Footer */}
       <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-[var(--text-secondary)]">
-          <span>{competition.track}</span>
-          <span className="mx-1.5 text-white/20">/</span>
-          <span>{competition.volume ?? `$${((competition as any).volumeUsd/1000).toFixed(1)}k`}</span>
+          {isSport ? (
+            <>
+              <span>{sportEmoji(sport)} {sport ?? "badminton"}</span>
+              <span className="mx-1.5 text-white/20">/</span>
+              <span>
+                {competition.agents[0] && competition.agents[1]
+                  ? `${(competition.agents[0] as any).score ?? 0} – ${(competition.agents[1] as any).score ?? 0}`
+                  : "—"} pts
+              </span>
+            </>
+          ) : (
+            <>
+              <span>{competition.track}</span>
+              <span className="mx-1.5 text-white/20">/</span>
+              <span>{competition.volume ?? `$${((competition as any).volumeUsd/1000).toFixed(1)}k`}</span>
+            </>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link href={`/competitions/${competition.id}`}

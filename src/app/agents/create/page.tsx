@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { SiteChrome } from "@/components/arena/site-chrome";
-import { AgentBuilderLazy as AgentBuilderPanel } from "@/components/arena/agent-builder-wrapper";
+import { SportAgentBuilderLazy } from "@/components/arena/sport-agent-builder-wrapper";
 import { Surface, ButtonLink } from "@/components/arena/ui";
-import { roadmap } from "@/lib/arena-data";
+
+const sportChecklist = [
+  "Choose your archetype — Net Dominator, Speed Demon, or Power Hitter",
+  "Allocate 32 stat points across Speed, Power, Stamina, and Accuracy",
+  "Pick up to 2 signature special moves from the move pool",
+  "Describe your play style — how does this athlete compete?",
+  "Submit and enter your athlete in a live match",
+];
 
 export default function CreateAgentPage() {
   return (
@@ -12,27 +19,27 @@ export default function CreateAgentPage() {
           <div className="space-y-5 sm:space-y-6">
             <div className="glass-panel-strong rounded-[1.4rem] p-5 sm:rounded-[1.9rem] sm:p-7 lg:p-8">
               <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.24em] text-[var(--cyan)] sm:py-1 sm:text-xs">
-                Agent builder
+                Athlete builder
               </div>
               <h1 className="mt-4 max-w-2xl text-[clamp(1.35rem,3.5vw,2.25rem)] font-semibold tracking-[-0.05em] text-white sm:mt-5">
-                Shape a trading persona that can actually survive an X Layer bout.
+                Build an AI sport athlete and send them into the arena.
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--text-secondary)] sm:mt-4 sm:text-base sm:leading-7 lg:text-lg">
-                Pick a strategy template, fund the wallet, and prepare the agent for x402 entry and Onchain OS execution.
+                Design your play style, allocate stats, pick special moves, and compete in badminton, tennis, or table tennis matches.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-2.5 sm:mt-7 sm:gap-3">
-                <ButtonLink href="/competitions">Browse competitions</ButtonLink>
+                <ButtonLink href="/competitions">Browse matches</ButtonLink>
                 <Link
-                  href="/competitions/047"
+                  href="/leaderboard"
                   className="rounded-full border border-white/10 px-5 py-3 text-sm text-[var(--text-primary)] transition hover:bg-white/5"
                 >
-                  Inspect a live bout
+                  View leaderboard
                 </Link>
               </div>
             </div>
 
-            <AgentBuilderPanel />
+            <SportAgentBuilderLazy />
           </div>
 
           <div className="space-y-6">
@@ -41,7 +48,7 @@ export default function CreateAgentPage() {
                 Builder checklist
               </div>
               <div className="mt-4 space-y-3">
-                {roadmap.map((item, index) => (
+                {sportChecklist.map((item, index) => (
                   <div key={item} className="flex items-start gap-3 rounded-[1.15rem] border border-white/10 bg-white/5 p-4">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--cyan-soft)] font-mono text-xs text-[var(--cyan)]">
                       0{index + 1}
@@ -56,20 +63,20 @@ export default function CreateAgentPage() {
 
             <Surface>
               <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                Wallet and payment flow
+                Sport archetypes
               </div>
-              <div className="mt-4 grid gap-4">
+              <div className="mt-4 grid gap-3">
                 {[
-                  ["Connect", "X Layer wallet via wagmi"],
-                  ["Pay", "x402 entry fee in the browser"],
-                  ["Fund", "USDC bankroll + OKB gas"],
-                  ["Deploy", "Strategy prompt and wallet handoff"],
+                  ["Net Dominator",        "Controls the net with precision drops and kill shots"],
+                  ["Counter Specialist",   "Reads opponents and turns defence into attack"],
+                  ["Adaptive All-Rounder", "Adjusts strategy round by round"],
+                  ["Endurance Baseliner",  "Outlasts opponents with relentless stamina"],
+                  ["Power Hitter",         "Overpowers with raw speed and force"],
+                  ["Speed Demon",          "Blazing footwork and rapid-fire returns"],
                 ].map(([label, value]) => (
-                  <div key={label} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                      {label}
-                    </div>
-                    <div className="mt-2 text-sm text-white">{value}</div>
+                  <div key={label} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3">
+                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-white">{label}</div>
+                    <div className="mt-1 text-xs text-[var(--text-muted)]">{value}</div>
                   </div>
                 ))}
               </div>

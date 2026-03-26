@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Leaderboard · Agent Arena",
-  description: "Global rankings of AI trading agents by win rate, PnL, and streak",
+  description: "Global rankings of AI sport athletes by win rate, points, and rally performance",
 };
 
 function RankDelta({ delta }: { delta: number }) {
@@ -39,22 +39,22 @@ function RecentDots({ results }: { results: string }) {
 }
 
 export default async function LeaderboardPage() {
-  const stats = await prisma.agentStats.findMany({
-    where: { totalCompetitions: { gte: 1 } },
-    include: {
-      agent: {
-        select: {
-          id: true, name: true, color: true, archetype: true, risk: true,
-          card: { select: { recentResults: true, tagline: true, currentStreak: true } },
+  const [stats, allAgentCount] = await Promise.all([
+    prisma.agentStats.findMany({
+      where: { totalCompetitions: { gte: 1 } },
+      include: {
+        agent: {
+          select: {
+            id: true, name: true, color: true, archetype: true, risk: true,
+            card: { select: { recentResults: true, tagline: true, currentStreak: true } },
+          },
         },
       },
-    },
-    orderBy: [{ rankAllTime: "asc" }, { winRate: "desc" }],
-    take: 50,
-  });
-
-  // Agents with no competitions yet (for participation row)
-  const allAgentCount = await prisma.agent.count();
+      orderBy: [{ rankAllTime: "asc" }, { winRate: "desc" }],
+      take: 50,
+    }),
+    prisma.agent.count(),
+  ]);
 
   return (
     <SiteChrome activeHref="/leaderboard">
@@ -62,7 +62,7 @@ export default async function LeaderboardPage() {
         <SectionIntro
           eyebrow="Global Rankings"
           title="Leaderboard"
-          description={`${stats.length} ranked agents · ${allAgentCount} total agents`}
+          description={`${stats.length} ranked athletes · ${allAgentCount} total agents`}
         />
 
         {stats.length === 0 ? (
@@ -70,29 +70,29 @@ export default async function LeaderboardPage() {
             <div className="py-16 text-center">
               <div className="text-4xl">🏟️</div>
               <p className="mt-4 text-[var(--text-secondary)]">
-                No ranked agents yet. Complete a competition to claim your spot.
+                No ranked athletes yet. Complete a match to claim your spot.
               </p>
               <Link
                 href="/competitions"
                 className="mt-6 inline-block rounded-full bg-[var(--teal)] px-6 py-3 text-sm font-semibold text-black"
               >
-                Browse competitions →
+                Browse matches →
               </Link>
             </div>
           </Surface>
         ) : (
           <div className="space-y-2">
-            {/* Header row — only visible at lg+ */}
+            {/* Header row */}
             <div className="hidden grid-cols-[2.5rem_1fr_repeat(5,minmax(4.5rem,1fr))_5.5rem_5.5rem] gap-3 px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] lg:grid xl:grid-cols-[2.5rem_1fr_repeat(5,minmax(5rem,1fr))_6rem_6rem] xl:gap-4">
               <span>#</span>
-              <span>Agent</span>
+              <span>Athlete</span>
               <span className="text-right">Win Rate</span>
               <span className="text-right">Total PnL</span>
               <span className="text-right">Best Win</span>
               <span className="text-right">W / L</span>
               <span className="text-right">Streak</span>
               <span className="text-right">Recent</span>
-              <span className="text-right">Prize Earned</span>
+              <span className="text-right">Points Won</span>
             </div>
 
             {stats.map((s, i) => {
@@ -139,9 +139,9 @@ export default async function LeaderboardPage() {
                     {/* Mobile stats row */}
                     <div className="col-span-full mt-3 grid grid-cols-3 gap-2 lg:hidden">
                       {[
-                        ["Win Rate", winRate],
-                        ["PnL", pnl],
-                        ["W/L", `${s.totalWins}/${s.totalLosses}`],
+                        ["Win Rate",        winRate],
+                        ["Rallies Played",  String(s.totalTradesPlaced ?? 0)],
+                        ["W/L",             `${s.totalWins}/${s.totalLosses}`],
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-[0.75rem] border border-white/10 bg-white/5 p-2 text-center">
                           <div className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{label}</div>
@@ -175,7 +175,7 @@ export default async function LeaderboardPage() {
                       <RecentDots results={card?.recentResults ?? ""} />
                     </div>
                     <div className="hidden text-right text-sm text-[var(--teal)] lg:block">
-                      {s.totalPrizeUsdc > 0 ? `$${s.totalPrizeUsdc.toFixed(0)}` : "—"}
+                      {s.totalPrizeUsdc > 0 ? `${Math.round(s.totalPrizeUsdc)} pts` : "—"}
                     </div>
                   </div>
                 </Link>
@@ -188,7 +188,7 @@ export default async function LeaderboardPage() {
         {allAgentCount > stats.length && (
           <div className="mt-8 rounded-[1.4rem] border border-dashed border-white/10 p-6 text-center">
             <p className="text-sm text-[var(--text-muted)]">
-              {allAgentCount - stats.length} agent{allAgentCount - stats.length !== 1 ? "s" : ""} haven't competed yet.
+              {allAgentCount - stats.length} athlete{allAgentCount - stats.length !== 1 ? "s" : ""} haven't competed yet.
             </p>
             <Link
               href="/challenges"

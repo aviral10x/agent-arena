@@ -11,12 +11,29 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
+function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
+  const pct = Math.min(100, Math.max(0, (value / 10) * 100));
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-8 text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">{label}</span>
+      <div className="flex-1 h-2 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: color }}
+        />
+      </div>
+      <span className="w-6 font-mono text-xs text-white text-right">{value.toFixed(0)}</span>
+    </div>
+  );
+}
+
 export async function generateMetadata(props: PageProps) {
   const { id } = await props.params;
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? "https://agentarena.xyz";
   const agent = await prisma.agent.findUnique({ where: { id }, select: { name: true, archetype: true } });
   return {
     title: agent ? `${agent.name} · Agent Arena` : "Agent Arena",
+    description: agent ? `${agent.name} is an AI sport athlete (${agent.archetype}) competing in Agent Arena.` : "AI sport athlete profile",
     openGraph: {
       images: [`${base}/api/og/agent/${id}`],
     },
@@ -52,19 +69,22 @@ export default async function AgentPage(props: PageProps) {
   const stats = agent.stats;
   const card  = agent.card;
 
-  const winRate    = stats ? `${(stats.winRate * 100).toFixed(0)}%`                         : "—";
+  const winRate    = stats ? `${(stats.winRate * 100).toFixed(0)}%` : "—";
   const totalPnl   = stats ? `${stats.totalPnlPct >= 0 ? "+" : ""}${stats.totalPnlPct.toFixed(1)}%` : "—";
-  const bestWin    = stats ? `+${stats.bestWinPct.toFixed(1)}%`                             : "—";
+  const bestWin    = stats ? `+${stats.bestWinPct.toFixed(1)}%` : "—";
   const recentDots = (card?.recentResults ?? "").split(",").filter(Boolean).slice(0, 5);
 
-  // Latest open/live competition this agent is in
+  const specialMoves: string[] = (() => {
+    try { return JSON.parse((agent as any).specialMoves ?? "[]"); } catch { return []; }
+  })();
+
   const activeComp = agent.competitions.find(
-    (ca) => ca.competition.status === "live" || ca.competition.status === "open"
+    (ca) => (ca.competition as any).status === "live" || (ca.competition as any).status === "open"
   );
 
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? "https://agentarena.xyz";
-  const shareUrl  = `${base}/agents/${id}`;
-  const shareTweet = `My AI agent ${agent.name} (${agent.archetype}) is live on @AgentArenaXYZ — ${winRate} win rate, ${totalPnl} total PnL. Challenge it 👇 ${shareUrl}`;
+  const shareUrl   = `${base}/agents/${id}`;
+  const shareTweet = `My AI athlete ${agent.name} (${agent.archetype}) is live on @AgentArenaXYZ — ${winRate} win rate. Challenge it 👇 ${shareUrl}`;
 
   return (
     <SiteChrome activeHref="/agents">
@@ -74,7 +94,6 @@ export default async function AgentPage(props: PageProps) {
           className="mb-5 rounded-[1.4rem] p-5 relative overflow-hidden sm:mb-6 sm:rounded-[1.9rem] sm:p-8"
           style={{ background: card?.bgGradient ?? `linear-gradient(135deg, #0e0e18, #13132a)` }}
         >
-          {/* Glow */}
           <div
             className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full opacity-30"
             style={{ background: `radial-gradient(circle, ${agent.color}, transparent 70%)` }}
@@ -82,7 +101,6 @@ export default async function AgentPage(props: PageProps) {
 
           <div className="flex flex-wrap items-start justify-between gap-4 sm:gap-6">
             <div className="flex items-center gap-3 sm:gap-4">
-              {/* Color dot */}
               <div
                 className="h-11 w-11 rounded-full flex-shrink-0 sm:h-14 sm:w-14"
                 style={{ background: agent.color, boxShadow: `0 0 32px ${agent.color}60` }}
@@ -99,7 +117,7 @@ export default async function AgentPage(props: PageProps) {
             </div>
 
             <div className="flex items-center gap-3">
-              <ShareButton text={shareTweet} url={shareUrl} label="Share agent" />
+              <ShareButton text={shareTweet} url={shareUrl} label="Share athlete" />
               <ButtonLink href="/challenges">Challenge</ButtonLink>
             </div>
           </div>
@@ -107,10 +125,10 @@ export default async function AgentPage(props: PageProps) {
           {/* Stats */}
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
-              { label: "Win Rate",  value: winRate },
-              { label: "Total PnL", value: totalPnl },
-              { label: "Best Win",  value: bestWin },
-              { label: "W / L",     value: stats ? `${stats.totalWins} / ${stats.totalLosses}` : "—" },
+              { label: "Win Rate",   value: winRate },
+              { label: "Points Won", value: stats ? String(Math.round(stats.totalPrizeUsdc ?? 0)) : "—" },
+              { label: "Best Win",   value: bestWin },
+              { label: "W / L",      value: stats ? `${stats.totalWins} / ${stats.totalLosses}` : "—" },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-4">
                 <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</div>
@@ -140,8 +158,8 @@ export default async function AgentPage(props: PageProps) {
                   style={{ color: stats.currentStreak > 0 ? "#22c55e" : "#ef4444" }}
                 >
                   {stats.currentStreak > 0
-                    ? `🔥 ${stats.currentStreak}-win streak`
-                    : `${Math.abs(stats.currentStreak)}-loss run`}
+                    ? `🔥 ${stats.currentStreak}-match streak`
+                    : `${Math.abs(stats.currentStreak)}-match losing run`}
                 </span>
               )}
             </div>
@@ -150,16 +168,43 @@ export default async function AgentPage(props: PageProps) {
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
-            {/* Strategy info */}
+            {/* Sport stats */}
             <Surface>
-              <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Strategy</div>
+              <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Sport Stats</div>
+              <div className="mt-4 space-y-3">
+                <StatBar label="SPD" value={(agent as any).speed ?? 7} color="#66E3FF" />
+                <StatBar label="PWR" value={(agent as any).power ?? 7} color="#f59e0b" />
+                <StatBar label="STA" value={(agent as any).stamina ?? 7} color="#22c55e" />
+                <StatBar label="ACC" value={(agent as any).accuracy ?? 7} color="#a78bfa" />
+              </div>
+            </Surface>
+
+            {/* Special moves */}
+            {specialMoves.length > 0 && (
+              <Surface>
+                <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Special Moves</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {specialMoves.map((move: string) => (
+                    <span
+                      key={move}
+                      className="rounded-full border border-[var(--teal)]/30 bg-[var(--teal)]/8 px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-[var(--teal)]"
+                    >
+                      {move}
+                    </span>
+                  ))}
+                </div>
+              </Surface>
+            )}
+
+            {/* Profile info */}
+            <Surface>
+              <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Profile</div>
               <div className="mt-4 space-y-3">
                 {[
-                  ["Archetype", agent.archetype],
-                  ["Strategy",  agent.strategy],
-                  ["Risk Level", agent.risk],
-                  ["Owner",     agent.owner],
-                  ["Wallet",    agent.wallet],
+                  ["Archetype",   agent.archetype],
+                  ["Play Style",  agent.strategy],
+                  ["Playing Style", agent.risk],
+                  ["Owner",       agent.owner],
                 ].map(([label, value]) => (
                   <div key={label} className="flex items-start justify-between gap-4 rounded-[1rem] border border-white/10 bg-white/5 px-3 py-2.5 sm:px-4 sm:py-3">
                     <span className="text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">{label}</span>
@@ -183,14 +228,14 @@ export default async function AgentPage(props: PageProps) {
             <Surface>
               <div className="flex items-center justify-between gap-4">
                 <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Status</div>
-                <StatusPill status={activeComp ? activeComp.competition.status as "live" | "open" | "settled" : "open"} />
+                <StatusPill status={activeComp ? (activeComp.competition as any).status as "live" | "open" | "settled" : "open"} />
               </div>
               <div className="mt-3 text-xl sm:text-2xl font-semibold tracking-[-0.04em] text-white">
-                {activeComp ? activeComp.competition.title : "Ready for entry"}
+                {activeComp ? (activeComp.competition as any).title : "Ready for entry"}
               </div>
               <div className="mt-5 flex flex-wrap gap-3">
                 {activeComp ? (
-                  <ButtonLink href={`/competitions/${activeComp.competition.id}`}>Watch live</ButtonLink>
+                  <ButtonLink href={`/competitions/${(activeComp.competition as any).id}`}>Watch live</ButtonLink>
                 ) : (
                   <ButtonLink href="/challenges">Enter competition</ButtonLink>
                 )}
@@ -206,25 +251,30 @@ export default async function AgentPage(props: PageProps) {
             {/* Competition history */}
             {agent.competitions.length > 0 && (
               <Surface>
-                <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">History</div>
+                <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Match History</div>
                 <div className="mt-4 space-y-2">
                   {agent.competitions.map((ca) => {
-                    const won = ca.competition.winnerId === id;
+                    const comp = ca.competition as any;
+                    const won = comp.winnerId === id;
+                    const isSport = comp.type === "sport";
+                    const compStatus: string = comp.status ?? "open";
                     return (
                       <Link
-                        key={ca.competition.id}
-                        href={`/competitions/${ca.competition.id}`}
+                        key={comp.id}
+                        href={`/competitions/${comp.id}`}
                         className="flex items-center gap-3 rounded-[1rem] border border-white/10 bg-white/5 px-3 py-2.5 sm:px-4 sm:py-3 text-sm transition hover:bg-white/10"
                       >
                         <div
                           className="h-4 w-4 rounded-full flex-shrink-0"
-                          style={{ background: won ? "#22c55e" : ca.competition.status === "live" ? agent.color : "#ffffff20" }}
+                          style={{ background: won ? "#22c55e" : compStatus === "live" ? agent.color : "#ffffff20" }}
                         />
-                        <span className="flex-1 truncate text-white">{ca.competition.title}</span>
-                        <span className="text-xs text-[var(--text-muted)]">
-                          {ca.competition.status === "settled"
-                            ? won ? "Won" : "Lost"
-                            : ca.competition.status}
+                        <span className="flex-1 truncate text-white">{comp.title}</span>
+                        <span className="shrink-0 font-mono text-xs text-[var(--text-muted)]">
+                          {compStatus === "settled"
+                            ? isSport
+                              ? `${(ca as any).score ?? 0} pts · ${won ? "Won" : "Lost"}`
+                              : won ? "Won" : "Lost"
+                            : compStatus}
                         </span>
                       </Link>
                     );

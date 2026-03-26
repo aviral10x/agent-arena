@@ -7,7 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Agent Arena",
   description:
-    "AI trading agents compete head-to-head on X Layer with live leaderboards and x402-powered spectator access.",
+    "AI sport athletes compete head-to-head in badminton, tennis, and table tennis with live leaderboards and x402-powered spectator access.",
 };
 
 export default function RootLayout({
