@@ -107,8 +107,13 @@ function AgentDuelCard({
   // Archetype
   const archetype = stats?.archetype ?? agent.name.split(' ')[0];
 
-  // Special moves
-  const specialMoves: string[] = stats?.specialMoves ?? [];
+  // Special moves (API returns JSON string or array)
+  const specialMoves: string[] = (() => {
+    const raw = stats?.specialMoves;
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    try { return JSON.parse(raw); } catch { return []; }
+  })();
 
   return (
     <div
@@ -192,21 +197,6 @@ function AgentDuelCard({
 
       {/* Stat bars */}
       <div className="space-y-1.5">
-        {hasStats ? (
-          [
-            ['SPD', stats.speed   ?? 5, agent.color],
-            ['PWR', stats.power   ?? 5, '#f87171'],
-            ['STA', stats.stamina ?? 5, '#34d399'],
-            ['ACC', stats.accuracy ?? 5, '#c084fc'],
-          ] as [string, number, string][]
-        ) : (
-          [
-            ['SPD', 0, agent.color],
-            ['PWR', 0, '#f87171'],
-            ['STA', 0, '#34d399'],
-            ['ACC', 0, '#c084fc'],
-          ] as [string, number, string][]
-        )}
         {(hasStats
           ? [
               ['SPD', stats.speed ?? 5, agent.color] as [string, number, string],
@@ -328,12 +318,15 @@ export function SportMatchClient({
   totalBetUsdc,
   winnerId,
 }: SportMatchClientProps) {
+  const [mounted, setMounted]   = useState(false);
   const [gameState, setGameState] = useState<GameState | null>(() => {
     try { return initialGameState ? JSON.parse(initialGameState) : null; } catch { return null; }
   });
   const [events, setEvents]     = useState<TradeEvent[]>(initialTrades);
   const [isLive, setIsLive]     = useState(status === 'live');
   const [agentStats, setAgentStats] = useState<Record<string, any>>({});
+
+  useEffect(() => { setMounted(true); }, []);
 
   const agentNames  = Object.fromEntries(agents.map(a => [a.id, a.name]));
   const agentColors = Object.fromEntries(agents.map(a => [a.id, a.color]));
@@ -445,7 +438,7 @@ export function SportMatchClient({
             <div
               key={`${a1score}-blast`}
               className="text-6xl font-black tabular-nums leading-none"
-              style={{ animation: 'score-blast 0.5s ease-out', color: a1color, textShadow: `0 0 30px ${a1color}88` }}
+              style={{ animation: mounted ? 'score-blast 0.5s ease-out' : 'none', color: a1color, textShadow: `0 0 30px ${a1color}88` }}
             >
               {a1score}
             </div>
@@ -462,7 +455,7 @@ export function SportMatchClient({
             <div
               key={`${a2score}-blast`}
               className="text-6xl font-black tabular-nums leading-none"
-              style={{ animation: 'score-blast 0.5s ease-out', color: a2color, textShadow: `0 0 30px ${a2color}88` }}
+              style={{ animation: mounted ? 'score-blast 0.5s ease-out' : 'none', color: a2color, textShadow: `0 0 30px ${a2color}88` }}
             >
               {a2score}
             </div>
@@ -574,7 +567,7 @@ export function SportMatchClient({
               <div
                 key={`${gameState.lastAction}-${gameState.rallyCount}`}
                 className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                style={{ animation: 'impact-flash 0.8s ease-out forwards' }}
+                style={{ animation: mounted ? 'impact-flash 0.8s ease-out forwards' : 'none' }}
               >
                 <span
                   className="text-4xl font-black"

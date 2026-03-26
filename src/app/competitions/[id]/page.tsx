@@ -7,7 +7,7 @@ import { LiveCountdown } from "@/components/arena/competition-filters";
 import { X402ButtonClient } from "@/components/arena/x402-btn-client";
 import { ShareButton } from "@/components/arena/share-button";
 import { BettingPanelClient } from "@/components/arena/betting-panel-client";
-import { SportMatchClient } from "@/components/arena/sport-match-client";
+import { SportMatchClient } from "@/components/arena/sport-match-wrapper";
 import { prisma } from "@/lib/db";
 import type { Competition } from "@/lib/arena-data";
 
