@@ -81,7 +81,7 @@ Tactical guidelines:
   if (groqKey) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const Groq = require('groq');
+      const Groq = require('groq-sdk').default ?? require('groq-sdk');
       const groq = new Groq({ apiKey: groqKey });
       const completion = await groq.chat.completions.create({
         model: 'llama-3.3-70b-versatile',

@@ -33,6 +33,12 @@ async function tickByType(type: 'trading' | 'sport') {
   g[runningKey] = true;
 
   try {
+    // Auto-clear stale isTicking locks older than 60s (crash recovery)
+    await prisma.competition.updateMany({
+      where: { isTicking: true, updatedAt: { lt: new Date(Date.now() - 60_000) } },
+      data: { isTicking: false },
+    }).catch(() => {});
+
     const liveComps = await prisma.competition.findMany({
       where: { status: 'live', type },
       select: { id: true, title: true, type: true },
