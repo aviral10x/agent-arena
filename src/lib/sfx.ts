@@ -6,6 +6,29 @@
  */
 
 let ctx: AudioContext | null = null;
+let audioUnlocked = false;
+
+// Unlock AudioContext on first user interaction (required by browsers)
+if (typeof window !== "undefined") {
+  const unlock = () => {
+    if (audioUnlocked) return;
+    if (!ctx) ctx = new AudioContext();
+    if (ctx.state === "suspended") ctx.resume();
+    // Play a silent buffer to fully unlock
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    audioUnlocked = true;
+    window.removeEventListener("click", unlock);
+    window.removeEventListener("touchstart", unlock);
+    window.removeEventListener("keydown", unlock);
+  };
+  window.addEventListener("click", unlock, { once: false });
+  window.addEventListener("touchstart", unlock, { once: false });
+  window.addEventListener("keydown", unlock, { once: false });
+}
 
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;

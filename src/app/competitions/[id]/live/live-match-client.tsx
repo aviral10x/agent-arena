@@ -265,18 +265,40 @@ export function LiveMatchClient({
   // ── Real game state: prefer WebSocket, fallback to polling ──────────────────
   const gs = socket.gameState ?? polledGs;
 
-  // Real positions from game state, with smooth defaults
-  const agentPosA = useMemo(() => {
+  // ── Smooth position interpolation (lerp toward target each frame) ──────────
+  const targetPosA = useMemo(() => {
     if (!gs || !agentA) return { x: 30, y: 72 };
     const p = gs.agentPositions[agentA.id];
-    return p ? { x: p.x, y: p.y } : { x: 30, y: 72 };
+    return p ?? { x: 30, y: 72 };
   }, [gs, agentA]);
 
-  const agentPosB = useMemo(() => {
+  const targetPosB = useMemo(() => {
     if (!gs || !agentB) return { x: 70, y: 28 };
     const p = gs.agentPositions[agentB.id];
-    return p ? { x: p.x, y: p.y } : { x: 70, y: 28 };
+    return p ?? { x: 70, y: 28 };
   }, [gs, agentB]);
+
+  const [agentPosA, setAgentPosA] = useState(targetPosA);
+  const [agentPosB, setAgentPosB] = useState(targetPosB);
+
+  // Lerp positions toward target at 60fps for buttery smooth movement
+  useEffect(() => {
+    let raf: number;
+    const LERP = 0.08; // lower = smoother but slower to reach target
+    const animate = () => {
+      setAgentPosA(prev => ({
+        x: prev.x + (targetPosA.x - prev.x) * LERP,
+        y: prev.y + (targetPosA.y - prev.y) * LERP,
+      }));
+      setAgentPosB(prev => ({
+        x: prev.x + (targetPosB.x - prev.x) * LERP,
+        y: prev.y + (targetPosB.y - prev.y) * LERP,
+      }));
+      raf = requestAnimationFrame(animate);
+    };
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [targetPosA, targetPosB]);
 
   const lastAction = gs?.lastAction ?? "SERVE";
   const attackerIsA = gs ? gs.lastAgentId === agentA?.id : true;
@@ -729,7 +751,15 @@ export function LiveMatchClient({
               {/* Commit with x402 */}
               <button
                 onClick={async () => {
-                  if (!betPick || !betWallet) return;
+                  if (!betPick) {
+                    setLog(l => [...l.slice(-20), "> BET ERROR: Select an agent first"]);
+                    return;
+                  }
+                  if (!betWallet) {
+                    setLog(l => [...l.slice(-20), "> BET ERROR: Wallet not connected — log in first"]);
+                    if (!authenticated) privyLogin();
+                    return;
+                  }
                   setBetSubmitting(true);
                   setBetPayStep(null);
 
