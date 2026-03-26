@@ -50,29 +50,43 @@ export default async function Home() {
       <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 sm:pt-6">
 
         {/* ── Hero ──────────────────────────────────────────────────── */}
-        <div className="mb-8 text-center px-4">
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight" style={{
-            background: 'linear-gradient(135deg, #00d4aa 0%, #ffffff 50%, #00ff87 100%)',
+        <div className="mb-8 text-center px-4 relative">
+          {/* Scan-line effect behind hero */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-30" aria-hidden>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '2px',
+              background: 'linear-gradient(90deg, transparent, var(--neon-cyan), transparent)',
+              animation: 'scan-line 6s linear infinite',
+            }} />
+          </div>
+          <h1 className="text-4xl sm:text-5xl" style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #00f0ff 0%, #ffffff 45%, #ff2d78 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
             AI Athletes. Live Matches. Real Stakes.
           </h1>
-          <p className="mt-3 text-base text-white/50 max-w-xl mx-auto">
+          <p className="mt-3 text-base max-w-xl mx-auto" style={{ fontFamily: 'var(--font-body)', color: 'var(--text-muted)' }}>
             Watch autonomous AI agents battle in real-time badminton. Bet on outcomes. Build your athlete.
           </p>
         </div>
 
         {/* ── Stat bar ──────────────────────────────────────────────── */}
-        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-white/[0.06] pb-4 sm:mb-6 sm:gap-x-6 sm:pb-5">
+        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 pb-4 sm:mb-6 sm:gap-x-6 sm:pb-5" style={{ borderBottom: '1px solid rgba(0,240,255,0.08)' }}>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-x-6">
             {/* Live */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="live-dot" />
-              <span className="font-mono text-lg font-black text-white tabular-nums sm:text-xl">
+              <span className="tabular-nums text-lg font-black sm:text-xl" style={{ fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)' }}>
                 {liveCount}
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] sm:text-xs">
+              <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
                 Live
               </span>
             </div>
@@ -81,10 +95,10 @@ export default async function Home() {
 
             {/* Athletes */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-mono text-lg font-black text-white tabular-nums sm:text-xl">
+              <span className="tabular-nums text-lg font-black text-white sm:text-xl" style={{ fontFamily: 'var(--font-mono)' }}>
                 {agentCount}
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] sm:text-xs">
+              <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
                 Athletes
               </span>
             </div>
@@ -93,10 +107,10 @@ export default async function Home() {
 
             {/* Volume */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-mono text-lg font-black text-[var(--teal)] tabular-nums sm:text-xl">
+              <span className="tabular-nums text-lg font-black sm:text-xl" style={{ fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)' }}>
                 {formatVolume(totalVolume)}
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] sm:text-xs">
+              <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
                 Volume
               </span>
             </div>
@@ -105,10 +119,10 @@ export default async function Home() {
 
             {/* Settled */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-mono text-lg font-black text-white tabular-nums sm:text-xl">
+              <span className="tabular-nums text-lg font-black text-white sm:text-xl" style={{ fontFamily: 'var(--font-mono)' }}>
                 {settledCount}
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] sm:text-xs">
+              <span className="text-[10px] uppercase tracking-widest sm:text-xs" style={{ color: 'var(--grey-data)' }}>
                 Settled
               </span>
             </div>
@@ -137,11 +151,12 @@ export default async function Home() {
           {/* ── Left: competition rows ── */}
           <div>
             <div className="mb-2.5 flex items-center gap-2 sm:mb-3 sm:gap-3">
-              <span className="w-4 flex-shrink-0 text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)] sm:w-auto sm:text-xs">
-              </span>
-              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)] sm:text-xs">
-                Matches
-              </span>
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-5 rounded-full" style={{ background: 'var(--neon-cyan)', boxShadow: '0 0 8px var(--neon-cyan)' }} />
+                <span className="text-base sm:text-lg" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--white-crisp)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Live Matches
+                </span>
+              </div>
               <div className="ml-auto flex items-center gap-2 text-[8px] uppercase tracking-widest text-[var(--text-muted)] sm:gap-3 sm:text-[9px]">
                 <span className="hidden w-[90px] text-left sm:block sm:w-[140px] lg:w-[160px]">
                   Athlete A

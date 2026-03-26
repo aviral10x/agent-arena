@@ -1,117 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Bebas+Neue&display=swap');
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   AGENT ARENA — Design System v2
-   Inspired by: Hyperliquid (teal + pure dark), Polymarket (high contrast),
-   Bloomberg Terminal (information density), Robinhood (profit psychology)
-   
-   Color psychology:
-   - #0a0a12  "terminal black" — focus, no distraction, serious money
-   - #00d4aa  "mint teal"     — financial intelligence, cutting-edge tech
-   - #00ff87  "profit green"  — dopamine, reward signal, money hitting account  
-   - #ff3a50  "loss red"      — urgency, action required (not soft pink)
-   - #f5c842  "arena gold"    — scarcity, prestige, tournament prizes
-   - #f0f8ff  "crisp white"   — maximum contrast, trustworthy data
+   AGENT ARENA — Neo-Tokyo Arena HUD Design System
+   Stitch design spec: neon-cyan/magenta palette, glassmorphic panels,
+   Rajdhani/Chakra Petch fonts, anime score animations
 ───────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --font-display-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --font-mono-family: "SFMono-Regular", "IBM Plex Mono", "Menlo", "Monaco", monospace;
-
-  /* Backgrounds — pure dark, no blue cast */
-  --bg:           #0a0a12;
-  --bg-soft:      #0f0f1a;
-  --bg-card:      #111118;
-  --bg-raised:    #16161f;
+  /* Backgrounds */
+  --bg-void: #05060e;
+  --bg-arena: #0a0b14;
+  --bg-surface: #10111c;
+  --bg-raised: #171829;
+  /* Backward compat aliases */
+  --bg: var(--bg-arena);
+  --bg-soft: #0d0e18;
+  --bg-card: var(--bg-surface);
 
   /* Panels */
-  --panel:        rgba(14, 14, 22, 0.82);
+  --panel-bg: rgba(10, 11, 20, 0.85);
+  --panel-border: rgba(255, 255, 255, 0.06);
+  --panel-glow: rgba(0, 240, 255, 0.03);
+  /* Legacy compat */
+  --panel: var(--panel-bg);
   --panel-strong: rgba(10, 10, 16, 0.97);
-  --panel-border: rgba(255, 255, 255, 0.07);
   --panel-border-strong: rgba(255, 255, 255, 0.14);
 
-  /* Text — high contrast, no blue tint */
-  --text-primary:   #f0f8ff;
-  --text-secondary: #9ba3b4;
-  --text-muted:     #5a6272;
-
-  /* Accent — electric teal (Hyperliquid DNA) */
-  --teal:       #00d4aa;
-  --teal-soft:  rgba(0, 212, 170, 0.14);
-  --teal-glow:  rgba(0, 212, 170, 0.30);
-
-  /* Legacy alias — keeps old --cyan references working */
-  --cyan:       #00d4aa;
-  --cyan-soft:  rgba(0, 212, 170, 0.14);
-
-  /* Profit / Loss — maximum clarity */
-  --green:      #00ff87;
-  --green-dim:  #00cc6a;
+  /* Neon accents */
+  --neon-cyan: #00f0ff;
+  --neon-magenta: #ff2d78;
+  --neon-green: #00ff87;
+  --neon-red: #ff3a50;
+  --gold-trophy: #ffd666;
+  /* Backward compat */
+  --teal: var(--neon-cyan);
+  --teal-soft: rgba(0, 240, 255, 0.14);
+  --teal-glow: rgba(0, 240, 255, 0.30);
+  --cyan: var(--neon-cyan);
+  --cyan-soft: rgba(0, 240, 255, 0.14);
+  --green: var(--neon-green);
+  --green-dim: #00cc6a;
   --green-soft: rgba(0, 255, 135, 0.12);
+  --red: var(--neon-red);
+  --red-dim: #cc2f40;
+  --red-soft: rgba(255, 58, 80, 0.12);
+  --gold: var(--gold-trophy);
+  --gold-soft: rgba(255, 214, 102, 0.14);
 
-  --red:        #ff3a50;
-  --red-dim:    #cc2f40;
-  --red-soft:   rgba(255, 58, 80, 0.12);
+  /* Text */
+  --white-crisp: #e8f0ff;
+  --grey-data: #8892a8;
+  --grey-ghost: #3a4060;
+  --text-primary: var(--white-crisp);
+  --text-secondary: #b8c4d8;
+  --text-muted: var(--grey-data);
 
-  /* Gold — tournaments, prizes, rank #1 */
-  --gold:       #f5c842;
-  --gold-soft:  rgba(245, 200, 66, 0.14);
+  /* Fonts */
+  --font-display: 'Rajdhani', 'Exo 2', sans-serif;
+  --font-body: 'Chakra Petch', 'Barlow', sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  --font-drama: 'Bebas Neue', 'Anton', sans-serif;
+  /* Legacy */
+  --font-display-family: var(--font-display);
+  --font-mono-family: var(--font-mono);
 
   /* Shadows */
-  --shadow-sm:  0 2px 8px rgba(0, 0, 0, 0.40);
-  --shadow:     0 8px 32px rgba(0, 0, 0, 0.50);
-  --shadow-lg:  0 24px 60px rgba(0, 0, 0, 0.60);
-  --shadow-teal: 0 0 24px rgba(0, 212, 170, 0.20);
+  --shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 24px rgba(0, 240, 255, 0.15);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.40);
+  --shadow: var(--shadow-panel);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.60);
+  --shadow-teal: 0 0 24px rgba(0, 240, 255, 0.20);
+
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Agent default colors */
+  --agent-1: #66e3ff;
+  --agent-2: #b0a4ff;
+  --agent-3: #49f3a6;
+  --agent-4: #ff8c42;
 }
 
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--text-primary);
-  --font-sans: var(--font-display-family);
-  --font-mono: var(--font-mono-family);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  background: var(--bg-void);
+  font-family: var(--font-body);
+  color: var(--white-crisp);
+  font-size: 14px;
+}
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--bg-void);
   color: var(--text-primary);
-  font-family: var(--font-display-family), sans-serif;
-  /* Subtle radial depth — just enough to feel alive, not distracting */
+  font-family: var(--font-body), sans-serif;
   background-image:
-    radial-gradient(ellipse 120% 60% at 50% -20%, rgba(0, 212, 170, 0.06) 0%, transparent 70%);
+    radial-gradient(ellipse 120% 60% at 50% -20%, rgba(0, 240, 255, 0.04) 0%, transparent 70%);
 }
 
 a { color: inherit; text-decoration: none; }
 
 ::selection {
-  background: rgba(0, 212, 170, 0.25);
+  background: rgba(0, 240, 255, 0.25);
   color: white;
 }
 
-/* ── Grid background (very subtle) ── */
-.arena-grid {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
-  background-size: 64px 64px;
-}
-
-/* ── Panels ── */
-.glass-panel {
-  background: var(--panel);
+/* ── Arena Panel base class ── */
+.arena-panel {
+  background: var(--panel-bg);
   backdrop-filter: blur(16px);
   border: 1px solid var(--panel-border);
-  box-shadow: var(--shadow);
+  border-radius: 12px;
+  box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.glass-panel-strong {
-  background: var(--panel-strong);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--panel-border-strong);
-  box-shadow: var(--shadow-lg);
+/* Neon glow on hover for interactive panels */
+.arena-panel-hover:hover {
+  border-color: rgba(0, 240, 255, 0.2);
+  box-shadow: var(--shadow-panel), 0 0 20px rgba(0, 240, 255, 0.08);
+}
+
+/* Glass card */
+.glass-panel, .glass-panel-strong {
+  background: rgba(10, 11, 20, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.03), 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* Standard card — used everywhere */
@@ -127,11 +153,19 @@ a { color: inherit; text-decoration: none; }
   border-radius: 1rem;
 }
 
+/* ── Grid background (very subtle) ── */
+.arena-grid {
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
 /* ── Typography ── */
 .text-balance { text-wrap: balance; }
 
 .text-gradient {
-  background: linear-gradient(135deg, var(--teal) 0%, #80ffdb 50%, var(--gold) 100%);
+  background: linear-gradient(135deg, var(--neon-cyan) 0%, #ffffff 45%, var(--neon-magenta) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -144,12 +178,12 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Status pills ── */
 .status-live {
-  color: var(--green);
+  color: var(--neon-green);
   background: var(--green-soft);
 }
 
 .status-open {
-  color: var(--gold);
+  color: var(--gold-trophy);
   background: var(--gold-soft);
 }
 
@@ -159,18 +193,18 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ── Profit / Loss colors ── */
-.profit { color: var(--green); }
-.loss   { color: var(--red); }
+.profit { color: var(--neon-green); }
+.loss   { color: var(--neon-red); }
 .neutral { color: var(--text-secondary); }
 
-/* ── Teal glow button ── */
+/* ── Neon glow button ── */
 .btn-primary {
-  background: var(--teal);
+  background: var(--neon-cyan);
   color: #000;
   font-weight: 700;
   border-radius: 999px;
   transition: opacity 0.15s, transform 0.15s;
-  box-shadow: 0 0 20px rgba(0, 212, 170, 0.30);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.30);
 }
 .btn-primary:hover { opacity: 0.90; transform: translateY(-1px); }
 .btn-primary:active { transform: scale(0.97); }
@@ -192,9 +226,9 @@ a { color: inherit; text-decoration: none; }
 /* ── Live pulse dot ── */
 .live-dot {
   width: 7px; height: 7px;
-  background: var(--green);
+  background: var(--neon-green);
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--green);
+  box-shadow: 0 0 8px var(--neon-green);
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
@@ -211,7 +245,7 @@ a { color: inherit; text-decoration: none; }
 .signal-line::after {
   content: "";
   position: absolute; inset: 0;
-  background: linear-gradient(110deg, transparent 0%, rgba(0,212,170,0.04) 50%, transparent 100%);
+  background: linear-gradient(110deg, transparent 0%, rgba(0,240,255,0.04) 50%, transparent 100%);
   transform: translateX(-140%);
   animation: sweep 10s linear infinite;
 }
@@ -220,13 +254,13 @@ a { color: inherit; text-decoration: none; }
   to { transform: translateX(160%); }
 }
 
-/* ── Row hover (Hyperliquid-style) ── */
+/* ── Row hover ── */
 .row-hover {
   transition: background 0.12s;
   cursor: pointer;
 }
 .row-hover:hover {
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(0, 240, 255, 0.03);
 }
 
 /* ── Animations ── */
@@ -251,34 +285,33 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-track { background: var(--bg-void); }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(0, 240, 255, 0.15);
   border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.18); }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.25); }
 
 /* ── Mobile bottom nav ── */
 .bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   z-index: 50;
-  background: rgba(10, 10, 18, 0.96);
+  background: rgba(5, 6, 14, 0.96);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--panel-border);
+  border-top: 1px solid rgba(0, 240, 255, 0.08);
   display: flex;
-  /* respect iOS home indicator + Android nav bar */
   padding: 6px 0 max(10px, env(safe-area-inset-bottom));
 }
 
 /* ── Price flash (ticker updates) ── */
 @keyframes tick-up {
-  0%   { color: var(--green); }
+  0%   { color: var(--neon-green); }
   100% { color: inherit; }
 }
 @keyframes tick-down {
-  0%   { color: var(--red); }
+  0%   { color: var(--neon-red); }
   100% { color: inherit; }
 }
 .tick-up   { animation: tick-up   0.8s ease; }
@@ -295,11 +328,9 @@ a { color: inherit; text-decoration: none; }
 .text-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .text-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* Prevent orphaned words on narrow screens */
 h1, h2, h3, h4 { text-wrap: balance; }
 p { text-wrap: pretty; }
 
-/* Fluid container padding — tighter on very small screens */
 @media (max-width: 360px) {
   .arena-grid { --safe-px: 12px; }
 }
@@ -307,8 +338,8 @@ p { text-wrap: pretty; }
 /* ── Overlay grid (hero sections) ── */
 .arena-overlay-grid {
   background-image:
-    linear-gradient(rgba(0, 212, 170, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 212, 170, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
   background-size: 80px 80px;
   mask-image: linear-gradient(180deg, rgba(0,0,0,0.8), transparent 90%);
 }
@@ -331,8 +362,8 @@ p { text-wrap: pretty; }
   to   { opacity: 1; transform: translateX(0); }
 }
 @keyframes live-breathe {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
-  50%       { opacity: 0.7; box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,135,0.5); }
+  50%       { opacity: 0.7; box-shadow: 0 0 0 8px rgba(0,255,135,0); }
 }
 @keyframes float-score {
   0%   { opacity: 1; transform: translateY(0) scale(1); }
@@ -350,4 +381,49 @@ p { text-wrap: pretty; }
   0%   { opacity: 0; transform: scale(0.7) rotate(-3deg); }
   60%  { transform: scale(1.08) rotate(1deg); }
   100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* ── Neo-Tokyo keyframe animations ── */
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan); }
+  50% { box-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan); }
+}
+@keyframes live-ping {
+  0% { transform: scale(1); opacity: 1; }
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+@keyframes agent-enter {
+  from { opacity: 0; transform: translateX(-40px) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes score-counter {
+  0% { transform: scale(1.4); filter: brightness(2) saturate(2); }
+  100% { transform: scale(1); filter: brightness(1) saturate(1); }
+}
+@keyframes smash-impact {
+  0% { opacity: 0; transform: scale(0.3) rotate(-5deg); }
+  30% { opacity: 1; transform: scale(1.15) rotate(2deg); }
+  60% { transform: scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: scale(0.8) rotate(0deg); }
+}
+@keyframes momentum-fire {
+  0%, 100% { opacity: 0.7; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.05); }
+}
+@keyframes vs-slam {
+  0% { opacity: 0; transform: scale(2) translateY(-20px); }
+  60% { transform: scale(0.95) translateY(2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes match-point-pulse {
+  0%, 100% { border-color: var(--gold-trophy); box-shadow: 0 0 10px var(--gold-trophy); }
+  50% { border-color: var(--neon-magenta); box-shadow: 0 0 30px var(--neon-magenta); }
+}
+@keyframes float-point {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-60px) scale(1.5); }
 }

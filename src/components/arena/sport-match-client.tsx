@@ -55,15 +55,15 @@ const ACTION_EMOJI: Record<string, string> = {
 };
 
 const ACTION_COLORS: Record<string, string> = {
-  SMASH:   '#f87171',
-  DROP:    '#c084fc',
-  CLEAR:   '#60a5fa',
-  DRIVE:   '#fbbf24',
-  LOB:     '#34d399',
+  SMASH:   '#ff2d78',   // neon-magenta
+  DROP:    '#c084fc',   // purple
+  CLEAR:   '#00f0ff',   // neon-cyan
+  DRIVE:   '#ffd666',   // amber/gold
+  LOB:     '#00ff87',   // neon-green
   BLOCK:   '#9ca3af',
-  SERVE:   '#f1f5f9',
-  SPECIAL: '#facc15',
-  POINT:   '#fbbf24',
+  SERVE:   '#e8f0ff',
+  SPECIAL: '#ffd666',
+  POINT:   '#ffd666',
 };
 
 const SPORT_LABELS: Record<string, string> = {
@@ -239,7 +239,7 @@ function AgentDuelCard({
             <span
               key={move}
               className="text-[9px] font-bold px-2 py-0.5 rounded-full"
-              style={{ background: 'rgba(0,212,170,0.12)', color: '#00d4aa', border: '1px solid rgba(0,212,170,0.2)' }}
+              style={{ fontFamily: 'var(--font-body)', background: 'rgba(0,240,255,0.10)', color: 'var(--neon-cyan)', border: '1px solid rgba(0,240,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
             >
               {move}
             </span>
@@ -419,23 +419,28 @@ export function SportMatchClient({
   return (
     <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-5">
 
-      {/* ── Score Banner ── */}
+      {/* ── Score Banner — Neo-Tokyo HUD ── */}
       <div
-        className="relative overflow-hidden rounded-2xl border border-white/10 mb-4 select-none"
+        className="relative overflow-hidden rounded-2xl mb-4 select-none"
         style={{
-          background: `linear-gradient(to right, ${a1color}22 0%, #0a0a12 40%, #0a0a12 60%, ${a2color}22 100%)`,
+          background: `linear-gradient(to right, ${a1color}30 0%, #05060e 35%, #05060e 65%, ${a2color}30 100%)`,
+          border: '1px solid rgba(0,240,255,0.1)',
+          boxShadow: `0 0 40px ${a1color}18, 0 0 40px ${a2color}18`,
         }}
       >
-        {/* Colored side strips */}
-        <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl" style={{ background: a1color, opacity: 0.6 }} />
-        <div className="absolute right-0 top-0 bottom-0 w-1 rounded-r-2xl" style={{ background: a2color, opacity: 0.6 }} />
+        {/* Colored side bleed strips */}
+        <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl" style={{ background: a1color, boxShadow: `4px 0 20px ${a1color}88` }} />
+        <div className="absolute right-0 top-0 bottom-0 w-1.5 rounded-r-2xl" style={{ background: a2color, boxShadow: `-4px 0 20px ${a2color}88` }} />
 
         <div className="px-6 py-5 flex items-center">
           {/* Left agent */}
           <div className="flex-1 min-w-0 flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full shrink-0" style={{ background: a1color, boxShadow: `0 0 10px ${a1color}` }} />
-              <span className="text-base font-bold truncate" style={{ color: a1color }}>
+              <span
+                className="text-base truncate"
+                style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: a1color, textTransform: 'uppercase', letterSpacing: '0.1em' }}
+              >
                 {a1name}{gameState?.winner === a1?.id && ' 🏆'}
               </span>
             </div>
@@ -460,25 +465,40 @@ export function SportMatchClient({
           <div className="flex items-center gap-4 px-4 shrink-0">
             <div
               key={`${a1score}-blast`}
-              className="text-6xl font-black tabular-nums leading-none"
-              style={{ animation: mounted ? 'score-blast 0.5s ease-out' : 'none', color: a1color, textShadow: `0 0 30px ${a1color}88` }}
+              className="tabular-nums leading-none"
+              style={{
+                fontFamily: 'var(--font-drama)',
+                fontSize: '5rem',
+                fontWeight: 700,
+                animation: mounted ? 'score-blast 0.5s ease-out' : 'none',
+                color: a1color,
+                textShadow: `0 0 20px ${a1color}, 0 0 40px ${a1color}66`,
+              }}
             >
               {a1score}
             </div>
             <div className="flex flex-col items-center gap-1">
-              <span className="text-white/20 text-xl font-light">–</span>
+              {/* Vertical neon cyan separator */}
+              <div style={{ width: '2px', height: '48px', background: 'var(--neon-cyan)', boxShadow: '0 0 8px var(--neon-cyan), 0 0 16px rgba(0,240,255,0.4)', borderRadius: '1px' }} />
               {score && score.sets.length > 1 && (
                 <div className="flex flex-col items-center gap-0.5">
                   {score.sets.slice(0, gameState?.currentSet).map((s, i) => (
-                    <span key={i} className="text-[9px] text-white/25 font-mono">{s.a1}–{s.a2}</span>
+                    <span key={i} className="text-[9px] text-white/25" style={{ fontFamily: 'var(--font-mono)' }}>{s.a1}–{s.a2}</span>
                   ))}
                 </div>
               )}
             </div>
             <div
               key={`${a2score}-blast`}
-              className="text-6xl font-black tabular-nums leading-none"
-              style={{ animation: mounted ? 'score-blast 0.5s ease-out' : 'none', color: a2color, textShadow: `0 0 30px ${a2color}88` }}
+              className="tabular-nums leading-none"
+              style={{
+                fontFamily: 'var(--font-drama)',
+                fontSize: '5rem',
+                fontWeight: 700,
+                animation: mounted ? 'score-blast 0.5s ease-out' : 'none',
+                color: a2color,
+                textShadow: `0 0 20px ${a2color}, 0 0 40px ${a2color}66`,
+              }}
             >
               {a2score}
             </div>
@@ -487,7 +507,10 @@ export function SportMatchClient({
           {/* Right agent */}
           <div className="flex-1 min-w-0 flex flex-col gap-1.5 items-end">
             <div className="flex items-center gap-2">
-              <span className="text-base font-bold truncate" style={{ color: a2color }}>
+              <span
+                className="text-base truncate"
+                style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: a2color, textTransform: 'uppercase', letterSpacing: '0.1em' }}
+              >
                 {gameState?.winner === a2?.id && '🏆 '}{a2name}
               </span>
               <div className="w-3 h-3 rounded-full shrink-0" style={{ background: a2color, boxShadow: `0 0 10px ${a2color}` }} />
@@ -509,23 +532,23 @@ export function SportMatchClient({
           </div>
         </div>
 
-        {/* Momentum bars */}
+        {/* Momentum bars — 4px glowing fills */}
         <div className="px-6 pb-4 grid grid-cols-2 gap-3">
           {([
             { agent: a1, m: m1, label: a1name, color: a1color },
             { agent: a2, m: m2, label: a2name, color: a2color },
           ] as { agent: Agent | undefined; m: number; label: string; color: string }[]).map(({ m, label, color }) => {
-            const barColor = m > 65 ? '#22c55e' : m < 35 ? '#ef4444' : color;
+            const barColor = m > 65 ? 'var(--neon-green)' : m < 35 ? 'var(--neon-red)' : color;
             return (
               <div key={label} className="flex items-center gap-2">
-                <span className="text-[9px] uppercase tracking-widest text-white/30 w-12 truncate shrink-0">{label}</span>
-                <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                <span className="text-[9px] uppercase tracking-widest w-12 truncate shrink-0" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.3)' }}>{label}</span>
+                <div className="flex-1 overflow-hidden rounded-full" style={{ height: '4px', background: 'rgba(255,255,255,0.08)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${m}%`, background: barColor, boxShadow: `0 0 6px ${barColor}66` }}
+                    style={{ width: `${m}%`, background: barColor, boxShadow: `0 0 6px ${barColor}`, animation: 'momentum-fire 2s ease-in-out infinite' }}
                   />
                 </div>
-                <span className="text-[9px] text-white/30 tabular-nums w-6 text-right">{Math.round(m)}</span>
+                <span className="text-[9px] tabular-nums w-6 text-right" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.3)' }}>{Math.round(m)}</span>
               </div>
             );
           })}
@@ -536,17 +559,27 @@ export function SportMatchClient({
           {/* Mute toggle */}
           <button
             onClick={() => { (window as any).__arenaMuted = !(window as any).__arenaMuted; }}
-            className="text-[11px] text-white/20 hover:text-white/50 transition-colors"
+            className="text-[11px] hover:text-white/50 transition-colors"
+            style={{ color: 'rgba(255,255,255,0.2)' }}
             title="Toggle SFX"
           >
             {(typeof window !== 'undefined' && (window as any).__arenaMuted) ? '🔇' : '🔊'}
           </button>
           {isLive && (
             <span
-              className="flex items-center gap-1.5 text-[10px] font-black tracking-widest text-emerald-400 px-2 py-0.5 rounded-full"
-              style={{ background: 'rgba(34,197,94,0.12)', animation: 'live-breathe 2s infinite' }}
+              className="flex items-center gap-1.5 text-[10px] font-black tracking-widest px-2 py-0.5 rounded-full"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--neon-green)',
+                background: 'rgba(0,255,135,0.12)',
+                border: '1px solid rgba(0,255,135,0.2)',
+                animation: 'live-breathe 2s infinite',
+              }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="relative">
+                <span className="w-1.5 h-1.5 rounded-full block" style={{ background: 'var(--neon-green)' }} />
+                <span className="absolute inset-0 rounded-full" style={{ background: 'var(--neon-green)', animation: 'live-ping 1.5s ease-in-out infinite' }} />
+              </span>
               LIVE
             </span>
           )}

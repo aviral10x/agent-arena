@@ -9,11 +9,11 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
   const pct = Math.min(100, Math.max(0, (value / 10) * 100));
   return (
     <div className="flex items-center gap-2">
-      <span className="w-7 text-[9px] uppercase tracking-[0.14em] text-[var(--text-muted)]">{label}</span>
-      <div className="flex-1 h-1 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+      <span className="w-7 text-[9px] uppercase tracking-[0.14em]" style={{ color: 'var(--grey-data)', fontFamily: 'var(--font-mono)' }}>{label}</span>
+      <div className="flex-1 overflow-hidden rounded-full" style={{ height: '4px', background: 'rgba(255,255,255,0.08)' }}>
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color, boxShadow: `0 0 4px ${color}66` }} />
       </div>
-      <span className="w-4 font-mono text-[9px] text-[var(--text-muted)] text-right">{value.toFixed(0)}</span>
+      <span className="w-4 text-[9px] text-right" style={{ fontFamily: 'var(--font-mono)', color: 'var(--grey-data)' }}>{value.toFixed(0)}</span>
     </div>
   );
 }
@@ -97,7 +97,22 @@ export default async function AgentsPage() {
               <Link
                 key={agent.id}
                 href={`/agents/${agent.id}`}
-                className="group glass-panel flex flex-col rounded-[1.4rem] p-4 transition hover:bg-white/[0.06] sm:rounded-[1.6rem] sm:p-5 lg:p-6"
+                className="group flex flex-col rounded-[1.4rem] p-4 sm:rounded-[1.6rem] sm:p-5 lg:p-6"
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: `1px solid rgba(255,255,255,0.06)`,
+                  borderLeft: `3px solid ${agent.color}`,
+                  transition: 'box-shadow 0.2s, border-color 0.2s',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = `0 0 20px ${agent.color}22, 0 8px 32px rgba(0,0,0,0.4)`;
+                  (e.currentTarget as HTMLElement).style.borderColor = `${agent.color}66`;
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = '';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
+                  (e.currentTarget as HTMLElement).style.borderLeftColor = agent.color;
+                }}
               >
                 {/* ── Avatar + name + win rate ──────────────────── */}
                 <div className="flex items-start justify-between gap-2 sm:gap-3">
@@ -109,10 +124,10 @@ export default async function AgentsPage() {
                       }}
                     />
                     <div className="min-w-0">
-                      <h2 className="truncate text-sm font-semibold text-white transition-colors group-hover:text-[var(--teal)] sm:text-base">
+                      <h2 className="truncate text-sm font-bold sm:text-base" style={{ fontFamily: 'var(--font-display)', color: agent.color }}>
                         {agent.name}
                       </h2>
-                      <p className="truncate text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)] sm:tracking-[0.18em]">
+                      <p className="truncate text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.18em]" style={{ fontFamily: 'var(--font-body)', color: 'var(--grey-data)' }}>
                         {agent.archetype}
                       </p>
                     </div>
@@ -155,7 +170,13 @@ export default async function AgentsPage() {
                     {agent.specialMoves.slice(0, 2).map((move: string) => (
                       <span
                         key={move}
-                        className="rounded-full border border-[var(--teal)]/25 bg-[var(--teal)]/8 px-2 py-0.5 text-[9px] uppercase tracking-[0.12em] text-[var(--teal)]"
+                        className="rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[0.12em]"
+                        style={{
+                          border: '1px solid rgba(0,240,255,0.3)',
+                          background: 'rgba(0,240,255,0.08)',
+                          color: 'var(--neon-cyan)',
+                          fontFamily: 'var(--font-body)',
+                        }}
                       >
                         {move}
                       </span>

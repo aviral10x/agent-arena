@@ -30,10 +30,10 @@ function sportEmoji(sport: string | undefined) {
 }
 
 function ScoreBadge({ agent, isSport, size = "sm" }: { agent: Agent; isSport: boolean; size?: "xs" | "sm" }) {
-  const cls = size === "xs" ? "text-[10px] sm:text-[11px]" : "text-xs sm:text-sm";
+  const cls = size === "xs" ? "text-[10px] sm:text-[12px]" : "text-sm sm:text-base";
   if (isSport) {
     return (
-      <span className={`font-mono font-bold tabular-nums text-[var(--teal)] ${cls}`}>
+      <span className={`font-bold tabular-nums ${cls}`} style={{ fontFamily: 'var(--font-mono)', color: agent.color }}>
         {(agent as any).score ?? 0} pts
       </span>
     );
@@ -42,8 +42,8 @@ function ScoreBadge({ agent, isSport, size = "sm" }: { agent: Agent; isSport: bo
   const up   = value > 0;
   const zero = value === 0;
   return (
-    <span className={`font-mono font-bold tabular-nums ${cls}`}
-      style={{ color: zero ? "var(--text-muted)" : up ? "var(--green)" : "var(--red)" }}>
+    <span className={`font-bold tabular-nums ${cls}`}
+      style={{ fontFamily: 'var(--font-mono)', color: zero ? "var(--text-muted)" : up ? "var(--neon-green)" : "var(--neon-red)" }}>
       {up ? "+" : ""}{value.toFixed(1)}%
     </span>
   );
@@ -118,9 +118,21 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
   return (
     <Link
       href={`/competitions/${c.id}`}
-      className={`group block rounded-2xl border bg-[var(--bg-card)] px-3 py-3 transition row-hover hover:border-white/[0.12] sm:px-4 relative overflow-hidden ${
-        isLive && isSport ? "border-l-2 border-teal-400 border-white/[0.06]" : "border-white/[0.06]"
-      }`}
+      className="group block rounded-2xl px-3 py-3 transition sm:px-4 relative overflow-hidden"
+      style={{
+        background: 'var(--bg-surface)',
+        border: isLive && isSport ? '1px solid rgba(0,240,255,0.08)' : '1px solid rgba(0,240,255,0.06)',
+        borderLeft: isLive && isSport ? '2px solid var(--neon-cyan)' : undefined,
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,240,255,0.2)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '0 0 16px rgba(0,240,255,0.06)';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.borderColor = isLive && isSport ? 'rgba(0,240,255,0.08)' : 'rgba(0,240,255,0.06)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '';
+      }}
     >
       {/* ── MAIN ROW ─────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 sm:gap-3">
@@ -128,21 +140,27 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
         {/* Status dot / sport emoji */}
         <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">
           {isSport ? (
-            <span className="text-base leading-none">{sportEmoji(sport)}</span>
+            <span className="text-lg leading-none" style={{ filter: isLive ? 'drop-shadow(0 0 4px rgba(0,240,255,0.5))' : undefined }}>{sportEmoji(sport)}</span>
           ) : isLive ? (
             <div className="live-dot" />
           ) : isOpen ? (
-            <div className="h-2 w-2 rounded-full bg-[var(--gold)]" />
+            <div className="h-2 w-2 rounded-full" style={{ background: 'var(--gold-trophy)' }} />
           ) : (
             <div className="h-2 w-2 rounded-full bg-white/20" />
           )}
         </div>
-        {/* Pulsing teal dot for live sport rows */}
+        {/* Pulsing neon-cyan dot for live sport rows */}
         {isLive && isSport && (
-          <div
-            className="h-2 w-2 rounded-full bg-teal-400 shrink-0 animate-pulse"
-            style={{ boxShadow: '0 0 6px rgba(45,212,191,0.7)' }}
-          />
+          <div className="relative shrink-0">
+            <div
+              className="h-2 w-2 rounded-full"
+              style={{ background: 'var(--neon-cyan)', boxShadow: '0 0 6px var(--neon-cyan)' }}
+            />
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{ background: 'var(--neon-cyan)', animation: 'live-ping 1.5s ease-in-out infinite' }}
+            />
+          </div>
         )}
 
         {/* ── Agent A ── */}
@@ -150,17 +168,17 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
           {a ? (
             <>
               <div className="h-5 w-5 shrink-0 rounded-full"
-                style={{ background: a.color, boxShadow: isLive ? `0 0 8px ${a.color}80` : "none" }} />
+                style={{ background: a.color, boxShadow: isLive ? `0 0 10px ${a.color}90` : "none" }} />
               <div className="min-w-0">
-                <div className="truncate text-[11px] font-bold text-white sm:text-[13px]">
-                  {a.name}{isSettled && winner?.id === a.id && <span className="ml-0.5 text-[var(--gold)]">🏆</span>}
+                <div className="truncate text-[11px] font-bold sm:text-[13px]" style={{ fontFamily: 'var(--font-body)', color: a.color }}>
+                  {a.name}{isSettled && winner?.id === a.id && <span className="ml-0.5" style={{ color: 'var(--gold-trophy)' }}>🏆</span>}
                 </div>
                 {isLive || isSettled
                   ? <ScoreBadge agent={a} isSport={isSport} size="xs" />
-                  : <div className="truncate text-[9px] text-[var(--text-muted)]">{a.archetype}</div>}
+                  : <div className="truncate text-[9px]" style={{ color: 'var(--text-muted)' }}>{a.archetype}</div>}
               </div>
             </>
-          ) : <span className="text-[10px] text-[var(--text-muted)]">—</span>}
+          ) : <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>—</span>}
         </div>
 
         {/* ── Centre ── */}
@@ -209,18 +227,18 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
           {b ? (
             <>
               <div className="min-w-0 text-right">
-                <div className="truncate text-[11px] font-bold text-white sm:text-[13px]">
-                  {isSettled && winner?.id === b.id && <span className="mr-0.5 text-[var(--gold)]">🏆</span>}{b.name}
+                <div className="truncate text-[11px] font-bold sm:text-[13px]" style={{ fontFamily: 'var(--font-body)', color: b.color }}>
+                  {isSettled && winner?.id === b.id && <span className="mr-0.5" style={{ color: 'var(--gold-trophy)' }}>🏆</span>}{b.name}
                 </div>
                 {isLive || isSettled
                   ? <ScoreBadge agent={b} isSport={isSport} size="xs" />
-                  : <div className="truncate text-[9px] text-[var(--text-muted)]">{b.archetype}</div>}
+                  : <div className="truncate text-[9px]" style={{ color: 'var(--text-muted)' }}>{b.archetype}</div>}
               </div>
               <div className="h-5 w-5 shrink-0 rounded-full"
-                style={{ background: b.color, boxShadow: isLive ? `0 0 8px ${b.color}80` : "none" }} />
+                style={{ background: b.color, boxShadow: isLive ? `0 0 10px ${b.color}90` : "none" }} />
             </>
           ) : (
-            <span className="text-[10px] text-[var(--text-muted)]">Waiting…</span>
+            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Waiting…</span>
           )}
         </div>
 
@@ -321,18 +339,12 @@ export function CompetitionRow({ competition: c }: { competition: RowCompetition
         </div>
       )}
 
-      {/* ── Score ratio bar (sport only, live or settled) ── */}
+      {/* ── Score ratio bar (sport only, live or settled) — gradient from agent A to agent B ── */}
       {isSport && a && b && (isLive || isSettled) && totalScore > 0 && (
-        <div className="mt-2 flex h-1 overflow-hidden rounded-full">
-          <div
-            className="h-full transition-all duration-700"
-            style={{ width: `${aRatioPct}%`, background: a.color, opacity: 0.8 }}
-          />
-          <div
-            className="h-full transition-all duration-700"
-            style={{ width: `${bRatioPct}%`, background: b.color, opacity: 0.8 }}
-          />
-        </div>
+        <div className="mt-2 h-1 overflow-hidden rounded-full" style={{
+          background: `linear-gradient(90deg, ${a.color} 0%, ${a.color} ${aRatioPct}%, ${b.color} ${aRatioPct}%, ${b.color} 100%)`,
+          boxShadow: `0 0 6px ${a.color}44`,
+        }} />
       )}
     </Link>
   );

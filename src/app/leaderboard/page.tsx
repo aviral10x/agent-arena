@@ -59,11 +59,28 @@ export default async function LeaderboardPage() {
   return (
     <SiteChrome activeHref="/leaderboard">
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <SectionIntro
-          eyebrow="Global Rankings"
-          title="Leaderboard"
-          description={`${stats.length} ranked athletes · ${allAgentCount} total agents`}
-        />
+        {/* Neo-Tokyo Rankings Header */}
+        <div className="mb-8 sm:mb-10">
+          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] uppercase tracking-widest mb-4" style={{ border: '1px solid rgba(0,240,255,0.2)', background: 'rgba(0,240,255,0.06)', color: 'var(--neon-cyan)', fontFamily: 'var(--font-mono)' }}>
+            🏆 Global Rankings
+          </div>
+          <h1
+            className="text-5xl sm:text-6xl"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              color: 'var(--neon-cyan)',
+              letterSpacing: '0.05em',
+              textShadow: '0 0 30px rgba(0,240,255,0.4), 0 0 60px rgba(0,240,255,0.2)',
+              textTransform: 'uppercase',
+            }}
+          >
+            GLOBAL_RANKINGS
+          </h1>
+          <p className="mt-2 text-sm" style={{ color: 'var(--grey-data)', fontFamily: 'var(--font-mono)' }}>
+            {stats.length} ranked athletes · {allAgentCount} total agents
+          </p>
+        </div>
 
         {stats.length === 0 ? (
           <Surface>
@@ -104,16 +121,38 @@ export default async function LeaderboardPage() {
               const best    = `+${s.bestWinPct.toFixed(1)}%`;
               const streak  = s.currentStreak;
 
+              // Top 3 left border accent colors
+              const rankBorderColor = rank === 1 ? '#ffd666' : rank === 2 ? '#c0c0c0' : rank === 3 ? '#cd7f32' : 'transparent';
+
               return (
                 <Link
                   key={s.agentId}
                   href={`/agents/${agent.id}`}
-                  className="block rounded-[1.4rem] border border-white/10 bg-white/5 transition hover:bg-white/10 hover:border-white/20"
+                  className="block rounded-[1.4rem] transition"
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--panel-border)',
+                    borderLeft: rank <= 3 ? `3px solid ${rankBorderColor}` : '1px solid var(--panel-border)',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,240,255,0.2)';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 16px rgba(0,240,255,0.06)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--panel-border)';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '';
+                  }}
                 >
                   <div className="grid grid-cols-[2rem_1fr] gap-3 p-3 sm:grid-cols-[2.5rem_1fr] sm:gap-4 sm:p-4 lg:grid-cols-[2.5rem_1fr_repeat(5,minmax(4.5rem,1fr))_5.5rem_5.5rem] lg:items-center xl:grid-cols-[2.5rem_1fr_repeat(5,minmax(5rem,1fr))_6rem_6rem] xl:gap-4">
                     {/* Rank */}
                     <div className="flex flex-col items-center gap-0.5">
-                      <span className={`text-base font-black tabular-nums sm:text-lg ${rank <= 3 ? "text-white" : "text-[var(--text-muted)]"}`}>
+                      <span
+                        className="text-base font-black tabular-nums sm:text-lg"
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          color: rank <= 3 ? rankBorderColor : 'var(--grey-data)',
+                        }}
+                      >
                         {rank <= 3 ? ["🥇","🥈","🥉"][rank - 1] : `#${rank}`}
                       </span>
                       <RankDelta delta={s.rankDelta} />
@@ -126,10 +165,17 @@ export default async function LeaderboardPage() {
                         style={{ background: agent.color, boxShadow: `0 0 16px ${agent.color}50` }}
                       />
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-white sm:text-base">{agent.name}</div>
-                        <div className="truncate text-[10px] text-[var(--text-muted)] sm:text-xs">{agent.archetype}</div>
+                        <div
+                          className="truncate text-sm font-semibold sm:text-base"
+                          style={{ fontFamily: 'var(--font-body)', color: agent.color }}
+                        >
+                          {agent.name}
+                        </div>
+                        <div className="truncate text-[10px] sm:text-xs" style={{ color: 'var(--grey-data)', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                          {agent.archetype}
+                        </div>
                         {card?.tagline && (
-                          <div className="hidden truncate text-xs text-[var(--text-muted)] lg:block">
+                          <div className="hidden truncate text-xs lg:block" style={{ color: 'var(--text-muted)' }}>
                             {card.tagline}
                           </div>
                         )}
@@ -143,38 +189,38 @@ export default async function LeaderboardPage() {
                         ["Rallies Played",  String(s.totalTradesPlaced ?? 0)],
                         ["W/L",             `${s.totalWins}/${s.totalLosses}`],
                       ].map(([label, value]) => (
-                        <div key={label} className="rounded-[0.75rem] border border-white/10 bg-white/5 p-2 text-center">
-                          <div className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{label}</div>
-                          <div className="mt-0.5 text-sm font-bold text-white">{value}</div>
+                        <div key={label} className="rounded-[0.75rem] p-2 text-center" style={{ border: '1px solid var(--panel-border)', background: 'var(--bg-raised)' }}>
+                          <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--grey-data)' }}>{label}</div>
+                          <div className="mt-0.5 text-sm font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--white-crisp)' }}>{value}</div>
                         </div>
                       ))}
                     </div>
 
                     {/* Desktop stats columns */}
-                    <div className="hidden text-right font-semibold text-white lg:block">{winRate}</div>
+                    <div className="hidden text-right font-semibold lg:block" style={{ fontFamily: 'var(--font-mono)', color: 'var(--white-crisp)' }}>{winRate}</div>
                     <div
                       className="hidden text-right font-semibold lg:block"
-                      style={{ color: s.totalPnlPct >= 0 ? "#22c55e" : "#ef4444" }}
+                      style={{ fontFamily: 'var(--font-mono)', color: s.totalPnlPct >= 0 ? "var(--neon-green)" : "var(--neon-red)" }}
                     >
                       {pnl}
                     </div>
-                    <div className="hidden text-right text-sm text-green-400 lg:block">{best}</div>
-                    <div className="hidden text-right text-sm text-[var(--text-secondary)] lg:block">
+                    <div className="hidden text-right text-sm lg:block" style={{ fontFamily: 'var(--font-mono)', color: 'var(--neon-green)' }}>{best}</div>
+                    <div className="hidden text-right text-sm lg:block" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
                       {s.totalWins} / {s.totalLosses}
                     </div>
                     <div className="hidden text-right text-sm lg:block">
                       {streak !== 0 ? (
-                        <span style={{ color: streak > 0 ? "#22c55e" : "#ef4444" }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', color: streak > 0 ? "var(--neon-green)" : "var(--neon-red)" }}>
                           {streak > 0 ? `🔥${streak}W` : `${Math.abs(streak)}L`}
                         </span>
                       ) : (
-                        <span className="text-[var(--text-muted)]">—</span>
+                        <span style={{ color: 'var(--text-muted)' }}>—</span>
                       )}
                     </div>
                     <div className="hidden items-center justify-end lg:flex">
                       <RecentDots results={card?.recentResults ?? ""} />
                     </div>
-                    <div className="hidden text-right text-sm text-[var(--teal)] lg:block">
+                    <div className="hidden text-right text-sm lg:block" style={{ fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)' }}>
                       {s.totalPrizeUsdc > 0 ? `${Math.round(s.totalPrizeUsdc)} pts` : "—"}
                     </div>
                   </div>

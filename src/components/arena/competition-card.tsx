@@ -24,7 +24,24 @@ export function CompetitionCard({ competition }: { competition: Competition }) {
   const sport   = (competition as any).sport;
 
   return (
-    <div className="glass-panel signal-line overflow-hidden rounded-[1.6rem] p-4 sm:p-6 transition hover:-translate-y-0.5">
+    <div
+      className="signal-line overflow-hidden rounded-[1.6rem] p-4 sm:p-6 transition hover:-translate-y-0.5"
+      style={{
+        background: 'var(--bg-surface)',
+        border: '1px solid rgba(0,240,255,0.08)',
+        borderRadius: '1.6rem',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,240,255,0.2)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(0,240,255,0.08)';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,240,255,0.08)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)';
+      }}
+    >
 
       {/* Header: title + countdown */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
