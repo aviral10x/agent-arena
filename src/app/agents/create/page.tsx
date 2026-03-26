@@ -124,3 +124,66 @@ export default function CreateAgentPage() {
               onChange={e => setName(e.target.value)}
               placeholder="ENTER_CALLSIGN..."
               className="w-full bg-transparent border-b-2 text-lg font-mono px-0 py-2 focus:outline-none uppercase tracking-widest"
+              style={{ borderColor: '#8ff5ff', color: '#8ff5ff' }}
+            />
+          </div>
+
+          {/* Archetype Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+            {ARCHETYPES.map((a, i) => {
+              const selected = selectedArchetype === i;
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => setSelectedArchetype(i)}
+                  className="relative cursor-pointer transition-all text-left group"
+                  style={{
+                    background: selected ? 'rgba(143,245,255,0.08)' : '#11131d',
+                    border: `2px solid ${selected ? '#8ff5ff' : 'rgba(70,71,82,0.3)'}`,
+                    boxShadow: selected ? '0 0 20px rgba(143,245,255,0.3)' : 'none',
+                    padding: '16px',
+                  }}
+                >
+                  <span className="material-symbols-outlined block mb-2" style={{ color: selected ? '#8ff5ff' : '#464752' }}>{a.icon}</span>
+                  <div className="font-mono text-xs font-bold uppercase" style={{ color: selected ? '#8ff5ff' : '#aaaab6' }}>{a.label}</div>
+                  {selected && <div className="absolute inset-0 border pointer-events-none" style={{ borderColor: 'rgba(143,245,255,0.2)' }} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Play Style Cards */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold uppercase tracking-wider mb-4 italic" style={{ color: '#8ff5ff', fontFamily: 'Rajdhani' }}>Operational Protocol</h3>
+            <div className="grid grid-cols-3 gap-4">
+              {PROTOCOLS.map(p => {
+                const active = protocol === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setProtocol(p.id)}
+                    className="p-4 cursor-pointer text-left transition-all relative overflow-hidden"
+                    style={{
+                      background: active ? 'rgba(143,245,255,0.05)' : '#11131d',
+                      border: `1px solid ${active ? '#8ff5ff' : 'rgba(70,71,82,0.3)'}`,
+                    }}
+                  >
+                    <div className="flex items-center gap-3 relative z-10">
+                      <span className="material-symbols-outlined" style={{ color: active ? '#8ff5ff' : '#464752', fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}>{p.icon}</span>
+                      <div className="font-bold text-sm uppercase" style={{ color: active ? '#8ff5ff' : '#aaaab6', fontFamily: 'Chakra Petch' }}>{p.label}</div>
+                    </div>
+                    <div className="mt-2 text-[10px] uppercase leading-tight relative z-10" style={{ color: '#464752', fontFamily: 'Chakra Petch' }}>{p.desc}</div>
+                    {active && <div className="absolute top-0 right-0 w-12 h-12 -translate-y-4 translate-x-4 skew-x-12" style={{ background: 'rgba(143,245,255,0.1)' }} />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div className="mb-4">
+            <label className="text-[10px] font-mono uppercase tracking-widest block mb-2" style={{ color: '#464752' }}>Play_Style_Description</label>
+            <textarea
+              value={bio}
+              onChange={e => setBio(e.target.value)}
+              placeholder="DESCRIBE_COMBAT_PROTOCOL..."
