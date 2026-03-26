@@ -250,3 +250,67 @@ export default function CreateAgentPage() {
                 <div className="flex gap-[2px] h-2">
                   {Array.from({ length: 10 }).map((_, i) => (
                     <div key={i} className="flex-1 h-full" style={{
+                      background: i < Math.round((BUDGET - remainingPoints) / BUDGET * 10) ? '#ffd666' : '#1d1f2b',
+                    }} />
+                  ))}
+                </div>
+                {remainingPoints <= 0 && <div className="text-[9px] font-mono mt-1" style={{ color: '#ff6c92' }}>BANDWIDTH_MAXED</div>}
+              </div>
+
+              {/* Special moves */}
+              <div className="mb-8">
+                <h3 className="text-sm font-bold uppercase tracking-widest mb-3" style={{ color: '#eeecfa', fontFamily: 'Rajdhani' }}>Loaded Abilities <span className="text-[10px] font-mono" style={{ color: '#464752' }}>({selectedMoves.length}/2)</span></h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {SPECIAL_MOVES.map(move => {
+                    const active = selectedMoves.includes(move.id);
+                    return (
+                      <button
+                        key={move.id}
+                        onClick={() => toggleMove(move.id)}
+                        className="border p-3 flex items-center gap-3 relative transition-all text-left"
+                        style={{
+                          borderColor: active ? move.color + '66' : 'rgba(70,71,82,0.2)',
+                          background: active ? move.color + '0d' : 'transparent',
+                        }}
+                      >
+                        <div className="w-9 h-9 flex items-center justify-center shrink-0" style={{ background: active ? move.color + '33' : 'rgba(70,71,82,0.1)' }}>
+                          <span className="material-symbols-outlined text-sm" style={{ color: active ? move.color : '#464752', fontVariationSettings: "'FILL' 1" }}>{move.icon}</span>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold uppercase" style={{ color: active ? move.color : '#aaaab6', fontFamily: 'Chakra Petch' }}>{move.id}</div>
+                        </div>
+                        {active && <div className="absolute -top-1 -right-1 w-2 h-2" style={{ background: move.color }} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Error */}
+              {error && <p className="text-xs font-mono mb-4" style={{ color: '#ff716c' }}>{error}</p>}
+
+              {/* CTA */}
+              <div className="mt-auto">
+                <button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full py-5 font-black text-2xl uppercase tracking-tighter flex items-center justify-center gap-4 transition-all active:scale-[0.98]"
+                  style={{
+                    background: 'linear-gradient(135deg, #ffd666, #efc859)',
+                    color: '#6a5200',
+                    boxShadow: '0 0 30px rgba(255,230,170,0.3)',
+                    fontFamily: 'Space Grotesk, Bebas Neue',
+                    opacity: loading ? 0.7 : 1,
+                  }}
+                >
+                  {loading ? "INITIALIZING..." : "Enter the Arena"}
+                  <span className="material-symbols-outlined font-bold">arrow_forward_ios</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </SiteChrome>
+  );
+}
