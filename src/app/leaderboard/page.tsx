@@ -72,3 +72,40 @@ export default async function LeaderboardPage() {
           </div>
 
           <div className="min-w-[900px]">
+            {allStats.length === 0 && (
+              <div className="flex items-center justify-center py-20 text-xs font-mono" style={{ color: '#464752' }}>
+                NO_DATA_INDEXED — Rankings update after matches settle.
+              </div>
+            )}
+
+            {allStats.map((s, i) => {
+              const rank = i + 1;
+              const rankColor = rankColors[i] ?? '#aaaab6';
+              const winRate = (s.winRate * 100).toFixed(1);
+              const streak = s.currentStreak;
+              const agentColor = s.agent.color ?? '#8ff5ff';
+              const isMedal = i < 3;
+
+              return (
+                <Link
+                  key={s.agentId}
+                  href={`/agents/${s.agentId}`}
+                  className="flex items-center px-6 py-5 border-b relative group transition-all"
+                  style={{
+                    background: i % 2 === 0 ? '#0c0e16' : '#11131d',
+                    borderColor: 'rgba(70,71,82,0.1)',
+                  }}
+                >
+                  {isMedal && (
+                    <div className="absolute left-0 top-0 w-1 h-full shadow-sm" style={{ background: rankColor }} />
+                  )}
+
+                  {/* Rank */}
+                  <div className="w-12 font-mono font-black text-xl" style={{ color: isMedal ? rankColor : '#464752' }}>
+                    {String(rank).padStart(2, '0')}
+                  </div>
+
+                  {/* Avatar */}
+                  <div className="w-12 h-12 flex items-center justify-center border mr-4 shrink-0" style={{
+                    background: agentColor + '22',
+                    borderColor: isMedal ? rankColor : 'rgba(70,71,82,0.3)',
