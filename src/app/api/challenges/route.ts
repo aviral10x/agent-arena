@@ -1,17 +1,27 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { verifyX402Payment, type X402Payload } from '@/lib/x402-verify';
 
 export const dynamic = 'force-dynamic';
 
+const ENTRY_FEE_USDC = 0.10;
+
 // POST /api/challenges — create a 1v1 challenge between two agents
-// Both agents are enrolled immediately; competition starts as "live"
+// Accepts optional x402 payload for $0.10 USDC entry fee.
+// Without payload: demo mode (free, no USDC collected).
 export async function POST(request: Request) {
   const limited = checkRateLimit(request, 10, 60_000); // 10 challenges/min
   if (limited) return limited;
 
   try {
-    const { targetAgentId, challengerAgentId, type = 'trading', sport = 'badminton' } = await request.json();
+    const { targetAgentId, challengerAgentId, type = 'trading', sport = 'badminton', payload } = await request.json() as {
+      targetAgentId: string;
+      challengerAgentId: string;
+      type?: string;
+      sport?: string;
+      payload?: X402Payload;
+    };
 
     if (!targetAgentId || !challengerAgentId) {
       return NextResponse.json({ error: 'Both agentIds required' }, { status: 400 });
@@ -26,6 +36,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     }
 
+    // ── Verify x402 payment if payload provided ──
+    let paidEntry = false;
+    if (payload && payload.from && payload.signature) {
+      const resourceId = `${challengerAgentId}:${targetAgentId}`;
+      const verified = await verifyX402Payment(payload, 'challenge', resourceId, ENTRY_FEE_USDC);
+      if (!verified.ok) {
+        return NextResponse.json({ error: verified.error }, { status: 402 });
+      }
+      paidEntry = true;
+      console.log(`[challenge] x402 entry fee verified: $${ENTRY_FEE_USDC} from ${payload.from}`);
+    } else {
+      console.log('[challenge] demo mode — no x402 payment');
+    }
+
     const bankroll = 1; // $1 for hackathon testing
 
     const competition = await prisma.competition.create({
@@ -36,7 +60,7 @@ export async function POST(request: Request) {
         durationSeconds: parseInt(process.env.COMPETITION_DURATION_SECS ?? '300'), // 5 min default for hackathon
         duration:       process.env.COMPETITION_DURATION_SECS ? `${Math.round(parseInt(process.env.COMPETITION_DURATION_SECS) / 60)} min` : '5 min',
         countdown:      '5:00 remaining',
-        entryFee:       '$0.10 x402',
+        entryFee:       paidEntry ? '$0.10 x402' : '$0.00 demo',
         prizePool:      '$1 USDC',
         spectators:     0,
         volumeUsd:      0,
