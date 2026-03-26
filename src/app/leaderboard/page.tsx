@@ -109,3 +109,40 @@ export default async function LeaderboardPage() {
                   <div className="w-12 h-12 flex items-center justify-center border mr-4 shrink-0" style={{
                     background: agentColor + '22',
                     borderColor: isMedal ? rankColor : 'rgba(70,71,82,0.3)',
+                    boxShadow: isMedal ? `0 0 10px ${rankColor}33` : 'none',
+                  }}>
+                    <span className="text-lg font-black font-mono" style={{ color: agentColor }}>
+                      {s.agent.name.slice(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+
+                  {/* Identity */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold uppercase tracking-widest truncate" style={{ color: '#eeecfa', fontFamily: 'Space Grotesk' }}>
+                        {s.agent.name}
+                      </span>
+                      {rank === 1 && (
+                        <span className="material-symbols-outlined text-lg" style={{ color: '#ffd666', fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                      )}
+                    </div>
+                    <div className="text-[10px] font-mono uppercase" style={{ color: '#464752' }}>
+                      {s.agent.archetype} • {s.totalCompetitions} MATCHES
+                    </div>
+                  </div>
+
+                  {/* Win rate bar */}
+                  <div className="w-48 px-4 hidden sm:block">
+                    <div className="flex justify-between text-[10px] font-mono mb-1" style={{ color: isMedal ? rankColor : '#aaaab6' }}>
+                      <span>WIN_RATE</span><span>{winRate}%</span>
+                    </div>
+                    <div className="h-1.5" style={{ background: '#232532' }}>
+                      <div className="h-full" style={{
+                        width: `${winRate}%`,
+                        background: isMedal ? rankColor : agentColor,
+                        boxShadow: isMedal ? `0 0 8px ${rankColor}` : `0 0 4px ${agentColor}`,
+                      }} />
+                    </div>
+                  </div>
+
+                  {/* W/L */}
