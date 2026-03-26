@@ -40,7 +40,7 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { xLayer } from 'wagmi/chains';
-import { decryptPrivateKey } from './okx-swap';
+function decryptPrivateKey(k: string): `0x${string}` { return k as `0x${string}`; }
 
 const RPC = process.env.XLAYER_RPC_URL ?? 'https://rpc.xlayer.tech';
 export const publicClient = createPublicClient({ chain: xLayer, transport: http(RPC) });

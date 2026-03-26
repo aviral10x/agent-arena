@@ -9,7 +9,7 @@
  */
 
 import { prisma } from './db';
-import { runCompetitionTick, runSportCompetitionTick } from './orchestrator';
+import { runSportCompetitionTick } from './orchestrator';
 
 const TRADING_TICK_MS     = parseInt(process.env.TICK_INTERVAL_MS       ?? '30000');
 const SPORT_TICK_MS       = parseInt(process.env.SPORT_TICK_INTERVAL_MS  ?? '4000');
@@ -51,22 +51,11 @@ async function tickByType(type: 'trading' | 'sport') {
       await Promise.allSettled(
         batch.map(async (comp) => {
           try {
-            const isSport = type === 'sport';
-            const results = isSport
-              ? await runSportCompetitionTick(comp.id)
-              : await runCompetitionTick(comp.id);
-
-            if (isSport) {
-              const r = results[0];
-              if (r && (r as any).sport) {
-                const desc = (r as any).result?.description;
-                if (desc) console.log(`[sport] ${comp.title}: ${desc.slice(0, 70)}`);
-              }
-            } else {
-              const actions = results.filter((r: any) => r.action && r.action !== 'HOLD');
-              if (actions.length > 0) {
-                console.log(`[trading] ${comp.title}: ${actions.length} trade(s)`);
-              }
+            const results = await runSportCompetitionTick(comp.id);
+            const r = results[0];
+            if (r && (r as any).sport) {
+              const desc = (r as any).result?.description;
+              if (desc) console.log(`[sport] ${comp.title}: ${desc.slice(0, 70)}`);
             }
           } catch (err: any) {
             if (err.message?.includes('not live') || err.message?.includes('settled')) return;

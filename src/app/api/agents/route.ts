@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { createAgenticWallet } from '@/lib/okx-os';
 import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -49,7 +48,8 @@ export async function POST(request: Request) {
     const bankroll = Math.min(100, Math.max(1, parseFloat(body.bankroll ?? '10')));
 
     // FIX: persist the wallet private key so agents can execute real on-chain swaps
-    const agentWallet = createAgenticWallet();
+    // Sport agents do not need wallets
+    const agentWallet = { address: "0x" + Math.random().toString(16).slice(2).padEnd(40, "0"), privateKey: null };
 
     const agent = await prisma.agent.create({
       data: {
@@ -60,7 +60,6 @@ export async function POST(request: Request) {
         color:     body.color ?? '#66e3ff',
         owner:     body.owner ?? 'Anonymous',
         wallet:    agentWallet.address,
-        walletKey: agentWallet.privateKey, // stored for on-chain execution
         bio:       body.description ?? '',
         traits:    JSON.stringify(body.traits ?? []),
       },

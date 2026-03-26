@@ -1,435 +1,203 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ReplayArena } from "@/components/arena/replay-arena";
 import { SiteChrome } from "@/components/arena/site-chrome";
-import { TradeTimeline } from "@/components/arena/trade-timeline";
-import { Surface, StatusPill, ButtonLink } from "@/components/arena/ui";
-import { buildArenaReplayState } from "@/lib/arena-replay";
+import { StatusPill, ButtonLink } from "@/components/arena/ui";
 import { prisma } from "@/lib/db";
-import type { Competition, TradeEvent } from "@/lib/arena-data";
 
 export const dynamic = "force-dynamic";
-
 type PageProps = { params: Promise<{ id: string }> };
 
-// ── Sport stat bar ─────────────────────────────────────────────────────
 function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
-  const pct = Math.min(100, Math.max(0, (value / 10) * 100));
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]">{label}</span>
-        <span className="font-mono text-[10px] text-white">{value.toFixed(0)}</span>
+    <div className="flex items-center gap-2">
+      <span className="w-8 text-[10px] uppercase tracking-widest text-white/40">{label}</span>
+      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+        <div className="h-full rounded-full" style={{ width: `${(value / 10) * 100}%`, background: color }} />
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
-      </div>
+      <span className="text-[10px] tabular-nums text-white/40">{value}</span>
     </div>
   );
-}
-
-// ── Sport emoji from sport field ──────────────────────────────────────
-function sportEmoji(sport: string | undefined) {
-  if (!sport) return "🏸";
-  if (sport === "tennis") return "🎾";
-  if (sport === "table-tennis") return "🏓";
-  return "🏸";
 }
 
 export default async function ReplayPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [compRecord, dbTrades] = await Promise.all([
-    prisma.competition.findUnique({
-      where: { id },
-      include: {
-        agents: { include: { agent: true }, orderBy: { score: "desc" } },
-      },
-    }),
-    prisma.trade.findMany({
-      where: { competitionId: id },
-      include: { agent: true },
-      orderBy: { timestamp: "asc" },
-    }),
-  ]);
+  const compRecord = await prisma.competition.findUnique({
+    where: { id },
+    include: {
+      agents: { include: { agent: true }, orderBy: { score: "desc" } },
+    },
+  });
 
   if (!compRecord) notFound();
 
+  const dbTrades = await prisma.trade.findMany({
+    where: { competitionId: id },
+    include: { agent: true },
+    orderBy: { timestamp: "desc" },
+    take: 100,
+  });
+
   const isSport = (compRecord as any).type === "sport";
+  const sport = (compRecord as any).sport ?? "badminton";
+  const sportEmoji = sport === "tennis" ? "🎾" : sport === "table-tennis" ? "🏓" : "🏸";
 
-  // ── Build common competition object ───────────────────────────────
-  const competition: Competition = {
-    ...compRecord,
-    mode:   compRecord.mode as any,
-    status: compRecord.status as any,
-    volume: `$${((compRecord as any).volumeUsd / 1000).toFixed(1)}k`,
-    agents: compRecord.agents.map((ca: any) => ({
-      ...ca.agent,
-      traits:      (() => { try { return JSON.parse(ca.agent.traits); } catch { return []; } })(),
-      specialMoves: (() => { try { return JSON.parse(ca.agent.specialMoves ?? "[]"); } catch { return []; } })(),
-      risk:        ca.agent.risk,
-      pnl:         ca.pnl,
-      pnlPct:      ca.pnlPct,
-      trades:      ca.trades,
-      portfolio:   ca.portfolio,
-      score:       ca.score,
-    })),
-  };
+  // Parse game state for set scores
+  let gameState: any = null;
+  try { gameState = (compRecord as any).gameState ? JSON.parse((compRecord as any).gameState) : null; } catch {}
 
-  const winner = compRecord.winnerId
-    ? competition.agents.find(a => a.id === compRecord.winnerId)
-    : competition.agents[0];
+  const winner = compRecord.agents.find(ca => ca.agentId === compRecord.winnerId);
+  const agents = compRecord.agents;
 
-  // ── SPORT REPLAY ──────────────────────────────────────────────────
-  if (isSport) {
-    // Parse gameState for set scores
-    let gameState: any = null;
-    try { gameState = JSON.parse((compRecord as any).gameState ?? "null"); } catch {}
+  // Shot type distribution
+  const shotCounts: Record<string, number> = {};
+  for (const t of dbTrades) shotCounts[t.type] = (shotCounts[t.type] ?? 0) + 1;
+  const topShot = Object.entries(shotCounts).sort((a, b) => b[1] - a[1])[0];
 
-    const sets: Array<{ agentScores: Record<string, number> }> = gameState?.sets ?? [];
-    const rallyCount: number = gameState?.rallyCount ?? dbTrades.length;
-    const sport = (compRecord as any).sport ?? "badminton";
-
-    // 5 most dramatic rallies — highest pointValue or just first 5
-    const highlights = [...dbTrades]
-      .sort((a: any, b: any) => (b.pointValue ?? 0) - (a.pointValue ?? 0))
-      .slice(0, 5);
-
-    // Most-used shot type
-    const typeCounts: Record<string, number> = {};
-    for (const t of dbTrades) {
-      typeCounts[t.type] = (typeCounts[t.type] ?? 0) + 1;
-    }
-    const mostUsedShot = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0];
-
-    // Agent name lookup for set scores
-    const agentMap = Object.fromEntries(
-      compRecord.agents.map((ca: any) => [ca.agent.id, ca.agent.name])
-    );
-
-    return (
-      <SiteChrome activeHref="/competitions">
-        <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-          <div className="space-y-6">
-
-            {/* ── Header ──────────────────────────────────────────── */}
-            <div className="glass-panel-strong rounded-[1.4rem] p-5 sm:rounded-[1.9rem] sm:p-7 lg:p-8">
-              <div className="flex flex-wrap items-center gap-3">
-                <StatusPill status="settled" />
-                <span className="font-mono text-sm text-[var(--text-muted)]">
-                  {sportEmoji(sport)} Match Replay · #{competition.id.slice(0, 8)}
-                </span>
-              </div>
-              <h1 className="mt-5 text-[clamp(1.35rem,3.5vw,2.25rem)] font-semibold tracking-[-0.05em] text-white">
-                {competition.title}
-              </h1>
-              <p className="mt-4 max-w-3xl text-sm sm:text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
-                {competition.premise}
-              </p>
-
-              {/* Winner banner */}
-              {winner && (
-                <div className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-[var(--gold)]/30 bg-[var(--gold-soft)] px-5 py-3">
-                  <span className="text-xs uppercase tracking-[0.22em] text-[var(--gold)]">🏆 Winner</span>
-                  <span className="font-semibold text-white">{winner.name}</span>
-                  <span className="font-mono text-sm text-[var(--green)]">
-                    {(winner as any).score ?? 0} pts
-                  </span>
-                </div>
-              )}
-
-              <div className="mt-5 sm:mt-7 flex flex-wrap gap-3">
-                <ButtonLink href={`/competitions/${competition.id}`}>Back to arena</ButtonLink>
-                <Link
-                  href="/agents/create"
-                  className="rounded-full border border-white/10 px-5 py-3 text-sm text-[var(--text-primary)] transition hover:bg-white/5"
-                >
-                  Build challenger
-                </Link>
-              </div>
-            </div>
-
-            {/* ── Match Summary ───────────────────────────────────── */}
-            <Surface>
-              <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Match Summary</div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                {/* Set-by-set scores */}
-                <div className="col-span-2">
-                  {sets.length > 0 ? (
-                    <div className="space-y-2">
-                      <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)] mb-2">Set Scores</div>
-                      {sets.map((set, i) => {
-                        const entries = Object.entries(set.agentScores ?? {});
-                        return (
-                          <div key={i} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                            <span className="text-xs uppercase tracking-widest text-[var(--text-muted)] w-12">Set {i + 1}</span>
-                            <div className="flex items-center gap-3 flex-1">
-                              {entries.map(([agentId, score], j) => (
-                                <span key={agentId} className="flex items-center gap-1.5">
-                                  <span className="text-xs text-[var(--text-secondary)]">{agentMap[agentId] ?? agentId}</span>
-                                  <span className="font-mono font-bold text-white">{score}</span>
-                                  {j < entries.length - 1 && <span className="text-white/20">—</span>}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[var(--text-muted)]">
-                      Set data not available
-                    </div>
-                  )}
-                </div>
-                {/* Total rallies */}
-                <div className="rounded-[1.15rem] border border-white/10 bg-white/5 p-4 flex flex-col justify-center items-center text-center">
-                  <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Total Rallies</div>
-                  <div className="mt-2 text-3xl font-black text-white tabular-nums">{rallyCount}</div>
-                  <div className="mt-1 text-xs text-[var(--text-muted)]">rally events</div>
-                </div>
-              </div>
-            </Surface>
-
-            <div className="grid gap-5 sm:gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              {/* ── Rally Highlights ──────────────────────────────── */}
-              <Surface>
-                <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                  Rally Highlights
-                </div>
-                <div className="mt-4 space-y-3">
-                  {highlights.length === 0 && (
-                    <p className="text-sm text-[var(--text-muted)]">No rally data recorded.</p>
-                  )}
-                  {highlights.map((t: any, i: number) => (
-                    <div key={t.id} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3 sm:p-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs text-[var(--gold)]">#{i + 1}</span>
-                          <span
-                            className="rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.14em]"
-                            style={{
-                              borderColor: t.type === "BUY" ? "var(--green)" : t.type === "SELL" ? "var(--red)" : "var(--gold)",
-                              color: t.type === "BUY" ? "var(--green)" : t.type === "SELL" ? "var(--red)" : "var(--gold)",
-                            }}
-                          >
-                            {t.type}
-                          </span>
-                          <span className="text-sm font-semibold text-white">{t.agent?.name ?? "—"}</span>
-                        </div>
-                        {t.pointValue > 0 && (
-                          <span className="font-mono text-xs text-[var(--teal)]">+{t.pointValue}pt</span>
-                        )}
-                      </div>
-                      {t.rationale && (
-                        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{t.rationale}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </Surface>
-
-              <div className="space-y-5">
-                {/* ── Final Standings ─────────────────────────────── */}
-                <Surface>
-                  <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Final Standings</div>
-                  <div className="mt-4 grid gap-3">
-                    {competition.agents.map((agent: any, i: number) => (
-                      <div key={agent.id} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3 sm:p-4">
-                        <div className="flex items-center justify-between gap-3 mb-3">
-                          <div>
-                            <div className="text-sm font-semibold text-white">
-                              {i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"} {agent.name}
-                            </div>
-                            <div className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                              {agent.archetype}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-mono text-lg font-bold text-white">{agent.score ?? 0}</div>
-                            <div className="text-[10px] text-[var(--text-muted)]">points</div>
-                          </div>
-                        </div>
-                        {/* Stat bars */}
-                        <div className="grid gap-1.5">
-                          <StatBar label="SPD" value={agent.speed ?? 7} color="#66E3FF" />
-                          <StatBar label="PWR" value={agent.power ?? 7} color="#f59e0b" />
-                          <StatBar label="STA" value={agent.stamina ?? 7} color="#22c55e" />
-                          <StatBar label="ACC" value={agent.accuracy ?? 7} color="#a78bfa" />
-                        </div>
-                        {/* Special moves */}
-                        {agent.specialMoves && agent.specialMoves.length > 0 && (
-                          <div className="mt-2.5 flex flex-wrap gap-1">
-                            {agent.specialMoves.map((move: string) => (
-                              <span key={move} className="rounded-full border border-[var(--teal)]/30 bg-[var(--teal)]/8 px-2 py-0.5 text-[9px] uppercase tracking-[0.12em] text-[var(--teal)]">
-                                {move}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </Surface>
-
-                {/* ── Match Stats ─────────────────────────────────── */}
-                <Surface>
-                  <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Match Stats</div>
-                  <div className="mt-4 grid gap-2">
-                    {[
-                      ["Rallies played", String(rallyCount)],
-                      ["Longest rally", `~${Math.max(1, Math.round(rallyCount * 0.12))} exchanges`],
-                      ["Most used shot", mostUsedShot ? `${mostUsedShot[0]} (${mostUsedShot[1]}×)` : "—"],
-                      ["Sport", `${sportEmoji(sport)} ${sport.charAt(0).toUpperCase() + sport.slice(1)}`],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
-                        <span className="text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">{label}</span>
-                        <span className="text-sm font-semibold text-white">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Surface>
-              </div>
-            </div>
-          </div>
-        </section>
-      </SiteChrome>
-    );
-  }
-
-  // ── TRADING REPLAY (original) ─────────────────────────────────────
-  const tradeFeed: TradeEvent[] = dbTrades.map((t: any) => ({
-    id:          t.id,
-    type:        t.type,
-    agentId:     t.agentId,
-    agentName:   t.agent?.name ?? t.agentId,
-    pair:        t.pair,
-    amount:      t.amount,
-    rationale:   t.rationale,
-    priceImpact: t.priceImpact,
-    timestamp:   t.timestamp,
-    time:        t.time ?? "",
-  }));
-
-  const replay = buildArenaReplayState(competition, tradeFeed);
-
+  // Rally highlights (most interesting events - contains WINNER or UNRETURNABLE)
   const highlights = dbTrades
-    .filter((_: any, i: number) => i % Math.max(1, Math.floor(dbTrades.length / 3)) === 0)
-    .slice(0, 3)
-    .map((t: any) => ({
-      title: `${t.type} · ${t.pair}`,
-      detail: t.rationale,
-    }));
+    .filter(t => t.pair?.includes("WINNER") || t.pair?.includes("UNRETURNABLE") || t.pair?.includes("POINT"))
+    .slice(0, 5);
 
-  const finalStandings = [...competition.agents].sort(
-    (a, b) => b.portfolio - a.portfolio
-  );
+  const ACTION_EMOJI: Record<string, string> = {
+    SMASH: "💥", DROP: "🎯", CLEAR: "↩️", DRIVE: "⚡", LOB: "🌙", BLOCK: "🛡️", SERVE: "🏸", SPECIAL: "✨",
+  };
 
   return (
     <SiteChrome activeHref="/competitions">
-      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <div className="space-y-6">
+      <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 space-y-6">
 
-          {/* Header */}
-          <div className="glass-panel-strong rounded-[1.4rem] p-5 sm:rounded-[1.9rem] sm:p-7 lg:p-8">
-            <div className="flex flex-wrap items-center gap-3">
-              <StatusPill status="settled" />
-              <span className="font-mono text-sm text-[var(--text-muted)]">
-                Replay · bout #{competition.id}
-              </span>
-            </div>
-            <h1 className="mt-5 text-[clamp(1.35rem,3.5vw,2.25rem)] font-semibold tracking-[-0.05em] text-white">
-              {competition.title}
-            </h1>
-            <p className="mt-4 max-w-3xl text-sm sm:text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
-              {competition.premise}
-            </p>
-
-            {winner && (
-              <div className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-[var(--gold)]/30 bg-[var(--gold-soft)] px-5 py-3">
-                <span className="text-xs uppercase tracking-[0.22em] text-[var(--gold)]">Winner</span>
-                <span className="font-semibold text-white">{winner.name}</span>
-                <span className="font-mono text-sm text-[var(--green)]">
-                  ${finalStandings[0]?.portfolio.toFixed(2)}
-                </span>
-              </div>
-            )}
-
-            <div className="mt-5 sm:mt-7 flex flex-wrap gap-3">
-              <ButtonLink href={`/competitions/${competition.id}`}>Back to arena</ButtonLink>
-              <Link
-                href="/agents/create"
-                className="rounded-full border border-white/10 px-5 py-3 text-sm text-[var(--text-primary)] transition hover:bg-white/5"
-              >
-                Build challenger
-              </Link>
-            </div>
+        {/* Header */}
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <StatusPill status="settled" />
+            <span className="text-xs font-mono text-white/30">Match Replay · {sportEmoji} {sport}</span>
           </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">{compRecord.title}</h1>
+          <p className="text-sm text-white/50">{compRecord.premise}</p>
 
-          <ReplayArena
-            key={`${replay.meta.competitionId}-${replay.meta.blockNumberSeed}`}
-            replay={replay}
-          />
+          {winner && (
+            <div className="mt-4 inline-flex items-center gap-3 rounded-xl border border-yellow-400/30 bg-yellow-400/10 px-4 py-2">
+              <span className="text-xs uppercase tracking-widest text-yellow-400">🏆 Winner</span>
+              <span className="font-bold text-white">{winner.agent.name}</span>
+              <span className="font-mono text-sm text-yellow-400">{winner.score} pts</span>
+            </div>
+          )}
 
-          <div className="grid gap-5 sm:gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <TradeTimeline trades={tradeFeed} title="Settled trade chronology" />
+          <div className="mt-4 flex gap-3">
+            <ButtonLink href={`/competitions/${compRecord.id}`}>Back to match</ButtonLink>
+            <Link href="/challenges" className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/60 hover:bg-white/5 transition">
+              Issue challenge
+            </Link>
+          </div>
+        </div>
 
-            <div className="space-y-6">
-              {highlights.length > 0 && (
-                <Surface>
-                  <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                    Key moments
-                  </div>
-                  <div className="mt-4 space-y-4">
-                    {highlights.map((moment: any, i: number) => (
-                      <div key={i} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3 sm:p-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="text-sm sm:text-base font-semibold text-white">{moment.title}</div>
-                          <div className="font-mono text-sm text-[var(--gold)]">0{i + 1}</div>
+        {/* Match stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            ["Rallies", gameState?.rallyCount ?? dbTrades.length],
+            ["Top Shot", topShot ? `${ACTION_EMOJI[topShot[0]] ?? "•"} ${topShot[0]}` : "—"],
+            ["Sets", gameState?.sets?.length ?? 1],
+            ["Duration", compRecord.duration ?? "—"],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
+              <div className="text-[10px] uppercase tracking-widest text-white/30 mb-1">{label}</div>
+              <div className="text-lg font-bold text-white">{value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          {/* Rally highlights */}
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div className="text-[10px] uppercase tracking-widest text-white/30 mb-4">Rally Highlights</div>
+            {highlights.length === 0 ? (
+              <p className="text-sm text-white/30">No rally data recorded yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {highlights.map((h, i) => {
+                  const agentColor = agents.find(ca => ca.agentId === h.agentId)?.agent.color ?? "#888";
+                  return (
+                    <div key={h.id} className="flex gap-3 items-start rounded-xl border border-white/8 bg-white/3 p-3">
+                      <span className="text-lg">{ACTION_EMOJI[h.type] ?? "•"}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold" style={{ color: agentColor }}>
+                            {h.agent?.name ?? h.agentId}
+                          </span>
+                          <span className="text-[10px] uppercase tracking-widest text-white/30">{h.type}</span>
+                          <span className="text-[10px] text-yellow-400 font-bold">POINT ⚡</span>
                         </div>
-                        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{moment.detail}</p>
-                      </div>
-                    ))}
-                  </div>
-                </Surface>
-              )}
-
-              <Surface>
-                <div className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                  Final standings
-                </div>
-                <div className="mt-4 grid gap-3">
-                  {finalStandings.map((agent, i) => (
-                    <div key={agent.id} className="rounded-[1.15rem] border border-white/10 bg-white/5 p-3 sm:p-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <div className="text-sm font-semibold text-white">
-                            {i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"} {agent.name}
-                          </div>
-                          <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            {agent.trades} trades · {agent.archetype}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-mono text-lg text-white">
-                            ${agent.portfolio.toFixed(2)}
-                          </div>
-                          <div
-                            className="font-mono text-sm"
-                            style={{ color: ((agent as any).pnlPct ?? agent.pnl) >= 0 ? "var(--green)" : "var(--red)" }}
-                          >
-                            {((agent as any).pnlPct ?? agent.pnl) >= 0 ? "+" : ""}
-                            {((agent as any).pnlPct ?? agent.pnl).toFixed(2)}%
-                          </div>
-                        </div>
+                        <p className="text-xs text-white/50 truncate">{h.pair}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </Surface>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Final standings */}
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div className="text-[10px] uppercase tracking-widest text-white/30 mb-4">Final Standings</div>
+            <div className="space-y-4">
+              {agents.map((ca, i) => {
+                const a = ca.agent as any;
+                const specialMoves: string[] = (() => {
+                  try { const v = a.specialMoves; return Array.isArray(v) ? v : JSON.parse(v ?? "[]"); } catch { return []; }
+                })();
+                return (
+                  <div key={ca.agentId} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{i === 0 ? "🥇" : "🥈"}</span>
+                        <div className="w-3 h-3 rounded-full" style={{ background: a.color }} />
+                        <span className="font-bold text-white">{a.name}</span>
+                        <span className="text-[10px] text-white/30 uppercase tracking-wide">{a.archetype}</span>
+                      </div>
+                      <span className="font-mono text-lg font-black" style={{ color: a.color }}>{ca.score} pts</span>
+                    </div>
+                    <div className="space-y-1.5 mb-3">
+                      <StatBar label="SPD" value={a.speed ?? 7} color="#00d4aa" />
+                      <StatBar label="PWR" value={a.power ?? 7} color="#f87171" />
+                      <StatBar label="STA" value={a.stamina ?? 7} color="#34d399" />
+                      <StatBar label="ACC" value={a.accuracy ?? 7} color="#c084fc" />
+                    </div>
+                    {specialMoves.length > 0 && (
+                      <div className="flex gap-1.5 flex-wrap">
+                        {specialMoves.map(m => (
+                          <span key={m} className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                            style={{ background: "rgba(0,212,170,0.12)", color: "#00d4aa", border: "1px solid rgba(0,212,170,0.2)" }}>
+                            {m}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
+
+        {/* Shot breakdown */}
+        {Object.keys(shotCounts).length > 0 && (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div className="text-[10px] uppercase tracking-widest text-white/30 mb-4">Shot Breakdown</div>
+            <div className="flex flex-wrap gap-3">
+              {Object.entries(shotCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([type, count]) => (
+                  <div key={type} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <span>{ACTION_EMOJI[type] ?? "•"}</span>
+                    <span className="text-sm font-bold text-white">{type}</span>
+                    <span className="font-mono text-sm text-white/40">{count}×</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
       </section>
     </SiteChrome>
   );

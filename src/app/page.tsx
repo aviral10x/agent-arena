@@ -3,7 +3,6 @@ import { SiteChrome } from "@/components/arena/site-chrome";
 import { prisma } from "@/lib/db";
 import { formatVolume } from "@/lib/orchestrator";
 import { CompetitionRow } from "@/components/arena/competition-row";
-import { ActivityFeed } from "@/components/arena/activity-feed";
 
 export const dynamic = "force-dynamic";
 
@@ -254,7 +253,7 @@ export default async function Home() {
             )}
 
             {/* Live activity feed */}
-            <ActivityFeed trades={recentTrades as any} />
+            
 
             {/* CTA card */}
             <div className="rounded-2xl border border-[var(--teal)]/20 bg-[var(--teal)]/5 p-4 text-center sm:p-5">
