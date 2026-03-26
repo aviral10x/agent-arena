@@ -66,9 +66,11 @@ export default async function CompetitionPage(props: PageProps) {
     timestamp: t.timestamp?.toISOString() ?? new Date().toISOString(),
   }));
 
+  const isSport = (compRecord as any).type === 'sport';
   const [agentA, agentB] = competition.agents as any[];
   const winner = competition.agents.find((a: any) => a.id === compRecord.winnerId) as any;
   const totalTrades = competition.agents.reduce((s: number, a: any) => s + (a.trades ?? 0), 0);
+  const totalRallies = (compRecord as any).totalRallies ?? 0;
 
   return (
     <SiteChrome activeHref="/competitions">
@@ -93,7 +95,7 @@ export default async function CompetitionPage(props: PageProps) {
               {competition.status === "open" && (
                 <X402ButtonClient label="Enter" amount={0.01} redirectHref="/agents/create" />
               )}
-              {competition.status === "live" && (
+              {competition.status === "live" && !isSport && (
                 <X402ButtonClient label="Unlock data" amount={0.01} />
               )}
               {competition.status === "settled" && (
@@ -119,11 +121,17 @@ export default async function CompetitionPage(props: PageProps) {
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full" style={{ background: agentA.color }} />
                 <span className="text-sm font-bold text-white">{agentA.name}</span>
-                <span className="font-mono text-sm font-bold" style={{
-                  color: (agentA.pnlPct ?? 0) >= 0 ? 'var(--green)' : 'var(--red)'
-                }}>
-                  {(agentA.pnlPct ?? 0) >= 0 ? '+' : ''}{(agentA.pnlPct ?? 0).toFixed(1)}%
-                </span>
+                {isSport ? (
+                  <span className="font-mono text-sm font-bold text-[var(--teal)]">
+                    {agentA.score ?? 0} pts
+                  </span>
+                ) : (
+                  <span className="font-mono text-sm font-bold" style={{
+                    color: (agentA.pnlPct ?? 0) >= 0 ? 'var(--green)' : 'var(--red)'
+                  }}>
+                    {(agentA.pnlPct ?? 0) >= 0 ? '+' : ''}{(agentA.pnlPct ?? 0).toFixed(1)}%
+                  </span>
+                )}
                 {winner?.id === agentA.id && <span className="text-[var(--gold)]">🏆</span>}
               </div>
             )}
@@ -135,11 +143,17 @@ export default async function CompetitionPage(props: PageProps) {
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full" style={{ background: agentB.color }} />
                 <span className="text-sm font-bold text-white">{agentB.name}</span>
-                <span className="font-mono text-sm font-bold" style={{
-                  color: (agentB.pnlPct ?? 0) >= 0 ? 'var(--green)' : 'var(--red)'
-                }}>
-                  {(agentB.pnlPct ?? 0) >= 0 ? '+' : ''}{(agentB.pnlPct ?? 0).toFixed(1)}%
-                </span>
+                {isSport ? (
+                  <span className="font-mono text-sm font-bold text-[var(--teal)]">
+                    {agentB.score ?? 0} pts
+                  </span>
+                ) : (
+                  <span className="font-mono text-sm font-bold" style={{
+                    color: (agentB.pnlPct ?? 0) >= 0 ? 'var(--green)' : 'var(--red)'
+                  }}>
+                    {(agentB.pnlPct ?? 0) >= 0 ? '+' : ''}{(agentB.pnlPct ?? 0).toFixed(1)}%
+                  </span>
+                )}
                 {winner?.id === agentB.id && <span className="text-[var(--gold)]">🏆</span>}
               </div>
             )}
@@ -154,8 +168,14 @@ export default async function CompetitionPage(props: PageProps) {
                   compact
                 />
               </div>
-              <span className="text-[11px] text-[var(--text-muted)]">{totalTrades} trades</span>
-              <span className="text-[11px] font-mono text-[var(--teal)]">{competition.volume} vol</span>
+              {isSport ? (
+                <span className="text-[11px] text-[var(--text-muted)]">{totalRallies} rallies</span>
+              ) : (
+                <>
+                  <span className="text-[11px] text-[var(--text-muted)]">{totalTrades} trades</span>
+                  <span className="text-[11px] font-mono text-[var(--teal)]">{competition.volume} vol</span>
+                </>
+              )}
               <span className="text-[11px] text-[var(--text-muted)]">{competition.duration}</span>
             </div>
           </div>
@@ -230,14 +250,21 @@ export default async function CompetitionPage(props: PageProps) {
                 Match Info
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {[
+                {(isSport ? [
+                  ["Sport",      ((compRecord as any).sport ?? 'badminton').toUpperCase()],
+                  ["Rallies",    totalRallies.toString()],
+                  ["Spectators", competition.spectators.toString()],
+                  ["Duration",   competition.duration],
+                  ["Entry",      competition.entryFee],
+                  ["Prize",      competition.prizePool],
+                ] : [
                   ["Track",      competition.track],
                   ["Volume",     competition.volume],
                   ["Spectators", competition.spectators.toString()],
                   ["Duration",   competition.duration],
                   ["Entry",      competition.entryFee],
                   ["Prize",      competition.prizePool],
-                ].map(([label, value]) => (
+                ]).map(([label, value]) => (
                   <div key={label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-2.5 py-2">
                     <div className="text-[9px] uppercase tracking-widest text-[var(--text-muted)]">{label}</div>
                     <div className="mt-0.5 truncate text-[11px] font-semibold text-white">{value}</div>

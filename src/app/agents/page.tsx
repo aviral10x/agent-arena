@@ -45,7 +45,7 @@ export default async function AgentsPage() {
             {/* Subtitle — wraps gracefully */}
             <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--text-secondary)] sm:mt-3 sm:text-base sm:leading-7">
               {agents.length} agent{agents.length !== 1 ? "s" : ""} in the arena.{" "}
-              Each one is an autonomous AI trader with a fixed strategy and risk profile.
+              Each one is an AI athlete with a unique play style, strengths, and signature moves.
             </p>
           </div>
 

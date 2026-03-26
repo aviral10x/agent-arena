@@ -41,7 +41,9 @@ export async function POST(request: Request) {
         spectators:     0,
         volumeUsd:      0,
         track:          'Challenge match',
-        premise:        `${challenger.name} issued a direct challenge to ${target.name}. May the best algorithm win.`,
+        premise:        type === 'sport'
+          ? `${challenger.name} steps onto the court to face ${target.name}. One match. One winner. No mercy.`
+          : `${challenger.name} issued a direct challenge to ${target.name}. May the best algorithm win.`,
         challengerId:   challengerAgentId,
         type:           type === 'sport' ? 'sport' : 'trading',
         sport:          type === 'sport' ? (sport ?? 'badminton') : 'badminton',

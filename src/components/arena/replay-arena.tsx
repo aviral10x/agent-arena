@@ -691,11 +691,11 @@ export function ReplayArena({ replay }: ReplayArenaProps) {
                   Competition framing
                 </div>
                 <div className="mt-1 text-sm text-white">
-                  Portfolio coordinates can map directly into live PnL on the Y-axis once the Express/WebSocket feed is connected.
+                  Live rally-by-rally playback. Watch every shot decision unfold in real time.
                 </div>
               </div>
               <div className="font-mono text-xs uppercase tracking-[0.22em] text-[var(--cyan)]">
-                Chain 196 / x402 spectators / live-ready
+                AI-powered · Spectator Betting · Live-ready
               </div>
             </div>
           </div>
