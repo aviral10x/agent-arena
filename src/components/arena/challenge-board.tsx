@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useWallet } from '@/hooks/use-wallet';
 
 type AgentRow = {
   id: string; name: string; archetype: string; color: string;
@@ -15,14 +15,7 @@ const SPORT = 'badminton';
 export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
   const router        = useRouter();
   const params        = useSearchParams();
-  const { user, ready }  = usePrivy();
-  const { wallets }      = useWallets();
-  // Privy: embedded wallet (user.wallet) or any connected external wallet
-  // wallets[] may be empty on first render — use user.wallet as primary source
-  const walletAddress = user?.wallet?.address
-    ?? wallets.find(w => w.walletClientType !== 'privy')?.address
-    ?? wallets[0]?.address
-    ?? '';
+  const { ready, connected, address: walletAddress, connect, signX402Payment } = useWallet();
 
   const [opponentId,   setOpponentId]   = useState<string | null>(null);
   const [myAgentId,    setMyAgentId]    = useState<string>(params.get('myAgentId') ?? '');
@@ -31,21 +24,19 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
   const [paymentStep,  setPaymentStep]  = useState<string | null>(null); // signing | verifying | null
   const [error,        setError]        = useState<string | null>(null);
 
-  // Fetch agents owned by the connected wallet.
-  // Wait for Privy to be ready AND user to be logged in before fetching.
+  // Fetch agents owned by the connected wallet
   useEffect(() => {
-    if (!ready || !user) return;
-    // walletAddress may still be hydrating — retry once it's available
-    const addr = walletAddress || user.id;
+    if (!ready) return;
+    const addr = walletAddress ?? '';
     if (!addr) return;
-    fetch(`/api/agents?owner=${encodeURIComponent(walletAddress || addr)}`)
+    fetch(`/api/agents?owner=${encodeURIComponent(addr)}`)
       .then(r => r.json())
       .then((data: AgentRow[]) => {
         setMyAgents(data);
         if (!params.get('myAgentId') && data.length > 0) setMyAgentId(data[0].id);
       })
       .catch(() => {});
-  }, [ready, user, walletAddress, params]);
+  }, [ready, walletAddress, params]);
 
   const opponent   = agents.find(a => a.id === opponentId);
   const myAgent    = myAgents.find(a => a.id === myAgentId) ?? agents.find(a => a.id === myAgentId);
@@ -62,68 +53,11 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
 
     let payload: any = null;
 
-    // ── Step 1: Try x402 payment ($0.10 USDC entry fee) via Privy embedded wallet ──
+    // ── Step 1: Try x402 payment ($0.10 USDC entry fee) via wallet ──
     if (walletAddress) {
       try {
         setPaymentStep('signing');
-        // Use the embedded wallet's provider for EIP-712 signing
-        const embeddedWallet = wallets.find(w => w.walletClientType === 'privy') ?? wallets[0];
-        if (embeddedWallet) {
-          const provider = await embeddedWallet.getEthereumProvider();
-          const amountMicro = Math.round(ENTRY_FEE_USDC * 1_000_000);
-          const nonce = `0x${crypto.randomUUID().replace(/-/g, '')}`;
-          const validBefore = Math.floor(Date.now() / 1000) + 300;
-          const from = walletAddress as `0x${string}`;
-
-          const typedData = {
-            types: {
-              EIP712Domain: [
-                { name: 'name', type: 'string' },
-                { name: 'version', type: 'string' },
-                { name: 'chainId', type: 'uint256' },
-                { name: 'verifyingContract', type: 'address' },
-              ],
-              TransferWithAuthorization: [
-                { name: 'from', type: 'address' },
-                { name: 'to', type: 'address' },
-                { name: 'value', type: 'uint256' },
-                { name: 'validAfter', type: 'uint256' },
-                { name: 'validBefore', type: 'uint256' },
-                { name: 'nonce', type: 'bytes32' },
-              ],
-            },
-            primaryType: 'TransferWithAuthorization',
-            domain: {
-              name: 'USD Coin',
-              version: '2',
-              chainId: 196,
-              verifyingContract: USDC_ADDRESS,
-            },
-            message: {
-              from,
-              to: ARENA_RECEIVER,
-              value: String(amountMicro),
-              validAfter: '0',
-              validBefore: String(validBefore),
-              nonce,
-            },
-          };
-
-          const signature = await provider.request({
-            method: 'eth_signTypedData_v4',
-            params: [from, JSON.stringify(typedData)],
-          });
-
-          payload = {
-            signature,
-            from,
-            to: ARENA_RECEIVER,
-            value: String(amountMicro),
-            validAfter: '0',
-            validBefore: String(validBefore),
-            nonce,
-          };
-        }
+        payload = await signX402Payment(ENTRY_FEE_USDC);
       } catch (signErr: any) {
         console.warn('[challenge] x402 sign failed, using demo mode:', signErr.message?.slice(0, 60));
         payload = null;
@@ -149,7 +83,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
         throw new Error(data.error ?? 'Failed to create challenge');
       }
       const comp = await compRes.json();
-      router.push(`/competitions/${comp.id}/live?wallet=${encodeURIComponent(walletAddress)}`);
+      router.push(`/competitions/${comp.id}/live?wallet=${encodeURIComponent(walletAddress ?? '')}`);
     } catch (err: any) {
       setError(err.message ?? 'Something went wrong');
       setLoading(false);
@@ -246,7 +180,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
         <div className="bg-[#11131d] border border-[#464752]/20 p-4">
           <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-2">
             Your Fighter
-            {ready && !user && <span className="ml-2 text-[#ff6c92]">— Login to use your agent</span>}
+            {ready && !connected && <span className="ml-2 text-[#ff6c92]">— Connect wallet to use your agent</span>}
             {!ready && <span className="ml-2 text-[#464752]">— loading…</span>}
           </div>
           {/* Combine: your agents first, then remaining public agents */}

@@ -1,15 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useAccount } from "wagmi";
-import { useSignTypedData } from "wagmi";
+import { useWallet } from "@/hooks/use-wallet";
 import useSWR from "swr";
-import dynamic from "next/dynamic";
-
-const ConnectButtonSafe = dynamic(
-  () => import("./connect-button-safe"),
-  { ssr: false, loading: () => <div className="h-9 w-28 rounded-full bg-white/10 animate-pulse" /> }
-);
 
 // USDC on X Layer (chain 196)
 const USDC_ADDRESS = '0x74b7f16337b8972027f6196a17a631ac6de26d22' as const;
@@ -48,8 +41,8 @@ export function BettingPanel({
   winnerId,
   status,
 }: BettingPanelProps) {
-  const { address, isConnected, chain } = useAccount();
-  const { signTypedDataAsync } = useSignTypedData();
+  const { address, connected: isConnected, chainId, connect, signX402Payment } = useWallet();
+  const chain = chainId ? { id: chainId } : null;
 
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [amount, setAmount] = useState<number>(0.10);
@@ -97,56 +90,13 @@ export function BettingPanel({
       const nonce         = crypto.randomUUID().replace(/-/g, '');
       const validBefore   = BigInt(Math.floor(Date.now() / 1000) + 300); // 5 min
 
-      // Attempt real EIP-3009 signature if on X Layer
+      // Sign x402 payment via connected wallet
       let payload: Record<string, unknown>;
-
-      if (isConnected && chain?.id === 196) {
-        // Real on-chain path — sign TransferWithAuthorization
-        const domain = {
-          name: 'USD Coin',
-          version: '2',
-          chainId: 196,
-          verifyingContract: USDC_ADDRESS,
-        } as const;
-
-        const types = {
-          TransferWithAuthorization: [
-            { name: 'from',        type: 'address' },
-            { name: 'to',          type: 'address' },
-            { name: 'value',       type: 'uint256' },
-            { name: 'validAfter',  type: 'uint256' },
-            { name: 'validBefore', type: 'uint256' },
-            { name: 'nonce',       type: 'bytes32' },
-          ],
-        } as const;
-
-        const message = {
-          from:        address,
-          to:          arenaReceiver,
-          value:       amountMicro,
-          validAfter:  BigInt(0),
-          validBefore,
-          nonce:       `0x${nonce}` as `0x${string}`,
-        };
-
-        const signature = await signTypedDataAsync({
-          domain,
-          types,
-          primaryType: 'TransferWithAuthorization',
-          message,
-        });
-
-        payload = {
-          signature,
-          from:        address,
-          to:          arenaReceiver,
-          value:       amountMicro.toString(),
-          validAfter:  '0',
-          validBefore: validBefore.toString(),
-          nonce:       `0x${nonce}`,
-        };
+      const x402 = await signX402Payment(effectiveAmount);
+      if (x402) {
+        payload = x402;
       } else {
-        // Demo/testnet path — skip signature, server accepts txSignature key
+        // Demo/fallback path
         payload = {
           txSignature: `demo_${Date.now()}_${Math.random().toString(36).slice(2)}`,
           walletAddress: address ?? 'unknown',
@@ -180,7 +130,7 @@ export function BettingPanel({
     } finally {
       setIsPlacing(false);
     }
-  }, [selectedAgent, address, effectiveAmount, competitionId, signTypedDataAsync, chain, isConnected]);
+  }, [selectedAgent, address, effectiveAmount, competitionId, signX402Payment]);
 
   const winnerAgent = agents.find((a) => a.id === winnerId);
   const userWon = placedBet && winnerId && placedBet.agentId === winnerId;
@@ -537,7 +487,12 @@ export function BettingPanel({
           {!isConnected && bettingOpen && (
             <div className="flex flex-col items-center gap-3 py-2">
               <p className="text-xs text-[var(--text-muted)]">Connect wallet to place a bet</p>
-              <ConnectButtonSafe />
+              <button
+                onClick={connect}
+                className="border border-[#8ff5ff]/30 px-4 py-2 text-sm font-mono uppercase text-[#8ff5ff] hover:bg-[#8ff5ff]/10 transition-colors rounded-full"
+              >
+                Connect Wallet
+              </button>
             </div>
           )}
 
