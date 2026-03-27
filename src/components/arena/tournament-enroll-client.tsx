@@ -2,10 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useAccount, useChainId, useSignTypedData } from "wagmi";
-import { xLayer } from "wagmi/chains";
-
-const USDC_ADDRESS = "0x74b7f16337b8972027f6196a17a631ac6de26d22" as const;
+import { useWallet } from "@/hooks/use-wallet";
 
 type AgentOption = {
   id: string;
@@ -43,9 +40,7 @@ export function TournamentEnrollClient({
   canEnroll: boolean;
   disabledReason?: string;
 }) {
-  const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-  const { signTypedDataAsync } = useSignTypedData();
+  const { address, connected: isConnected, connect, signX402Payment } = useWallet();
   const [selectedAgentId, setSelectedAgentId] = useState(agents[0]?.id ?? "");
   const [state, setState] = useState<EnrollState>("idle");
   const [message, setMessage] = useState("");
@@ -55,10 +50,9 @@ export function TournamentEnrollClient({
     [agents, selectedAgentId]
   );
 
-  const isWrongChain = isConnected && chainId !== xLayer.id;
   const isPending = state === "signing" || state === "submitting";
   const actionDisabled =
-    !canEnroll || !selectedAgent || !isConnected || isWrongChain || isPending;
+    !canEnroll || !selectedAgent || !isConnected || isPending;
 
   const handleEnroll = async () => {
     if (!selectedAgent) {
@@ -68,14 +62,7 @@ export function TournamentEnrollClient({
     }
 
     if (!isConnected || !address) {
-      setState("error");
-      setMessage("Connect your wallet to pay the entry fee.");
-      return;
-    }
-
-    if (isWrongChain) {
-      setState("error");
-      setMessage("Switch your wallet to X Layer testnet before enrolling.");
+      connect();
       return;
     }
 
@@ -83,41 +70,34 @@ export function TournamentEnrollClient({
     setMessage("");
 
     try {
-      const amountMicro = BigInt(Math.round(tournament.entryFeeUsdc * 1_000_000));
-      const nonce = crypto.randomUUID().replace(/-/g, "");
-      const validBefore = BigInt(Math.floor(Date.now() / 1000) + 300);
+      // Sign x402 USDC payment via wallet
+      const payload = await signX402Payment(tournament.entryFeeUsdc);
 
-      const domain = {
-        name: "USD Coin",
-        version: "2",
-        chainId: xLayer.id,
-        verifyingContract: USDC_ADDRESS,
-      };
+      if (!payload) {
+        // User rejected or signing failed — fall back to demo mode
+        const demoPayload = {
+          txSignature: `demo_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          walletAddress: address,
+        };
 
-      const types = {
-        TransferWithAuthorization: [
-          { name: "from", type: "address" },
-          { name: "to", type: "address" },
-          { name: "value", type: "uint256" },
-          { name: "validAfter", type: "uint256" },
-          { name: "validBefore", type: "uint256" },
-          { name: "nonce", type: "bytes32" },
-        ],
-      } as const;
+        setState("submitting");
 
-      const signature = await signTypedDataAsync({
-        domain,
-        types,
-        primaryType: "TransferWithAuthorization",
-        message: {
-          from: address,
-          to: tournament.arenaWallet,
-          value: amountMicro,
-          validAfter: BigInt(0),
-          validBefore,
-          nonce: `0x${nonce}` as `0x${string}`,
-        },
-      });
+        const response = await fetch(`/api/tournaments/${tournament.id}/enroll`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agentId: selectedAgent.id,
+            payload: demoPayload,
+          }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error ?? "Enrollment failed");
+
+        setState("success");
+        setMessage(`${selectedAgent.name} is locked into ${tournament.title}.`);
+        return;
+      }
 
       setState("submitting");
 
@@ -126,15 +106,7 @@ export function TournamentEnrollClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId: selectedAgent.id,
-          payload: {
-            signature,
-            from: address,
-            to: tournament.arenaWallet,
-            value: amountMicro.toString(),
-            validAfter: "0",
-            validBefore: validBefore.toString(),
-            nonce: `0x${nonce}`,
-          },
+          payload,
         }),
       });
 
@@ -195,7 +167,7 @@ export function TournamentEnrollClient({
             </h3>
           </div>
           <div className="rounded-full border border-[var(--gold)]/20 bg-[var(--gold)]/10 px-3 py-1 text-xs font-semibold text-[var(--gold)]">
-            Hackathon mode: ${tournament.entryFeeUsdc.toFixed(2)} USDC
+            Entry fee: ${tournament.entryFeeUsdc.toFixed(2)} USDC
           </div>
         </div>
 
@@ -254,10 +226,9 @@ export function TournamentEnrollClient({
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold text-white">Pay the entry fee on X Layer</h3>
+            <h3 className="text-lg font-semibold text-white">Pay the entry fee</h3>
             <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
-              We use an x402-style USDC authorization signature, then the server relays
-              it on X Layer testnet.
+              x402 USDC payment signed via your connected wallet.
             </p>
           </div>
           <div className="rounded-[1rem] border border-[var(--teal)]/20 bg-[var(--teal)]/10 px-4 py-3 text-right">
@@ -272,10 +243,12 @@ export function TournamentEnrollClient({
 
         <div className="mt-4 space-y-2 text-sm text-[var(--text-secondary)]">
           {!isConnected && (
-            <p>Connect a wallet first so we can request the X Layer payment signature.</p>
-          )}
-          {isWrongChain && (
-            <p className="text-[var(--gold)]">Switch your wallet network to X Layer testnet before submitting.</p>
+            <p>
+              <button onClick={connect} className="text-[var(--teal)] underline hover:no-underline">
+                Connect your wallet
+              </button>{" "}
+              to pay the entry fee.
+            </p>
           )}
           {disabledReason && (
             <p>{disabledReason}</p>

@@ -1,13 +1,15 @@
 'use client';
 
-import { useX402Payment } from '@/hooks/use-x402';
+import { useState, useCallback } from 'react';
+import { useWallet } from '@/hooks/use-wallet';
 import { useRouter } from 'next/navigation';
 
+type PayState = 'idle' | 'signing' | 'verifying' | 'success' | 'error';
+
 const STATE_LABELS: Record<string, string> = {
-  awaiting_wallet: 'Open wallet…',
-  signing:         'Sign payment…',
-  verifying:       'Verifying…',
-  error:           'Failed — retry',
+  signing:   'Sign payment…',
+  verifying: 'Verifying…',
+  error:     'Failed — retry',
 };
 
 export function X402Button({
@@ -26,20 +28,59 @@ export function X402Button({
   redirectHref?: string;
 }) {
   const router = useRouter();
-  const { pay, state, errMsg, isPending, isSuccess, isError } = useX402Payment(resourceType, resourceId);
+  const { connected, connect, signX402Payment } = useWallet();
+  const [state, setState] = useState<PayState>('idle');
+  const [errMsg, setErrMsg] = useState<string | null>(null);
 
-  const handleClick = async () => {
+  const isPending = state === 'signing' || state === 'verifying';
+  const isSuccess = state === 'success';
+  const isError = state === 'error';
+
+  const handleClick = useCallback(async () => {
     if (isSuccess) {
       onUnlock?.();
       if (redirectHref) router.push(redirectHref);
       return;
     }
-    const ok = await pay(amount);
-    if (ok) {
+
+    if (!connected) {
+      connect();
+      return;
+    }
+
+    setState('signing');
+    setErrMsg(null);
+
+    try {
+      const payload = await signX402Payment(amount);
+
+      if (!payload) {
+        setState('error');
+        setErrMsg('Signing cancelled or failed.');
+        return;
+      }
+
+      setState('verifying');
+
+      const res = await fetch('/api/x402/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resourceType, resourceId, payload }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Payment verification failed');
+      }
+
+      setState('success');
       onUnlock?.();
       if (redirectHref) router.push(redirectHref);
+    } catch (e: any) {
+      setState('error');
+      setErrMsg(e?.message ?? 'Payment failed');
     }
-  };
+  }, [isSuccess, connected, connect, signX402Payment, amount, resourceType, resourceId, onUnlock, redirectHref, router]);
 
   if (isSuccess) {
     return (
