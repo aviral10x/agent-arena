@@ -315,18 +315,18 @@ export function LiveMatchClient({
 
   const agentPosA = useMemo(() => {
     if (isSequencing && agentA) {
-      return activeFrame.agentPositions[agentA.id] ?? { x: 30, y: 72 };
+      return activeFrame.agentPositions[agentA.id] ?? { x: 35, y: 78 };
     }
-    if (!gs || !agentA) return { x: 30, y: 72 };
-    return gs.agentPositions[agentA.id] ?? { x: 30, y: 72 };
+    if (!gs || !agentA) return { x: 35, y: 78 };
+    return gs.agentPositions[agentA.id] ?? { x: 35, y: 78 };
   }, [isSequencing, activeFrame, gs, agentA]);
 
   const agentPosB = useMemo(() => {
     if (isSequencing && agentB) {
-      return activeFrame.agentPositions[agentB.id] ?? { x: 70, y: 28 };
+      return activeFrame.agentPositions[agentB.id] ?? { x: 65, y: 22 };
     }
-    if (!gs || !agentB) return { x: 70, y: 28 };
-    return gs.agentPositions[agentB.id] ?? { x: 70, y: 28 };
+    if (!gs || !agentB) return { x: 65, y: 22 };
+    return gs.agentPositions[agentB.id] ?? { x: 65, y: 22 };
   }, [isSequencing, activeFrame, gs, agentB]);
 
   const lastAction = isSequencing ? (activeFrame.action ?? "SERVE") : (gs?.lastAction ?? "SERVE");

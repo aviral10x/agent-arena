@@ -56,7 +56,7 @@ export function useRallySequencer(onFrameStart?: (frame: RallyFrame) => void) {
     const idx = indexRef.current;
 
     if (idx >= frames.length) {
-      // Rally complete
+      // Rally complete — single setState
       setState(s => ({ ...s, isPlaying: false, frameProgress: 1 }));
       return;
     }
@@ -65,22 +65,23 @@ export function useRallySequencer(onFrameStart?: (frame: RallyFrame) => void) {
     const elapsed = performance.now() - startTimeRef.current;
     const progress = Math.min(1, elapsed / frame.durationMs);
 
-    setState(s => ({
-      ...s,
-      currentFrame: frame,
-      frameIndex: idx,
-      frameProgress: progress,
-      isPlaying: true,
-    }));
-
     if (progress >= 1) {
-      // Move to next frame
+      // Frame complete — advance and setState ONCE per frame transition (not 60x/sec)
       indexRef.current = idx + 1;
       startTimeRef.current = performance.now();
 
-      // Fire callback for next frame
-      if (idx + 1 < frames.length && onFrameStartRef.current) {
-        onFrameStartRef.current(frames[idx + 1]);
+      const nextIdx = idx + 1;
+      if (nextIdx < frames.length) {
+        const nextFrame = frames[nextIdx];
+        setState({
+          currentFrame: nextFrame,
+          frameIndex: nextIdx,
+          frameProgress: 0,
+          isPlaying: true,
+          totalFrames: frames.length,
+          frames,
+        });
+        if (onFrameStartRef.current) onFrameStartRef.current(nextFrame);
       }
     }
 

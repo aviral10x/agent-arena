@@ -362,7 +362,7 @@ export function initGameState(
     shuttlePosition: { x: 50, y: 50 },
     shuttleHeight: 2.0, // start at service height
     agentPositions: Object.fromEntries(
-      agentIds.map((id, i) => [id, { x: 50, y: i === 0 ? 75 : 25 }])
+      agentIds.map((id, i) => [id, { x: i === 0 ? 35 : 65, y: i === 0 ? 78 : 22 }])
     ),
     momentum: Object.fromEntries(agentIds.map(id => [id, 50])),
     fatigue:  Object.fromEntries(agentIds.map(id => [id, 0])),
@@ -547,11 +547,11 @@ export function resolveRally(
   const newPositions = { ...gameState.agentPositions };
   const attackerIsA1 = attackerId === a1;
 
-  // After their shot, attacker recovers toward T-position (center of own half)
-  const tPos = { x: 50, y: attackerIsA1 ? 72 : 28 };
+  // After their shot, attacker recovers toward T-position (own half, spread from center)
+  const tPos = { x: 40 + Math.random() * 20, y: attackerIsA1 ? 72 : 28 };
   const rawAttackerPos = {
-    x: attackerPos.x + (tPos.x - attackerPos.x) * 0.45 + (Math.random() - 0.5) * 8,
-    y: attackerPos.y + (tPos.y - attackerPos.y) * 0.45,
+    x: attackerPos.x + (tPos.x - attackerPos.x) * 0.55 + (Math.random() - 0.5) * 12,
+    y: attackerPos.y + (tPos.y - attackerPos.y) * 0.55,
   };
   newPositions[attackerId] = clampToHalf(rawAttackerPos, attackerIsA1);
 
@@ -563,15 +563,15 @@ export function resolveRally(
       y: newShuttlePos.y + (defenderPos.y - newShuttlePos.y) * (1 - coverage),
     };
     const rawDefenderPos = {
-      x: defenderTgt.x + (Math.random() - 0.5) * 7,
-      y: defenderTgt.y + (Math.random() - 0.5) * 7,
+      x: defenderTgt.x + (Math.random() - 0.5) * 10,
+      y: defenderTgt.y + (Math.random() - 0.5) * 10,
     };
     // CRITICAL: defender stays in own half — never crosses the net
     newPositions[defenderId] = clampToHalf(rawDefenderPos, defenderIsA1);
   } else {
-    // Reset both to T-positions after the point
-    newPositions[a1] = { x: 50, y: 72 };
-    newPositions[a2] = { x: 50, y: 28 };
+    // Reset both to T-positions after the point — spread for visual clarity
+    newPositions[a1] = { x: 30 + Math.random() * 15, y: 75 };
+    newPositions[a2] = { x: 55 + Math.random() * 15, y: 25 };
   }
 
   // ── Description ──────────────────────────────────────────────────────────
@@ -674,16 +674,16 @@ export function getScoreDisplay(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /** Timing in ms for each shot type — how long the animation should take.
- *  Tightened for fast-paced gameplay feel. A 10-shot rally = ~3.5s total. */
+ *  Ultra-fast: a 10-shot rally = ~2s total. Real-time badminton feel. */
 export const SHOT_TIMING: Record<string, number> = {
-  SERVE:   600,
-  SMASH:   250,
-  DROP:    380,
-  CLEAR:   450,
-  LOB:     480,
-  DRIVE:   280,
-  BLOCK:   300,
-  SPECIAL: 350,
+  SERVE:   350,
+  SMASH:   150,
+  DROP:    220,
+  CLEAR:   250,
+  LOB:     260,
+  DRIVE:   170,
+  BLOCK:   180,
+  SPECIAL: 200,
 };
 
 /** One frame in a rally animation sequence */
