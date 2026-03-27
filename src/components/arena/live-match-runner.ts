@@ -3,9 +3,10 @@
 import { useEffect, useRef } from 'react';
 
 const CRON_SECRET = process.env.NEXT_PUBLIC_CRON_SECRET ?? '';
-// Each tick now computes an ENTIRE rally (5-15 shots) — the client animates them.
-// Interval = time for rally animation (~5-8s) + small buffer for server compute.
-const TICK_INTERVAL_MS = 8_000;
+// Each tick computes an ENTIRE rally (5-15 shots) using instant physics engine.
+// Server compute: <100ms. Client animation: ~3-6s.
+// Tick fires every 4s — next rally starts as soon as animation finishes.
+const TICK_INTERVAL_MS = 4_000;
 
 export function LiveMatchRunner({
   competitionId,
