@@ -108,6 +108,28 @@ function AgentPanel({
       </div>
 
       <div className="p-4 space-y-3 flex-1">
+        {/* Strategy badge */}
+        {(() => {
+          const strat = agent && gameState ? (gameState as any).strategies?.[agent.id] : null;
+          if (!strat) return null;
+          const icons: Record<string, string> = { aggressive: '⚔️', defensive: '🛡️', 'counter-attack': '🔄', balanced: '⚖️' };
+          const colors: Record<string, string> = { aggressive: '#ff6c92', defensive: '#8ff5ff', 'counter-attack': '#ffe6aa', balanced: '#aaaab6' };
+          const gp = strat.gameplan ?? 'balanced';
+          return (
+            <div className="flex items-center gap-2 px-2 py-1 border border-[#464752]/20 bg-[#11131d] mb-1">
+              <span className="text-sm">{icons[gp] ?? '⚖️'}</span>
+              <span className="text-[9px] font-mono uppercase tracking-widest" style={{ color: colors[gp] ?? '#aaaab6' }}>
+                {gp}
+              </span>
+              {strat.specialTiming && strat.specialTiming !== 'late' && (
+                <span className="text-[8px] font-mono uppercase text-[#464752] ml-auto">
+                  SP:{strat.specialTiming}
+                </span>
+              )}
+            </div>
+          );
+        })()}
+
         <div className="grid grid-cols-2 gap-2">
           {[
             { label: "Set Pts",   value: `${setScores}` },
@@ -376,13 +398,40 @@ export function LiveMatchClient({
     }
   }, [socket.status, socket.winner, competitionId, router]);
 
-  // ── Trainer command submit ──────────────────────────────────────────────────
-  const handleTrainerSubmit = (e: React.FormEvent) => {
+  // ── Trainer command submit: WebSocket primary, HTTP fallback ────────────────
+  const [cmdFlash, setCmdFlash] = useState<string | null>(null);
+  const handleTrainerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!trainerInput.trim()) return;
-    setLog(l => [...l.slice(-20), `> TRAINER: ${trainerInput}`]);
-    if (viewerSide) socket.sendCommand(trainerInput);
+    const cmd = trainerInput.trim();
+    setLog(l => [...l.slice(-20), `> ⚡ TRAINER: ${cmd}`]);
     setTrainerInput("");
+
+    // Visual flash on court
+    setCmdFlash(cmd);
+    setTimeout(() => setCmdFlash(null), 2000);
+    if (!muted) SFX_MAP["POINT!"]?.(); // confirmation beep
+
+    // Try WebSocket first
+    if (viewerSide && socket.status === "live") {
+      socket.sendCommand(cmd);
+    }
+
+    // Always send via HTTP too (more reliable, pre-interprets with LLM)
+    const myAgent = viewerSide === "a" ? agentA : viewerSide === "b" ? agentB : null;
+    if (myAgent) {
+      try {
+        await fetch(`/api/competitions/${competitionId}/command`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agentId: myAgent.id,
+            ownerWallet: betWallet || "demo",
+            command: cmd,
+          }),
+        });
+      } catch {}
+    }
   };
 
   // ── Share URL ──────────────────────────────────────────────────────────────
@@ -535,6 +584,17 @@ export function LiveMatchClient({
                 style={{ color: "#8ff5ff", textShadow: "0 0 40px #8ff5ff" }}
               >
                 {flashText}
+              </div>
+            </div>
+          )}
+
+          {/* Trainer command flash */}
+          {cmdFlash && (
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-none z-30 animate-pulse">
+              <div className="px-4 py-2 bg-[#ffe6aa]/20 border border-[#ffe6aa]/60 backdrop-blur-sm">
+                <span className="text-[#ffe6aa] font-mono text-sm font-bold uppercase tracking-wider">
+                  ⚡ TRAINER: {cmdFlash.slice(0, 40)}
+                </span>
               </div>
             </div>
           )}
