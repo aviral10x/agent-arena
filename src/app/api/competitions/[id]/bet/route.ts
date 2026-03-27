@@ -25,21 +25,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       betterAgentId?:    string;
     };
 
-    if (!betterWallet || !predictedWinnerId || !amountUsdc || !payload) {
+    if (!betterWallet || !predictedWinnerId || !amountUsdc) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     if (amountUsdc < 0.01) return NextResponse.json({ error: 'Minimum bet is $0.01' }, { status: 400 });
     if (amountUsdc > 100)  return NextResponse.json({ error: 'Maximum bet is $100' },  { status: 400 });
 
     // Determine payment mode:
-    // - Full EIP-3009 (payload.from set, no txSignature key) → verify on-chain
-    // - Demo mode (payload.txSignature key present OR no payload.from) → skip verify, cap at $1
-    const txSig: string = (payload as any).txSignature ?? payload.signature ?? `demo_${Date.now()}`;
-    const isDemoPayload = !!(payload as any).txSignature || !payload.from;
+    // - Full EIP-3009 (payload with from set and no txSignature) → verify on-chain
+    // - Demo mode (no payload, or txSignature present, or no from) → skip verify, cap at $10
+    const hasPayload = payload && payload.from && payload.signature && !(payload as any).txSignature;
+    const txSig: string = hasPayload
+      ? (payload.signature ?? `demo_${Date.now()}`)
+      : ((payload as any)?.txSignature ?? `demo_${Date.now()}`);
 
-    if (isDemoPayload) {
-      // Demo: cap bet at $1 to prevent abuse without real payment
-      if (amountUsdc > 1) return NextResponse.json({ error: 'Demo bets capped at $1 — connect X Layer wallet for larger bets' }, { status: 400 });
+    if (!hasPayload) {
+      // Demo/hackathon mode: allow bets up to $10 without on-chain verification
+      if (amountUsdc > 10) return NextResponse.json({ error: 'Demo bets capped at $10 — connect X Layer wallet for larger bets' }, { status: 400 });
     } else {
       // Full EIP-3009 path — verify the on-chain payment
       const verified = await verifyX402Payment(payload, 'bet', `${id}:${betterWallet}`, amountUsdc);
