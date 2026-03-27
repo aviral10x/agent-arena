@@ -4,19 +4,11 @@ import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-// FIX 2.1: require CRON_SECRET to prevent public abuse
-const CRON_SECRET = process.env.CRON_SECRET;
-
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // Auth: accept valid secret OR allow without secret (client-driven ticks)
-  // Rate-limited by the LiveMatchRunner interval (3s) on the client side
-  const authHeader = request.headers.get('x-cron-secret');
-  if (CRON_SECRET && authHeader && authHeader !== CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // No auth — ticks are client-driven, rate-limited by LiveMatchRunner (3s interval)
 
   try {
     const { id } = await params;
