@@ -2,7 +2,7 @@ import { prisma } from './db';
 import { onCompetitionSettle } from './stats';
 import { settleBets } from './betting';
 import { initGameState, resolveRally, resolveFullRally, type GameState, type ShotDecision, type BatchRallyResult } from './game-engine';
-import { executeSportAgentTurn, type SportAgent } from './sport-agent-runner';
+import { executeSportAgentTurn, generateMockDecision, type SportAgent } from './sport-agent-runner';
 import { signAgentPayment } from './agent-wallet';
 
 // FIX 1.3: relative timestamp from actual DB timestamp
@@ -178,14 +178,38 @@ export async function runSportCompetitionTick(competitionId: string) {
       })
     );
 
-    // Decision function: tries AI (LLM), falls back to stats-based random
+    // ═══ FAST DECISION ENGINE ═══
+    // Real-time shots use the instant physics engine (generateMockDecision).
+    // LLM is ONLY used for the opening serve of each rally (1 call, not 10+).
+    // This makes rallies compute in <10ms instead of 5-20 seconds.
     const preComputed = (gameState as any).preComputedDecisions ?? {};
+    let shotCount = 0;
+
+    // Pre-fetch LLM strategy for the serving agent (1 call only, async)
+    const servingEntry = agentMap[gameState.servingAgentId];
+    let llmServeDecision: ShotDecision | null = null;
+    if (servingEntry) {
+      const opId = agentIds.find(id => id !== gameState.servingAgentId) ?? '';
+      const opName = agentMap[opId]?.agent?.name ?? 'Opponent';
+      // Fire LLM call for serve strategy — don't block if it fails
+      try {
+        llmServeDecision = await Promise.race([
+          executeSportAgentTurn(servingEntry.sportAgent, gameState, opId, opName),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)), // 2s timeout
+        ]);
+      } catch {
+        llmServeDecision = null;
+      }
+    }
+
     const decisionFn = async (state: GameState, attackerId: string): Promise<ShotDecision> => {
+      shotCount++;
+
       // Trainer pre-computed decision takes priority
       if (preComputed[attackerId]) {
         const d = preComputed[attackerId];
         delete preComputed[attackerId];
-        console.log(`[sport-tick] Using trainer decision for ${agentMap[attackerId]?.agent?.name}: ${d.action}`);
+        console.log(`[sport-tick] Trainer decision for ${agentMap[attackerId]?.agent?.name}: ${d.action}`);
         return d;
       }
 
@@ -194,21 +218,29 @@ export async function runSportCompetitionTick(competitionId: string) {
         return { action: 'DRIVE', targetZone: 5, rationale: 'fallback' };
       }
 
-      const opponentId = agentIds.find(id => id !== attackerId) ?? '';
-      const opponentName = agentMap[opponentId]?.agent?.name ?? 'Opponent';
-
-      try {
-        return await executeSportAgentTurn(entry.sportAgent, state, opponentId, opponentName);
-      } catch (err: any) {
-        console.warn(`[sport-tick] LLM failed for ${entry.agent.name}: ${err.message?.slice(0, 80)}`);
-        const actions: Array<'SMASH' | 'DROP' | 'CLEAR' | 'DRIVE' | 'LOB'> = ['SMASH', 'DROP', 'CLEAR', 'DRIVE', 'LOB'];
-        return {
-          action: actions[Math.floor(Math.random() * actions.length)],
-          targetZone: Math.floor(Math.random() * 9) + 1,
-          specialMove: null,
-          rationale: 'Tactical fallback.',
-        };
+      // First shot (serve): use LLM decision if available
+      if (shotCount === 1 && llmServeDecision && attackerId === gameState.servingAgentId) {
+        return llmServeDecision;
       }
+
+      // All other shots: instant physics engine (0ms, no network)
+      const specialMoves = (() => {
+        try { return JSON.parse(entry.sportAgent.specialMoves || '[]'); }
+        catch { return []; }
+      })();
+
+      return generateMockDecision(
+        {
+          id: attackerId,
+          speed: entry.sportAgent.speed,
+          power: entry.sportAgent.power,
+          accuracy: entry.sportAgent.accuracy,
+          stamina: entry.sportAgent.stamina,
+          archetype: entry.sportAgent.archetype ?? '',
+        },
+        state,
+        specialMoves,
+      );
     };
 
     // ═══ BATCH RALLY: compute entire rally (serve to point) in one call ═══

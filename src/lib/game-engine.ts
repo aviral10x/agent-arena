@@ -657,16 +657,17 @@ export function getScoreDisplay(
 // BATCH RALLY — compute entire rally in one call for smooth client-side playback
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Timing in ms for each shot type — how long the animation should take */
+/** Timing in ms for each shot type — how long the animation should take.
+ *  Tightened for fast-paced gameplay feel. A 10-shot rally = ~3.5s total. */
 export const SHOT_TIMING: Record<string, number> = {
-  SERVE:   900,
-  SMASH:   350,
-  DROP:    550,
-  CLEAR:   700,
-  LOB:     750,
-  DRIVE:   400,
-  BLOCK:   450,
-  SPECIAL: 500,
+  SERVE:   600,
+  SMASH:   250,
+  DROP:    380,
+  CLEAR:   450,
+  LOB:     480,
+  DRIVE:   280,
+  BLOCK:   300,
+  SPECIAL: 350,
 };
 
 /** One frame in a rally animation sequence */
