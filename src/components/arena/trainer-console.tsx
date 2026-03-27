@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useAccount } from 'wagmi';
+import { useWallet } from '@/hooks/use-wallet';
 
 interface TrainerConsoleProps {
   competitionId: string;
@@ -21,7 +21,7 @@ const QUICK_COMMANDS = [
 ];
 
 export function TrainerConsole({ competitionId, agentId, agentName, agentOwner }: TrainerConsoleProps) {
-  const { address }   = useAccount();
+  const { address }   = useWallet();
   const [mounted, setMounted]       = useState(false);
   const [command, setCommand]       = useState('');
   const [status, setStatus]         = useState<Status>('idle');

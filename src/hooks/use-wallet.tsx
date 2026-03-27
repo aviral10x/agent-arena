@@ -88,7 +88,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             });
             return;
           }
-        } catch {}
+        } catch (e) {
+          console.debug('[wallet] Extension check failed:', e);
+        }
       }
 
       // Try server-side agentic wallet
@@ -106,7 +108,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           });
           return;
         }
-      } catch {}
+      } catch (e) {
+        console.debug('[wallet] Agentic wallet check failed:', e);
+      }
 
       setState({ ready: true, connected: false, address: null, source: null, chainId: null, loading: false });
     };
@@ -186,7 +190,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             method: 'eth_signTypedData_v4',
             params: [state.address, JSON.stringify(typedData)],
           });
-        } catch { return null; }
+        } catch (e) {
+          console.warn('[wallet] Extension signing rejected:', e);
+          return null;
+        }
       }
     }
 
@@ -199,7 +206,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
       const data = await res.json();
       return data.ok ? data.signature : null;
-    } catch { return null; }
+    } catch (e) {
+      console.warn('[wallet] Agentic signing failed:', e);
+      return null;
+    }
   }, [state.address, state.source]);
 
   const signX402Payment = useCallback(async (amountUsdc: number): Promise<any | null> => {
