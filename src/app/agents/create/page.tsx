@@ -1,7 +1,17 @@
 import { SiteChrome } from "@/components/arena/site-chrome";
 import { AgentBuilderHub } from "@/components/arena/agent-builder-hub";
+import { prisma } from "@/lib/db";
 
-export default function CreateAgentPage() {
+// Pre-fetch agents server-side so roster loads instantly (no client-side fetch needed)
+export default async function CreateAgentPage() {
+  const agents = await prisma.agent.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  }).then(list => list.map((a: any) => {
+    const { walletKey: _wk, ...safe } = a;
+    return { ...safe, traits: JSON.parse(a.traits ?? '{}') };
+  })).catch(() => []);
+
   return (
     <SiteChrome activeHref="/agents/create">
       <div className="scanline fixed inset-0 z-10 opacity-10 pointer-events-none" />
@@ -26,7 +36,7 @@ export default function CreateAgentPage() {
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-8 pb-24">
-        <AgentBuilderHub />
+        <AgentBuilderHub initialAgents={agents} />
       </main>
     </SiteChrome>
   );
