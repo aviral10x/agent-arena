@@ -3,7 +3,9 @@
 import { useEffect, useRef } from 'react';
 
 const CRON_SECRET = process.env.NEXT_PUBLIC_CRON_SECRET ?? '';
-const TICK_INTERVAL_MS = 2_500; // 2.5s per shot — fast-paced badminton rally
+// Each tick now computes an ENTIRE rally (5-15 shots) — the client animates them.
+// Interval = time for rally animation (~5-8s) + small buffer for server compute.
+const TICK_INTERVAL_MS = 8_000;
 
 export function LiveMatchRunner({
   competitionId,
