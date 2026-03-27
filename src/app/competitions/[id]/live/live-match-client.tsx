@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/hooks/use-wallet";
@@ -217,6 +217,11 @@ export function LiveMatchClient({
   const [betDone, setBetDone]       = useState(false);
   const [betTxInfo, setBetTxInfo]   = useState<{ amount: number; agent: string; wallet: string } | null>(null);
 
+  // My bets list
+  type MyBet = { id: string; predictedWinnerId: string; amountUsdc: number; txSignature: string; paidAt: string; isCorrect: boolean | null; payoutUsdc: number; settledAt: string | null };
+  const [myBets, setMyBets] = useState<MyBet[]>([]);
+  const betRefreshRef = useRef(0);
+
   // Wallet: standard EIP-1193 connect (OKX / MetaMask / any injected)
   const wallet = useWallet();
   const betWallet = wallet.address ?? viewerWallet ?? '';
@@ -422,6 +427,26 @@ export function LiveMatchClient({
     }, 1000);
     return () => clearInterval(interval);
   }, [competitionId]);
+
+  // Fetch my bets for this competition
+  const fetchMyBets = useCallback(async () => {
+    const w = betWallet || viewerWallet || '';
+    if (!w) return;
+    try {
+      const res = await fetch(`/api/competitions/${competitionId}/bet?wallet=${encodeURIComponent(w)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setMyBets(data);
+      }
+    } catch {}
+  }, [competitionId, betWallet, viewerWallet]);
+
+  // Poll bets every 5s + after each bet placed
+  useEffect(() => {
+    fetchMyBets();
+    const interval = setInterval(fetchMyBets, 5000);
+    return () => clearInterval(interval);
+  }, [fetchMyBets, betRefreshRef.current]);
 
   // Redirect on match end (WebSocket OR polling)
   const isSettled = socket.status === "settled" || polledStatus === "settled";
@@ -885,7 +910,9 @@ export function LiveMatchClient({
                       setBetTxInfo({ amount: betAmount, agent: agentName, wallet: resolvedWallet });
                       setBetDone(true);
                       if (!muted) SFX_MAP["POINT!"]?.();
-                      // Reset after 2s so user can bet again
+                      // Refresh bets list + reset after 2s
+                      betRefreshRef.current++;
+                      fetchMyBets();
                       setTimeout(() => { setBetDone(false); setBetPick(null); }, 2000);
                     } else {
                       const data = await res.json().catch(() => ({}));
@@ -907,6 +934,49 @@ export function LiveMatchClient({
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── My Bets List ── */}
+      {myBets.length > 0 && (
+        <div className="shrink-0 border-t border-[#464752]/20 px-4 py-2 bg-[#11131d]/80 max-h-32 overflow-y-auto">
+          <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752] mb-1.5">
+            My Bets <span className="text-[#ffe6aa]">// {myBets.length}</span>
+          </div>
+          <div className="space-y-1">
+            {myBets.map(bet => {
+              const agentName = bet.predictedWinnerId === agentA?.id ? (agentA?.name ?? "A") : (agentB?.name ?? "B");
+              const agentColor = bet.predictedWinnerId === agentA?.id ? colorA : colorB;
+              const txHash = bet.txSignature.slice(0, 16);
+              const xlayerUrl = `https://www.okx.com/web3/explorer/xlayer-test/tx/${bet.txSignature}`;
+              const time = new Date(bet.paidAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+              return (
+                <div key={bet.id} className="flex items-center gap-3 text-[10px] font-mono">
+                  <span className="text-[#464752]">{time}</span>
+                  <span style={{ color: agentColor }} className="font-bold uppercase">{agentName}</span>
+                  <span className="text-[#ffe6aa] font-bold">${bet.amountUsdc.toFixed(2)}</span>
+                  {bet.settledAt ? (
+                    bet.isCorrect ? (
+                      <span className="text-[#00ff87]">✓ WON ${bet.payoutUsdc.toFixed(2)}</span>
+                    ) : (
+                      <span className="text-[#ff6c92]">✗ LOST</span>
+                    )
+                  ) : (
+                    <span className="text-[#464752] animate-pulse">PENDING</span>
+                  )}
+                  <a
+                    href={xlayerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-auto text-[#8ff5ff] hover:underline truncate max-w-[120px]"
+                    title={bet.txSignature}
+                  >
+                    tx:{txHash}…
+                  </a>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
