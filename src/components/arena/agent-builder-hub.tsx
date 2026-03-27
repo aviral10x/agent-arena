@@ -269,29 +269,39 @@ export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } =
   const router = useRouter();
   const { address: walletAddress } = useWallet();
 
-  const [agents, setAgents] = useState<Agent[]>(initialAgents ?? []);
+  const [myAgents, setMyAgents] = useState<Agent[]>([]);
+  const [allAgents, setAllAgents] = useState<Agent[]>(initialAgents ?? []);
   const [loading, setLoading] = useState(!initialAgents);
   const [selectedId, setSelectedId] = useState<string | "new">("new");
 
   useEffect(() => {
-    // Skip fetch if server already provided agents (and no wallet filter needed)
-    if (initialAgents?.length && !walletAddress) {
+    // Always fetch all agents for the default roster
+    if (!initialAgents?.length) {
+      fetch('/api/agents')
+        .then(r => r.json())
+        .then((data: Agent[]) => { if (Array.isArray(data)) setAllAgents(data); })
+        .catch(() => {});
+    }
+  }, [initialAgents]);
+
+  useEffect(() => {
+    if (!walletAddress) {
+      setMyAgents([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    // Fetch user's agents if connected, otherwise all agents
-    const url = walletAddress
-      ? `/api/agents?owner=${encodeURIComponent(walletAddress)}`
-      : '/api/agents';
-    fetch(url)
+    fetch(`/api/agents?owner=${encodeURIComponent(walletAddress)}`)
       .then(r => r.json())
-      .then((data: Agent[]) => {
-        if (Array.isArray(data)) setAgents(data);
-      })
+      .then((data: Agent[]) => { if (Array.isArray(data)) setMyAgents(data); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [walletAddress, initialAgents]);
+  }, [walletAddress]);
+
+  // Merge: user's agents first, then default agents (deduped)
+  const myIds = new Set(myAgents.map(a => a.id));
+  const defaultAgents = allAgents.filter(a => !myIds.has(a.id));
+  const agents = [...myAgents, ...defaultAgents];
 
   const selectedAgent = agents.find(a => a.id === selectedId);
 
@@ -307,7 +317,7 @@ export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } =
       {/* ── Left: Agent Roster ── */}
       <section className="col-span-12 lg:col-span-4">
         <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-3 flex items-center justify-between">
-          <span>{walletAddress ? "Your Agents" : "All Agents"} <span className="text-[#8ff5ff]">// {agents.length}</span></span>
+          <span>Your Agents <span className="text-[#8ff5ff]">// {myAgents.length}</span></span>
           {loading && (
             <span className="text-[#464752] animate-pulse">loading…</span>
           )}
@@ -346,8 +356,8 @@ export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } =
             </div>
           </button>
 
-          {/* Existing agents */}
-          {agents.map((agent, i) => (
+          {/* User's own agents */}
+          {myAgents.map((agent, i) => (
             <AgentRosterCard
               key={agent.id}
               agent={agent}
@@ -357,6 +367,26 @@ export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } =
             />
           ))}
         </div>
+
+        {/* Default Arena Agents — always visible */}
+        {defaultAgents.length > 0 && (
+          <>
+            <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mt-5 mb-3 flex items-center justify-between">
+              <span>Arena Roster <span className="text-[#ffe6aa]">// {defaultAgents.length}</span></span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {defaultAgents.map((agent, i) => (
+                <AgentRosterCard
+                  key={agent.id}
+                  agent={agent}
+                  index={myAgents.length + i}
+                  selected={selectedId === agent.id}
+                  onClick={() => setSelectedId(agent.id)}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       {/* ── Right: Detail or Builder ── */}
