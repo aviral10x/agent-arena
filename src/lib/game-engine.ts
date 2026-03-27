@@ -37,6 +37,20 @@ export type BadmintonStats = {
   archetype?: string;
 };
 
+// ── Pre-match trainer strategy ──────────────────────────────────────────────
+export type TrainerStrategy = {
+  /** Overall approach — modifies aggression and bias weighting */
+  gameplan: 'aggressive' | 'defensive' | 'counter-attack' | 'balanced';
+  /** Shot emphasis — override archetype biases (each 0.0–1.0) */
+  shotBias?: { smash?: number; drop?: number; drive?: number; clear?: number };
+  /** Preferred target zones (1-9) — bias shot placement toward these zones */
+  targetZones?: number[];
+  /** When to deploy special moves */
+  specialTiming: 'early' | 'late' | 'never';
+  /** Freetext instructions for the LLM tactical advisor (max 200 chars) */
+  customInstructions?: string;
+};
+
 export type GameState = {
   sport: 'badminton';
   servingAgentId: string;
@@ -53,6 +67,8 @@ export type GameState = {
   rallyLength: number;
   trainerCommands: Record<string, string | null>;
   preComputedDecisions?: Record<string, any>;
+  /** Per-agent trainer strategies — set pre-match, adjusted by LLM advisor between rallies */
+  strategies?: Record<string, TrainerStrategy>;
   matchOver: boolean;
   winner?: string;
 };

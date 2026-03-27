@@ -381,10 +381,12 @@ PHYSICS RULES:
   }
 
   mockDecision(player: PlayerInfo, gameState: GameState): ShotDecision {
-    // Delegate to the physics-aware stat-driven decision in sport-agent-runner
+    // Read trainer strategy from game state (set pre-match)
+    const strategy = (gameState as any).strategies?.[player.agentId] ?? undefined;
+
     return generateMockDecision(
       {
-        id:        player.agentId,  // needed for trainer command lookup
+        id:        player.agentId,
         speed:     player.stats.speed,
         power:     player.stats.power,
         accuracy:  player.stats.accuracy,
@@ -393,6 +395,7 @@ PHYSICS RULES:
       },
       gameState,
       player.specialMoves,
+      strategy,
     );
   }
 

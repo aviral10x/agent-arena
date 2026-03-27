@@ -11,7 +11,7 @@
 
 import { z }        from 'zod';
 import type { Agent } from '@prisma/client';
-import type { GameState, SportAction, ShotDecision } from './game-engine';
+import type { GameState, SportAction, ShotDecision, TrainerStrategy } from './game-engine';
 
 export const ShotDecisionSchema = z.object({
   action: z.enum(['SERVE','SMASH','DROP','CLEAR','DRIVE','LOB','BLOCK','SPECIAL']),
@@ -264,14 +264,44 @@ export function generateMockDecision(
   agent: { id?: string; speed: number; power: number; accuracy: number; stamina: number; archetype?: string },
   gameState: GameState,
   specialMoves: string[],
+  strategy?: TrainerStrategy,
 ): ShotDecision {
   const agentId   = ('id' in agent ? (agent as any).id : '') as string;
   const momentum  = gameState.momentum[agentId] ?? 50;
   const fatigue   = (gameState.fatigue as Record<string,number>)?.[agentId] ?? 0;
   const height    = gameState.shuttleHeight ?? 2.0;
   const myPos     = gameState.agentPositions[agentId] ?? { x: 50, y: 50 };
-  const profile   = getArchetypeProfile(agent.archetype ?? '');
+  const profile   = { ...getArchetypeProfile(agent.archetype ?? '') }; // clone to mutate
   const rallyLen  = gameState.rallyLength;
+
+  // ═══ TRAINER STRATEGY: modify archetype biases ═══
+  if (strategy) {
+    // Gameplan → aggression modifier
+    if (strategy.gameplan === 'aggressive') {
+      profile.smashBias += 0.15;
+      profile.driveBias += 0.10;
+      profile.dropBias  -= 0.05;
+    } else if (strategy.gameplan === 'defensive') {
+      profile.smashBias -= 0.15;
+      profile.driveBias -= 0.10;
+      (profile as any).clearBias = ((profile as any).clearBias ?? 0.2) + 0.20;
+    } else if (strategy.gameplan === 'counter-attack') {
+      profile.smashBias += 0.10;
+      profile.dropBias  += 0.10;
+    }
+
+    // Shot bias override — direct replacement if set
+    if (strategy.shotBias) {
+      if (strategy.shotBias.smash !== undefined) profile.smashBias = strategy.shotBias.smash;
+      if (strategy.shotBias.drop  !== undefined) profile.dropBias  = strategy.shotBias.drop;
+      if (strategy.shotBias.drive !== undefined) profile.driveBias = strategy.shotBias.drive;
+    }
+
+    // Clamp all biases to 0–1
+    profile.smashBias = Math.max(0, Math.min(1, profile.smashBias));
+    profile.dropBias  = Math.max(0, Math.min(1, profile.dropBias));
+    profile.driveBias = Math.max(0, Math.min(1, profile.driveBias));
+  }
 
   // 0. Trainer command override — obey the coach
   const trainerCmd = gameState.trainerCommands?.[agentId];
@@ -294,9 +324,13 @@ export function generateMockDecision(
   }
 
   // 2. Special move: only when HOT and shuttle is high enough
-  const specialThreshold = 78 - (Math.max(agent.power, agent.accuracy) - 5) * 1.5;
-  if (momentum >= specialThreshold && specialMoves.length > 0 && height >= 2.0 && rallyLen >= 3) {
-    const pick = specialMoves[Math.floor(Math.random() * specialMoves.length)];
+  // Strategy: specialTiming modifies threshold
+  let effectiveSpecials = specialMoves;
+  let specialThreshold = 78 - (Math.max(agent.power, agent.accuracy) - 5) * 1.5;
+  if (strategy?.specialTiming === 'early') specialThreshold -= 18;
+  if (strategy?.specialTiming === 'never') effectiveSpecials = [];
+  if (momentum >= specialThreshold && effectiveSpecials.length > 0 && height >= 2.0 && rallyLen >= 3) {
+    const pick = effectiveSpecials[Math.floor(Math.random() * effectiveSpecials.length)];
     return { action: 'SPECIAL', targetZone: attackZone(agent, myPos), specialMove: pick,
       rationale: `${pick} — momentum ${momentum.toFixed(0)}, shuttle overhead!` };
   }
@@ -358,8 +392,14 @@ export function generateMockDecision(
     }
   }
 
-  // 5. Target zone based on action and archetype
-  const targetZone = selectTargetZone(action, agent, myPos);
+  // 5. Target zone based on action, archetype, and strategy
+  let targetZone: number;
+  if (strategy?.targetZones?.length && Math.random() < 0.70) {
+    // Strategy zones: 70% bias toward preferred zones
+    targetZone = strategy.targetZones[Math.floor(Math.random() * strategy.targetZones.length)];
+  } else {
+    targetZone = selectTargetZone(action, agent, myPos);
+  }
 
   return { action, targetZone, rationale, specialMove: null };
 }

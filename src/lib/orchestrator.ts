@@ -4,6 +4,7 @@ import { settleBets } from './betting';
 import { initGameState, resolveRally, resolveFullRally, type GameState, type ShotDecision, type BatchRallyResult } from './game-engine';
 import { executeSportAgentTurn, generateMockDecision, type SportAgent } from './sport-agent-runner';
 import { signAgentPayment } from './agent-wallet';
+import { adjustStrategyAsync } from './strategy-advisor';
 
 // FIX 1.3: relative timestamp from actual DB timestamp
 export function timeAgo(date: Date): string {
@@ -229,6 +230,9 @@ export async function runSportCompetitionTick(competitionId: string) {
         catch { return []; }
       })();
 
+      // Read trainer strategy for this agent (set pre-match, adjusted by LLM advisor)
+      const agentStrategy = (state as any).strategies?.[attackerId] ?? undefined;
+
       return generateMockDecision(
         {
           id: attackerId,
@@ -240,6 +244,7 @@ export async function runSportCompetitionTick(competitionId: string) {
         },
         state,
         specialMoves,
+        agentStrategy,
       );
     };
 
@@ -293,6 +298,15 @@ export async function runSportCompetitionTick(competitionId: string) {
           },
         });
       }
+    }
+
+    // ═══ ASYNC STRATEGY ADVISOR: adjust tactics every 3 rallies ═══
+    // Fire-and-forget — does NOT block this tick from returning.
+    // The updated strategy lands in DB before the next tick (4s away).
+    if (gameState.rallyCount > 0 && gameState.rallyCount % 3 === 0 && !batchResult.matchOver) {
+      adjustStrategyAsync(competitionId, gameState, agentMap).catch(err =>
+        console.debug('[strategy-advisor] async error:', err.message?.slice(0, 60))
+      );
     }
 
     // Settle if match is over
