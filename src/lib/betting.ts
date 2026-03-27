@@ -37,17 +37,10 @@ export async function placeBet(
     });
 
     if (!competition) return { ok: false, error: 'Competition not found' };
-    if (competition.status === 'settled') return { ok: false, error: 'Competition already settled' };
+    if (competition.status === 'settled') return { ok: false, error: 'Match already ended' };
+    // Allow bets anytime during live match — no betting window restriction
     if (competition.status !== 'live' && competition.status !== 'open') {
-      return { ok: false, error: 'Competition is not accepting bets' };
-    }
-
-    // Betting window
-    if (!competition.bettingOpen) return { ok: false, error: 'Betting is closed' };
-    if (competition.bettingClosedAt && new Date() > competition.bettingClosedAt) {
-      // Auto-close (best-effort, don't block if it fails)
-      prisma.competition.update({ where: { id: competitionId }, data: { bettingOpen: false } }).catch(() => {});
-      return { ok: false, error: 'Betting window has closed' };
+      return { ok: false, error: 'Match is not live' };
     }
 
     // Agent must be in this competition
@@ -56,17 +49,13 @@ export async function placeBet(
     });
     if (!agentEnrolled) return { ok: false, error: 'Predicted agent not in this competition' };
 
-    // Replay protection — signature must be unique
-    const usedSig = await prisma.spectatorBet.findFirst({ where: { txSignature } });
-    if (usedSig) return { ok: false, error: 'Signature already used' };
-
     // ── Atomic insert + pool increment ──────────────────────────────────
-    // If a duplicate (competitionId, betterWallet) is already in the DB the
-    // `create` will throw a unique-constraint error which we catch below.
+    // Allow multiple bets per wallet (no unique constraint on wallet+comp)
     await prisma.$transaction([
       prisma.spectatorBet.create({
         data: {
-          competitionId, predictedWinnerId, amountUsdc, txSignature,
+          competitionId, predictedWinnerId, amountUsdc,
+          txSignature: `${txSignature}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           betterWallet:  wallet,
           betterAgentId: betterAgentId ?? null,
         },
@@ -81,10 +70,6 @@ export async function placeBet(
     return { ok: true };
 
   } catch (err: any) {
-    // Unique constraint violation = wallet already has a bet
-    if (err?.code === 'P2002') {
-      return { ok: false, error: 'You already placed a bet on this competition' };
-    }
     console.error('[bet] placeBet error:', err?.message);
     return { ok: false, error: 'Failed to place bet — please try again' };
   }

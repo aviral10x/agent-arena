@@ -210,9 +210,9 @@ export function LiveMatchClient({
   const [trainerInput, setTrainerInput] = useState("");
   const [flashText, setFlashText]   = useState<string | null>(null);
   const [shareMsg, setShareMsg]     = useState<string | null>(null);
-  const [showBetPanel, setShowBetPanel] = useState(false);
+  const [showBetPanel, setShowBetPanel] = useState(true); // open by default
   const [betPick, setBetPick]       = useState<"a" | "b" | null>(null);
-  const [betAmount, setBetAmount]   = useState(5);
+  const [betAmount, setBetAmount]   = useState(1);
   const [betSubmitting, setBetSubmitting] = useState(false);
   const [betDone, setBetDone]       = useState(false);
   const [betTxInfo, setBetTxInfo]   = useState<{ amount: number; agent: string; wallet: string } | null>(null);
@@ -860,12 +860,8 @@ export function LiveMatchClient({
                     setLog(l => [...l.slice(-20), "> BET ERROR: Select an agent first"]);
                     return;
                   }
-                  // Auto-resolve wallet: use connected address, or prompt connect
-                  const resolvedWallet = betWallet;
-                  if (!resolvedWallet) {
-                    wallet.connect();
-                    return;
-                  }
+                  // Auto-resolve wallet: connected > URL param > guest
+                  const resolvedWallet = betWallet || viewerWallet || `guest_${Date.now()}`;
                   setBetSubmitting(true);
                   setBetPayStep(null);
 
@@ -889,6 +885,8 @@ export function LiveMatchClient({
                       setBetTxInfo({ amount: betAmount, agent: agentName, wallet: resolvedWallet });
                       setBetDone(true);
                       if (!muted) SFX_MAP["POINT!"]?.();
+                      // Reset after 2s so user can bet again
+                      setTimeout(() => { setBetDone(false); setBetPick(null); }, 2000);
                     } else {
                       const data = await res.json().catch(() => ({}));
                       setLog(l => [...l.slice(-20), `> BET ERROR: ${data.error ?? 'Failed'}`]);
