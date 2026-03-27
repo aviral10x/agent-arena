@@ -224,11 +224,55 @@ export function playGenerate() {
   [440, 660, 880].forEach((f, i) => uiBeep(f, 0.08, 0.03, 'sine', i * 0.09));
 }
 
-// Dispatch map — keyed by flash label
+/** HIT — quick ping for every regular shot (drive, clear, lob) */
+export function playHit() {
+  const ac = getCtx();
+  if (!ac) return;
+  const now = ac.currentTime;
+  const osc = ac.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(600 + Math.random() * 200, now);
+  osc.frequency.exponentialRampToValueAtTime(400, now + 0.06);
+  const g = gain(ac, 0.15);
+  osc.connect(g);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+  osc.start(now);
+  osc.stop(now + 0.07);
+}
+
+/** DROP — soft descending tone */
+export function playDrop() {
+  const ac = getCtx();
+  if (!ac) return;
+  const now = ac.currentTime;
+  const osc = ac.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(900, now);
+  osc.frequency.exponentialRampToValueAtTime(300, now + 0.12);
+  const g = gain(ac, 0.18);
+  osc.connect(g);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+  osc.start(now);
+  osc.stop(now + 0.14);
+}
+
+// Dispatch map — keyed by flash label OR shot action
 export const SFX_MAP: Record<string, () => void> = {
-  "SMASH!": playSmash,
-  "ACE!":   playAce,
-  "POINT!": playPoint,
-  "RALLY!": playRally,
-  "NET!":   playNet,
+  "SMASH!":   playSmash,
+  "ACE!":     playAce,
+  "POINT!":   playPoint,
+  "RALLY!":   playRally,
+  "NET!":     playNet,
+  "SPECIAL!": playAce,
+  "DROP ACE!": playDrop,
+  "DRIVE!":   playHit,
+  // Shot action keys (for per-shot SFX)
+  "SMASH":  playSmash,
+  "DROP":   playDrop,
+  "CLEAR":  playHit,
+  "DRIVE":  playHit,
+  "LOB":    playHit,
+  "BLOCK":  playNet,
+  "SERVE":  playRally,
+  "SPECIAL": playAce,
 };
