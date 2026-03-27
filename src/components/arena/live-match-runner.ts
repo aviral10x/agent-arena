@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 
 const CRON_SECRET = process.env.NEXT_PUBLIC_CRON_SECRET ?? '';
-const TICK_INTERVAL_MS = 10_000;
+const TICK_INTERVAL_MS = 2_500; // 2.5s per shot — fast-paced badminton rally
 
 export function LiveMatchRunner({
   competitionId,
