@@ -260,11 +260,12 @@ export function LiveMatchClient({
 
   const socket = useMatchSocket(isSport ? competitionId : "", playerConfig);
 
-  // ── Polling fallback when WebSocket isn't connected ─────────────────────────
+  // ── Polling: always poll for game state + rally frames ──────────────────────
   const [polledGs, setPolledGs] = useState<GameState | null>(null);
+  const [polledFrames, setPolledFrames] = useState<RallyFrame[] | null>(null);
+  const lastBatchTsRef = useRef(0);
   useEffect(() => {
-    // Only poll if WebSocket hasn't delivered game state after 5 seconds
-    if (socket.gameState || socket.status === "live" || socket.status === "settled") return;
+    // Poll every 2s — this is the primary data source (WebSocket is optional)
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`/api/competitions/${competitionId}`);
@@ -273,11 +274,18 @@ export function LiveMatchClient({
         if (data.gameState) {
           const parsed = typeof data.gameState === "string" ? JSON.parse(data.gameState) : data.gameState;
           setPolledGs(parsed);
+
+          // Extract rally frames if this is a new batch
+          const batchTs = (parsed as any).lastBatchTimestamp ?? 0;
+          if (batchTs > lastBatchTsRef.current && (parsed as any).lastBatchFrames?.length) {
+            lastBatchTsRef.current = batchTs;
+            setPolledFrames((parsed as any).lastBatchFrames);
+          }
         }
       } catch {}
-    }, 3000);
+    }, 2000);
     return () => clearInterval(interval);
-  }, [competitionId, socket.gameState, socket.status]);
+  }, [competitionId]);
 
   // ── Real game state: prefer WebSocket, fallback to polling ──────────────────
   const gs = socket.gameState ?? polledGs;
@@ -299,15 +307,15 @@ export function LiveMatchClient({
     }
   });
 
-  // When batch frames arrive, start the sequencer
+  // When batch frames arrive (WebSocket OR polling), start the sequencer
   const lastBatchRef = useRef<RallyFrame[] | null>(null);
   useEffect(() => {
-    const frames = socket.batchFrames;
+    const frames = socket.batchFrames ?? polledFrames;
     if (frames && frames.length > 0 && frames !== lastBatchRef.current) {
       lastBatchRef.current = frames;
       sequencer.play(frames);
     }
-  }, [socket.batchFrames]);
+  }, [socket.batchFrames, polledFrames]);
 
   // ── Position source: sequencer frame (during playback) or gameState (idle) ─
   const activeFrame = sequencer.state.currentFrame;

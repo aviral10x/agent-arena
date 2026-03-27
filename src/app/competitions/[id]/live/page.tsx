@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { LiveMatchClient } from "./live-match-client";
+import { LiveMatchRunner } from "@/components/arena/live-match-runner";
 
 export const dynamic = "force-dynamic";
 
@@ -79,19 +80,25 @@ export default async function LiveMatchPage(props: PageProps) {
   const oddsA = probA > 0 ? Math.max(1.1, (100 / probA)).toFixed(2) : "2.00";
   const oddsB = probB > 0 ? Math.max(1.1, (100 / probB)).toFixed(2) : "2.00";
 
+  const isLive = compRecord.status === "live";
+
   return (
-    <LiveMatchClient
-      competitionId={id}
-      competitionTitle={compRecord.title}
-      competitionStatus={compRecord.status as string}
-      agentA={agentA}
-      agentB={agentB}
-      totalBetUsdc={totalBetUsdc}
-      oddsA={oddsA.toString()}
-      oddsB={oddsB.toString()}
-      isSport={isSport}
-      sport={(compRecord as any).sport ?? "badminton"}
-      viewerWallet={viewerWallet ?? ""}
-    />
+    <>
+      {/* Tick driver: fires POST /tick every 3s to advance the game */}
+      {isLive && <LiveMatchRunner competitionId={id} isLive={isLive} />}
+      <LiveMatchClient
+        competitionId={id}
+        competitionTitle={compRecord.title}
+        competitionStatus={compRecord.status as string}
+        agentA={agentA}
+        agentB={agentB}
+        totalBetUsdc={totalBetUsdc}
+        oddsA={oddsA.toString()}
+        oddsB={oddsB.toString()}
+        isSport={isSport}
+        sport={(compRecord as any).sport ?? "badminton"}
+        viewerWallet={viewerWallet ?? ""}
+      />
+    </>
   );
 }

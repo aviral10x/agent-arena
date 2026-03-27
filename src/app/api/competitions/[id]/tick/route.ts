@@ -11,9 +11,10 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // Auth check — allow internal (no header) OR valid secret header
+  // Auth: accept valid secret OR allow without secret (client-driven ticks)
+  // Rate-limited by the LiveMatchRunner interval (3s) on the client side
   const authHeader = request.headers.get('x-cron-secret');
-  if (CRON_SECRET && authHeader !== CRON_SECRET) {
+  if (CRON_SECRET && authHeader && authHeader !== CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
