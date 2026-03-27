@@ -192,11 +192,11 @@ export async function runSportCompetitionTick(competitionId: string) {
     if (servingEntry) {
       const opId = agentIds.find(id => id !== gameState.servingAgentId) ?? '';
       const opName = agentMap[opId]?.agent?.name ?? 'Opponent';
-      // Fire LLM call for serve strategy — don't block if it fails
+      // Fire LLM call for serve strategy — 500ms hard cap, instant fallback
       try {
         llmServeDecision = await Promise.race([
           executeSportAgentTurn(servingEntry.sportAgent, gameState, opId, opName),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)), // 2s timeout
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 500)), // 500ms — skip if slow
         ]);
       } catch {
         llmServeDecision = null;

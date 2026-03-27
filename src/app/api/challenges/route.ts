@@ -8,6 +8,25 @@ export const dynamic = 'force-dynamic';
 
 const ENTRY_FEE_USDC = 0.10;
 
+/** Generate a default strategy based on agent archetype */
+function generateArchetypeStrategy(archetype: string): TrainerStrategy {
+  const a = (archetype ?? '').toLowerCase();
+  if (a.includes('power') || a.includes('smash') || a.includes('attacker')) {
+    return { gameplan: 'aggressive', specialTiming: 'early', shotBias: { smash: 0.45, drop: 0.15, drive: 0.25, clear: 0.15 } };
+  }
+  if (a.includes('defensive') || a.includes('wall') || a.includes('endur')) {
+    return { gameplan: 'defensive', specialTiming: 'late', shotBias: { smash: 0.10, drop: 0.20, drive: 0.15, clear: 0.55 } };
+  }
+  if (a.includes('trick') || a.includes('decept') || a.includes('net') || a.includes('finesse')) {
+    return { gameplan: 'counter-attack', specialTiming: 'late', shotBias: { smash: 0.15, drop: 0.40, drive: 0.25, clear: 0.20 } };
+  }
+  if (a.includes('adaptive') || a.includes('all-round') || a.includes('allround')) {
+    return { gameplan: 'balanced', specialTiming: 'late', shotBias: { smash: 0.25, drop: 0.25, drive: 0.25, clear: 0.25 } };
+  }
+  // Default balanced
+  return { gameplan: 'balanced', specialTiming: 'late' };
+}
+
 // POST /api/challenges — create a 1v1 challenge between two agents
 // Accepts optional x402 payload for $0.10 USDC entry fee.
 // Without payload: demo mode (free, no USDC collected).
@@ -54,12 +73,18 @@ export async function POST(request: Request) {
 
     const bankroll = 1; // $1 for hackathon testing
 
-    // Initialize game state with trainer strategy embedded
+    // Initialize game state with trainer strategies for BOTH agents
     const initialGameState = initGameState('badminton' as const, [challengerAgentId, targetAgentId], challengerAgentId);
-    if (strategy) {
-      (initialGameState as any).strategies = { [challengerAgentId]: strategy };
-      console.log(`[challenge] Strategy loaded for ${challenger.name}: ${strategy.gameplan}, specials=${strategy.specialTiming}`);
-    }
+
+    // Auto-generate opponent strategy based on their archetype
+    const opponentStrategy = generateArchetypeStrategy((target as any).archetype ?? 'balanced');
+
+    (initialGameState as any).strategies = {
+      [challengerAgentId]: strategy ?? { gameplan: 'balanced' as const, specialTiming: 'late' as const },
+      [targetAgentId]: opponentStrategy,
+    };
+
+    console.log(`[challenge] ${challenger.name}: ${strategy?.gameplan ?? 'balanced'} | ${target.name}: ${opponentStrategy.gameplan}`);
 
     const competition = await prisma.competition.create({
       data: {
