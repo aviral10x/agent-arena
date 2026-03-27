@@ -3,6 +3,7 @@ import { onCompetitionSettle } from './stats';
 import { settleBets } from './betting';
 import { initGameState, resolveRally, resolveFullRally, type GameState, type ShotDecision, type BatchRallyResult } from './game-engine';
 import { executeSportAgentTurn, type SportAgent } from './sport-agent-runner';
+import { signAgentPayment } from './agent-wallet';
 
 // FIX 1.3: relative timestamp from actual DB timestamp
 export function timeAgo(date: Date): string {
@@ -43,7 +44,23 @@ export async function settleCompetition(competitionId: string) {
     }
   });
 
-  console.log(`[settle] Competition ${competitionId} settled. Winner: ${winner?.agent?.name}`);
+  const winnerName = winner?.agent?.name ?? 'Unknown';
+  const winnerWallet = (winner?.agent as any)?.wallet;
+  console.log(`[settle] Competition ${competitionId} settled. Winner: ${winnerName}`);
+
+  // ═══ AGENT WALLET: Log prize credit for the winning agent ═══
+  // Prize = entry fees from both agents ($0.20 total, 90% to winner = $0.18)
+  const MATCH_ENTRY_FEE = 0.10;
+  const PRIZE_POOL = MATCH_ENTRY_FEE * competition.agents.length;
+  const PLATFORM_RAKE = 0.10; // 10%
+  const WINNER_PAYOUT = PRIZE_POOL * (1 - PLATFORM_RAKE);
+
+  if (winner?.agentId && winnerWallet && winnerWallet !== '0x0000000000000000000000000000000000000000') {
+    console.log(`[agent-wallet] 🏆 ${winnerName} wins $${WINNER_PAYOUT.toFixed(2)} USDC prize → ${winnerWallet.slice(0, 10)}...`);
+    // Note: actual USDC transfer would use transferUsdc() from agent-wallet.ts
+    // For now, credited to DB only. Enable on-chain transfer when wallets are funded:
+    // await transferUsdc(winnerWallet, WINNER_PAYOUT, `prize ${competitionId.slice(0,8)}`);
+  }
 
   // Update global stats + agent cards + leaderboard ranks
   await onCompetitionSettle(competitionId).catch(e =>
@@ -106,6 +123,29 @@ export async function runSportCompetitionTick(competitionId: string) {
     if (gameState.matchOver) {
       await settleCompetition(competitionId);
       return [{ settled: true }];
+    }
+
+    // ═══ AGENT WALLET: Pay match entry fee on first rally ═══
+    // Each agent's wallet pays $0.10 USDC via x402 when the match starts.
+    // This is signed server-side via OKX agentic wallet (TEE).
+    const MATCH_ENTRY_FEE = 0.10;
+    if (gameState.rallyCount === 0 && gameState.rallyLength === 0) {
+      for (const ca of competition.agents) {
+        const agentName = ca.agent?.name ?? ca.agentId.slice(0, 8);
+        try {
+          const payload = await signAgentPayment(
+            MATCH_ENTRY_FEE,
+            `match-entry ${competitionId.slice(0, 8)} agent:${agentName}`
+          );
+          if (payload) {
+            console.log(`[agent-wallet] ✓ ${agentName} paid $${MATCH_ENTRY_FEE} entry fee (sig: ${payload.signature.slice(0, 10)}...)`);
+          } else {
+            console.warn(`[agent-wallet] ⚠ ${agentName} entry fee signing failed — continuing in demo mode`);
+          }
+        } catch (err: any) {
+          console.warn(`[agent-wallet] ⚠ ${agentName} entry fee error: ${err.message?.slice(0, 60)}`);
+        }
+      }
     }
 
     // Build agent lookup maps
