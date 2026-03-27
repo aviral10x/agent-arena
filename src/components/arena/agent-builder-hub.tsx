@@ -265,15 +265,20 @@ function AgentRosterCard({
   );
 }
 
-export function AgentBuilderHub() {
+export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } = {}) {
   const router = useRouter();
   const { address: walletAddress } = useWallet();
 
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [agents, setAgents] = useState<Agent[]>(initialAgents ?? []);
+  const [loading, setLoading] = useState(!initialAgents);
   const [selectedId, setSelectedId] = useState<string | "new">("new");
 
   useEffect(() => {
+    // Skip fetch if server already provided agents (and no wallet filter needed)
+    if (initialAgents?.length && !walletAddress) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     // Fetch user's agents if connected, otherwise all agents
     const url = walletAddress
@@ -286,7 +291,7 @@ export function AgentBuilderHub() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [walletAddress]);
+  }, [walletAddress, initialAgents]);
 
   const selectedAgent = agents.find(a => a.id === selectedId);
 
