@@ -91,9 +91,9 @@ export async function POST(request: Request) {
         title:          `${challenger.name} vs ${target.name}`,
         mode:           '1v1',
         status:         'live',       // starts immediately since both agents are present
-        durationSeconds: parseInt(process.env.COMPETITION_DURATION_SECS ?? '30'), // 30s fast matches
-        duration:       '30s',
-        countdown:      '0:30 remaining',
+        durationSeconds: parseInt(process.env.COMPETITION_DURATION_SECS ?? '60'), // 1 min matches
+        duration:       '1 min',
+        countdown:      '1:00 remaining',
         entryFee:       paidEntry ? '$0.10 x402' : '$0.00 demo',
         prizePool:      '$1 USDC',
         spectators:     0,
@@ -108,9 +108,9 @@ export async function POST(request: Request) {
         startedAt:      new Date(),
         gameState:      JSON.stringify(initialGameState),
         isTicking:      false, // PartyKit drives ticks for sport matches
-        // Betting open for the full 30s match duration
+        // Betting open for the full 1 min match duration
         bettingOpen:    true,
-        bettingClosedAt: new Date(Date.now() + 30 * 1000),
+        bettingClosedAt: new Date(Date.now() + 60 * 1000),
         agents: {
           create: [
             {

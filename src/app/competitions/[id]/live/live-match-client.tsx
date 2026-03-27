@@ -428,18 +428,16 @@ export function LiveMatchClient({
     return () => clearInterval(interval);
   }, [competitionId]);
 
-  // Fetch my bets for this competition
+  // Fetch all bets for this competition (shows everyone's bets as a live feed)
   const fetchMyBets = useCallback(async () => {
-    const w = betWallet || viewerWallet || '';
-    if (!w) return;
     try {
-      const res = await fetch(`/api/competitions/${competitionId}/bet?wallet=${encodeURIComponent(w)}`);
+      const res = await fetch(`/api/competitions/${competitionId}/bet`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) setMyBets(data);
       }
     } catch {}
-  }, [competitionId, betWallet, viewerWallet]);
+  }, [competitionId]);
 
   // Poll bets every 5s + after each bet placed
   useEffect(() => {
@@ -599,7 +597,7 @@ export function LiveMatchClient({
         <span className="text-[#464752]">|</span>
         {countdown !== null && countdown > 0 ? (
           <span className={`font-bold ${countdown <= 10 ? "text-[#ff6c92] animate-pulse" : "text-[#ffe6aa]"}`}>
-            {countdown}s
+            {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
           </span>
         ) : countdown === 0 ? (
           <span className="text-[#ff6c92] font-bold animate-pulse">FINAL</span>
@@ -937,11 +935,11 @@ export function LiveMatchClient({
         </div>
       )}
 
-      {/* ── My Bets List ── */}
+      {/* ── My Bets List — ALWAYS visible when bets exist ── */}
       {myBets.length > 0 && (
         <div className="shrink-0 border-t border-[#464752]/20 px-4 py-2 bg-[#11131d]/80 max-h-32 overflow-y-auto">
           <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752] mb-1.5">
-            My Bets <span className="text-[#ffe6aa]">// {myBets.length}</span>
+            Live Bets <span className="text-[#ffe6aa]">// {myBets.length}</span>
           </div>
           <div className="space-y-1">
             {myBets.map(bet => {
