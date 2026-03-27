@@ -1,9 +1,9 @@
 "use client";
 
-import { usePrivy } from "@privy-io/react-auth";
+import { useWallet } from "@/hooks/use-wallet";
 
 export function AuthButton() {
-  const { ready, authenticated, user, login, logout } = usePrivy();
+  const { ready, connected, address, connect, disconnect } = useWallet();
 
   if (!ready) {
     return (
@@ -13,11 +13,8 @@ export function AuthButton() {
     );
   }
 
-  if (authenticated && user) {
-    const wallet = user.wallet?.address;
-    const display = wallet
-      ? `${wallet.slice(0, 4)}…${wallet.slice(-4)}`
-      : user.email?.address?.split("@")[0] ?? "Player";
+  if (connected && address) {
+    const display = `${address.slice(0, 4)}…${address.slice(-4)}`;
 
     return (
       <div className="flex items-center gap-2">
@@ -26,7 +23,7 @@ export function AuthButton() {
           <span className="text-[10px] font-mono text-[#8ff5ff] uppercase">{display}</span>
         </div>
         <button
-          onClick={logout}
+          onClick={disconnect}
           className="text-[10px] font-mono uppercase text-[#464752] hover:text-[#aaaab6] transition-colors"
         >
           Exit
@@ -37,10 +34,10 @@ export function AuthButton() {
 
   return (
     <button
-      onClick={login}
+      onClick={connect}
       className="border border-[#8ff5ff]/30 px-3 py-1 text-[10px] font-mono uppercase text-[#8ff5ff] hover:bg-[#8ff5ff]/10 transition-colors"
     >
-      Login_→
+      Connect Wallet
     </button>
   );
 }

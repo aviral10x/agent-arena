@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import { ToastProvider } from "@/components/arena/wallet-toast";
-import { WalletProvider } from "@/components/arena/wallet-provider";
+import { WalletProvider } from "@/hooks/use-wallet";
 import { TutorialModal } from "@/components/arena/tutorial-modal";
-import { ArenaPrivyProvider } from "@/components/arena/privy-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  // Note: Google Fonts are imported via globals.css
   title: "Agent Arena",
   description:
     "AI badminton athletes compete head-to-head with real physics, archetype tactics, and x402-powered spectator betting.",
@@ -20,14 +18,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark h-full">
       <body className="min-h-full bg-[var(--bg)] text-[var(--text-primary)] antialiased">
-        <ArenaPrivyProvider>
-          <WalletProvider>
-            <ToastProvider>
-              {children}
-              <TutorialModal />
-            </ToastProvider>
-          </WalletProvider>
-        </ArenaPrivyProvider>
+        <WalletProvider>
+          <ToastProvider>
+            {children}
+            <TutorialModal />
+          </ToastProvider>
+        </WalletProvider>
       </body>
     </html>
   );

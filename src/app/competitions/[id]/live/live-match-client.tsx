@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useOkxWallet } from "@/hooks/use-okx-wallet";
+import { useWallet } from "@/hooks/use-wallet";
 import { getAgentAvatar } from "@/lib/agent-avatars";
 import { SFX_MAP } from "@/lib/sfx";
 import { SportCourtCanvas } from "@/components/arena/sport-court-canvas";
@@ -196,19 +195,9 @@ export function LiveMatchClient({
   const [betDone, setBetDone]       = useState(false);
   const [betTxInfo, setBetTxInfo]   = useState<{ amount: number; agent: string; wallet: string } | null>(null);
 
-  // Wallet: prefer OKX Wallet (extension or agentic), fall back to Privy
-  const { user, login: privyLogin, ready: privyReady, authenticated } = usePrivy();
-  const { wallets } = useWallets();
-  const okx = useOkxWallet();
-
-  // Best wallet address: OKX extension > OKX agentic > Privy > URL param > user ID
-  const betWallet = okx.address
-    ?? user?.wallet?.address
-    ?? wallets.find(w => w.walletClientType !== 'privy')?.address
-    ?? wallets[0]?.address
-    ?? viewerWallet
-    ?? (authenticated && user?.id ? `privy:${user.id}` : '');
-  const walletSource = okx.address ? 'okx' : 'privy';
+  // Wallet: standard EIP-1193 connect (OKX / MetaMask / any injected)
+  const wallet = useWallet();
+  const betWallet = wallet.address ?? viewerWallet ?? '';
   const [betPayStep, setBetPayStep] = useState<string | null>(null);
   const prevRallyRef = useRef<string | null>(null);
   const [log, setLog] = useState([
@@ -771,10 +760,10 @@ export function LiveMatchClient({
                     setLog(l => [...l.slice(-20), "> BET ERROR: Select an agent first"]);
                     return;
                   }
-                  // Auto-resolve wallet: use any available address, or login if not authenticated
-                  const resolvedWallet = betWallet || (user?.id ? `privy:${user.id}` : '');
+                  // Auto-resolve wallet: use connected address, or prompt connect
+                  const resolvedWallet = betWallet;
                   if (!resolvedWallet) {
-                    privyLogin();
+                    wallet.connect();
                     return;
                   }
                   setBetSubmitting(true);
@@ -782,44 +771,12 @@ export function LiveMatchClient({
 
                   let payload: any = null;
 
-                  // Sign x402 via OKX Wallet (extension or agentic) — skip for demo wallets
-                  const isDemoWallet = resolvedWallet.startsWith('privy:') || !resolvedWallet.startsWith('0x');
+                  // Sign x402 payment via connected wallet
+                  const isDemoWallet = !resolvedWallet.startsWith('0x');
                   if (resolvedWallet && !isDemoWallet) {
                     try {
                       setBetPayStep('signing');
-                      // Use OKX wallet hook's signX402Payment (handles extension + agentic)
-                      if (walletSource === 'okx' && okx.signX402Payment) {
-                        payload = await okx.signX402Payment(betAmount);
-                      } else {
-                        // Privy fallback
-                        const embeddedWallet = wallets.find(w => w.walletClientType === 'privy') ?? wallets[0];
-                        if (embeddedWallet) {
-                          const USDC_ADDR = '0x74b7f16337b8972027f6196a17a631ac6de26d22';
-                          const ARENA_RECV = process.env.NEXT_PUBLIC_ARENA_WALLET ?? '0x991442af55370b91930c5617b472b0e468e97bb2';
-                          const provider = await embeddedWallet.getEthereumProvider();
-                          const amountMicro = Math.round(betAmount * 1_000_000);
-                          const nonce = `0x${crypto.randomUUID().replace(/-/g, '')}`;
-                          const validBefore = Math.floor(Date.now() / 1000) + 300;
-                          const typedData = {
-                            types: {
-                              EIP712Domain: [
-                                { name: 'name', type: 'string' }, { name: 'version', type: 'string' },
-                                { name: 'chainId', type: 'uint256' }, { name: 'verifyingContract', type: 'address' },
-                              ],
-                              TransferWithAuthorization: [
-                                { name: 'from', type: 'address' }, { name: 'to', type: 'address' },
-                                { name: 'value', type: 'uint256' }, { name: 'validAfter', type: 'uint256' },
-                                { name: 'validBefore', type: 'uint256' }, { name: 'nonce', type: 'bytes32' },
-                              ],
-                            },
-                            primaryType: 'TransferWithAuthorization',
-                            domain: { name: 'USD Coin', version: '2', chainId: 196, verifyingContract: USDC_ADDR },
-                            message: { from: resolvedWallet, to: ARENA_RECV, value: String(amountMicro), validAfter: '0', validBefore: String(validBefore), nonce },
-                          };
-                          const signature = await provider.request({ method: 'eth_signTypedData_v4', params: [resolvedWallet, JSON.stringify(typedData)] });
-                          payload = { signature, from: resolvedWallet, to: ARENA_RECV, value: String(amountMicro), validAfter: '0', validBefore: String(validBefore), nonce };
-                        }
-                      }
+                      payload = await wallet.signX402Payment(betAmount);
                     } catch {
                       payload = null;
                     }

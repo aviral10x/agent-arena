@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useWallet } from "@/hooks/use-wallet";
 import { playClick, playSelect, playSuccess, playError, playGenerate } from "@/lib/sfx";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -277,7 +277,7 @@ function StakeTerminal({
   committed: boolean;
   walletAddress: string | null;
 }) {
-  const { ready, login } = usePrivy();
+  const { ready, connect } = useWallet();
   const cyan = "#8ff5ff";
   const magenta = "#ff6c92";
   const selected = selectedAgent
@@ -581,12 +581,7 @@ export function BetClient({
   sport,
   recentBets,
 }: Props) {
-  const { user, login, ready } = usePrivy();
-  const { wallets } = useWallets();
-  const walletAddress = user?.wallet?.address
-    ?? wallets.find(w => w.walletClientType !== 'privy')?.address
-    ?? wallets[0]?.address
-    ?? null;
+  const { ready, address: walletAddress, connect, signX402Payment } = useWallet();
 
   const [visible, setVisible] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
@@ -628,7 +623,7 @@ export function BetClient({
   // Commit handler
   async function handleCommit() {
     if (!walletAddress || !selectedAgent) {
-      if (!walletAddress) login();
+      if (!walletAddress) connect();
       return;
     }
     setTxError(null);
@@ -757,7 +752,7 @@ export function BetClient({
             </div>
           ) : (
             <button
-              onClick={() => { playClick(); login(); }}
+              onClick={() => { playClick(); connect(); }}
               className="px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all hover:brightness-125"
               style={{
                 border: `1px solid ${magenta}55`,

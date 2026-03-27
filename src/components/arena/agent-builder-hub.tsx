@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { usePrivy } from "@privy-io/react-auth";
+import { useWallet } from "@/hooks/use-wallet";
 import { SportAgentBuilderLazy } from "./sport-agent-builder-wrapper";
 import { playClick, playSelect, playConfirm } from "@/lib/sfx";
 
@@ -267,8 +267,7 @@ function AgentRosterCard({
 
 export function AgentBuilderHub() {
   const router = useRouter();
-  const { user } = usePrivy();
-  const walletAddress = user?.wallet?.address ?? (user?.linkedAccounts?.find((a: any) => a.type === "wallet") as any)?.address ?? "";
+  const { address: walletAddress } = useWallet();
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);

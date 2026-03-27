@@ -2,7 +2,7 @@
 
 import { useState, useCallback, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { usePrivy } from "@privy-io/react-auth";
+import { useWallet } from "@/hooks/use-wallet";
 import { playClick, playToggleOn, playToggleOff, playConfirm, playSuccess, playError, playGenerate } from "@/lib/sfx";
 
 const ARCHETYPES = [
@@ -96,8 +96,7 @@ function StatSlider({
 
 export function SportAgentBuilder() {
   const router = useRouter();
-  const { user } = usePrivy();
-  const walletAddress = user?.wallet?.address ?? (user?.linkedAccounts?.find((a: any) => a.type === "wallet") as any)?.address ?? "";
+  const { address: walletAddress } = useWallet();
 
   const [form, setForm] = useState<FormState>({
     name: "",
