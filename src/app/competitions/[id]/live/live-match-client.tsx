@@ -654,18 +654,7 @@ export function LiveMatchClient({
           className="shrink-0 border-t border-[#ff6c92]/30 px-4 py-4"
           style={{ background: "rgba(11,13,22,0.95)", backdropFilter: "blur(16px)" }}
         >
-          {!privyReady ? (
-            <div className="text-center text-[10px] font-mono text-[#464752]">Loading…</div>
-          ) : !authenticated ? (
-            <div className="text-center">
-              <button
-                onClick={() => privyLogin()}
-                className="bg-[#ff6c92] text-[#48001b] px-6 py-2 font-['Space_Grotesk'] font-black uppercase text-xs hover:brightness-110 transition-all"
-              >
-                CONNECT_WALLET_TO_BET
-              </button>
-            </div>
-          ) : betDone ? (
+          {betDone ? (
             <div className="flex items-center justify-center gap-6 text-[#00ff87] font-mono text-xs uppercase">
               <span>BET CONFIRMED</span>
               {betTxInfo && (
@@ -755,9 +744,10 @@ export function LiveMatchClient({
                     setLog(l => [...l.slice(-20), "> BET ERROR: Select an agent first"]);
                     return;
                   }
-                  if (!betWallet) {
-                    setLog(l => [...l.slice(-20), "> BET ERROR: Wallet not connected — log in first"]);
-                    if (!authenticated) privyLogin();
+                  // Auto-resolve wallet: use any available address, or login if not authenticated
+                  const resolvedWallet = betWallet || (user?.id ? `privy:${user.id}` : '');
+                  if (!resolvedWallet) {
+                    privyLogin();
                     return;
                   }
                   setBetSubmitting(true);
@@ -768,8 +758,8 @@ export function LiveMatchClient({
                   let payload: any = null;
 
                   // Sign x402 payment via Privy embedded wallet (skip for demo/privy-id wallets)
-                  const isDemoWallet = betWallet.startsWith('privy:') || !betWallet.startsWith('0x');
-                  if (betWallet && !isDemoWallet) {
+                  const isDemoWallet = resolvedWallet.startsWith('privy:') || !resolvedWallet.startsWith('0x');
+                  if (resolvedWallet && !isDemoWallet) {
                     try {
                       setBetPayStep('signing');
                       const embeddedWallet = wallets.find(w => w.walletClientType === 'privy') ?? wallets[0];
@@ -793,11 +783,11 @@ export function LiveMatchClient({
                           },
                           primaryType: 'TransferWithAuthorization',
                           domain: { name: 'USD Coin', version: '2', chainId: 196, verifyingContract: USDC_ADDR },
-                          message: { from: betWallet, to: ARENA_RECV, value: String(amountMicro), validAfter: '0', validBefore: String(validBefore), nonce },
+                          message: { from: resolvedWallet, to: ARENA_RECV, value: String(amountMicro), validAfter: '0', validBefore: String(validBefore), nonce },
                         };
 
-                        const signature = await provider.request({ method: 'eth_signTypedData_v4', params: [betWallet, JSON.stringify(typedData)] });
-                        payload = { signature, from: betWallet, to: ARENA_RECV, value: String(amountMicro), validAfter: '0', validBefore: String(validBefore), nonce };
+                        const signature = await provider.request({ method: 'eth_signTypedData_v4', params: [resolvedWallet, JSON.stringify(typedData)] });
+                        payload = { signature, from: resolvedWallet, to: ARENA_RECV, value: String(amountMicro), validAfter: '0', validBefore: String(validBefore), nonce };
                       }
                     } catch {
                       payload = null;
@@ -813,13 +803,13 @@ export function LiveMatchClient({
                       body: JSON.stringify({
                         predictedWinnerId: selectedAgentId,
                         amountUsdc: betAmount,
-                        betterWallet: betWallet,
+                        betterWallet: resolvedWallet,
                         ...(payload ? { payload } : { payload: { txSignature: `demo_${Date.now()}` } }),
                       }),
                     });
                     if (res.ok) {
                       const agentName = betPick === "a" ? (agentA?.name ?? "A") : (agentB?.name ?? "B");
-                      setBetTxInfo({ amount: betAmount, agent: agentName, wallet: betWallet });
+                      setBetTxInfo({ amount: betAmount, agent: agentName, wallet: resolvedWallet });
                       setBetDone(true);
                     }
                     else {
