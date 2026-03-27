@@ -829,22 +829,11 @@ export function LiveMatchClient({
                   setBetSubmitting(true);
                   setBetPayStep(null);
 
-                  let payload: any = null;
-
-                  // Sign x402 payment via connected wallet
-                  const isDemoWallet = !resolvedWallet.startsWith('0x');
-                  if (resolvedWallet && !isDemoWallet) {
-                    try {
-                      setBetPayStep('signing');
-                      payload = await wallet.signX402Payment(betAmount);
-                    } catch {
-                      payload = null;
-                    }
-                  }
-
                   try {
-                    setBetPayStep(payload ? 'verifying' : null);
                     const selectedAgentId = betPick === "a" ? agentA?.id : agentB?.id;
+
+                    // Demo mode: send bet directly without x402 signing
+                    // (x402 signing requires browser wallet extension + correct chain — not always available)
                     const res = await fetch(`/api/competitions/${competitionId}/bet`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -852,19 +841,21 @@ export function LiveMatchClient({
                         predictedWinnerId: selectedAgentId,
                         amountUsdc: betAmount,
                         betterWallet: resolvedWallet,
-                        ...(payload ? { payload } : { payload: { txSignature: `demo_${Date.now()}` } }),
+                        payload: { txSignature: `demo_${Date.now()}` },
                       }),
                     });
                     if (res.ok) {
                       const agentName = betPick === "a" ? (agentA?.name ?? "A") : (agentB?.name ?? "B");
                       setBetTxInfo({ amount: betAmount, agent: agentName, wallet: resolvedWallet });
                       setBetDone(true);
-                    }
-                    else {
+                      if (!muted) SFX_MAP["POINT!"]?.();
+                    } else {
                       const data = await res.json().catch(() => ({}));
                       setLog(l => [...l.slice(-20), `> BET ERROR: ${data.error ?? 'Failed'}`]);
                     }
-                  } catch { /* network error */ }
+                  } catch {
+                    setLog(l => [...l.slice(-20), "> BET ERROR: Network error"]);
+                  }
                   setBetSubmitting(false);
                   setBetPayStep(null);
                 }}
