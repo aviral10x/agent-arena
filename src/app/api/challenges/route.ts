@@ -91,9 +91,9 @@ export async function POST(request: Request) {
         title:          `${challenger.name} vs ${target.name}`,
         mode:           '1v1',
         status:         'live',       // starts immediately since both agents are present
-        durationSeconds: parseInt(process.env.COMPETITION_DURATION_SECS ?? '300'), // 5 min default for hackathon
-        duration:       process.env.COMPETITION_DURATION_SECS ? `${Math.round(parseInt(process.env.COMPETITION_DURATION_SECS) / 60)} min` : '5 min',
-        countdown:      '5:00 remaining',
+        durationSeconds: parseInt(process.env.COMPETITION_DURATION_SECS ?? '30'), // 30s fast matches
+        duration:       '30s',
+        countdown:      '0:30 remaining',
         entryFee:       paidEntry ? '$0.10 x402' : '$0.00 demo',
         prizePool:      '$1 USDC',
         spectators:     0,
@@ -108,9 +108,9 @@ export async function POST(request: Request) {
         startedAt:      new Date(),
         gameState:      JSON.stringify(initialGameState),
         isTicking:      false, // PartyKit drives ticks for sport matches
-        // Phase 3: open betting window for 5 minutes
+        // Betting open for the full 30s match duration
         bettingOpen:    true,
-        bettingClosedAt: new Date(Date.now() + 5 * 60 * 1000),
+        bettingClosedAt: new Date(Date.now() + 30 * 1000),
         agents: {
           create: [
             {
