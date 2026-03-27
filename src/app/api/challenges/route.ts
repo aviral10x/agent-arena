@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { verifyX402Payment, type X402Payload } from '@/lib/x402-verify';
+import { initGameState, type TrainerStrategy } from '@/lib/game-engine';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,12 +16,13 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   try {
-    const { targetAgentId, challengerAgentId, type = 'trading', sport = 'badminton', payload } = await request.json() as {
+    const { targetAgentId, challengerAgentId, type = 'trading', sport = 'badminton', payload, strategy } = await request.json() as {
       targetAgentId: string;
       challengerAgentId: string;
       type?: string;
       sport?: string;
       payload?: X402Payload;
+      strategy?: TrainerStrategy;
     };
 
     if (!targetAgentId || !challengerAgentId) {
@@ -52,6 +54,13 @@ export async function POST(request: Request) {
 
     const bankroll = 1; // $1 for hackathon testing
 
+    // Initialize game state with trainer strategy embedded
+    const initialGameState = initGameState('badminton' as const, [challengerAgentId, targetAgentId], challengerAgentId);
+    if (strategy) {
+      (initialGameState as any).strategies = { [challengerAgentId]: strategy };
+      console.log(`[challenge] Strategy loaded for ${challenger.name}: ${strategy.gameplan}, specials=${strategy.specialTiming}`);
+    }
+
     const competition = await prisma.competition.create({
       data: {
         title:          `${challenger.name} vs ${target.name}`,
@@ -72,6 +81,7 @@ export async function POST(request: Request) {
         type:           type === 'sport' ? 'sport' : 'trading',
         sport:          type === 'sport' ? (sport ?? 'badminton') : 'badminton',
         startedAt:      new Date(),
+        gameState:      JSON.stringify(initialGameState),
         isTicking:      false, // PartyKit drives ticks for sport matches
         // Phase 3: open betting window for 5 minutes
         bettingOpen:    true,

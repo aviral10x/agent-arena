@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useWallet } from '@/hooks/use-wallet';
+import type { TrainerStrategy } from '@/lib/game-engine';
 
 type AgentRow = {
   id: string; name: string; archetype: string; color: string;
@@ -11,6 +12,18 @@ type AgentRow = {
 
 // Only badminton is supported in this version
 const SPORT = 'badminton';
+
+const SHOT_PRESETS: Record<string, TrainerStrategy['shotBias']> = {
+  'Smash-heavy': { smash: 0.55, drop: 0.15, drive: 0.15, clear: 0.15 },
+  'Net play':    { smash: 0.15, drop: 0.45, drive: 0.20, clear: 0.20 },
+  'Rally':       { smash: 0.10, drop: 0.15, drive: 0.20, clear: 0.55 },
+  'Auto':        undefined,
+};
+
+const DEFAULT_STRATEGY: TrainerStrategy = {
+  gameplan: 'balanced',
+  specialTiming: 'late',
+};
 
 export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
   const router        = useRouter();
@@ -22,6 +35,9 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
   const [myAgents,     setMyAgents]     = useState<AgentRow[]>([]);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState<string | null>(null);
+  const [strategy,     setStrategy]     = useState<TrainerStrategy>(DEFAULT_STRATEGY);
+  const [shotPreset,   setShotPreset]   = useState('Auto');
+  const [zones,        setZones]        = useState<number[]>([]);
 
   // Fetch agents owned by the connected wallet
   useEffect(() => {
@@ -59,6 +75,11 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
           challengerAgentId: myAgentId,
           type:              'sport',
           sport:             SPORT,
+          strategy: {
+            ...strategy,
+            shotBias: SHOT_PRESETS[shotPreset],
+            targetZones: zones.length > 0 ? zones : undefined,
+          },
         }),
       });
       if (!compRes.ok) {
@@ -219,6 +240,114 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
             );
           })()}
         </div>
+
+        {/* ── Strategy Panel ── */}
+        {myAgentId && (
+          <div className="bg-[#11131d] border border-[#8ff5ff]/20 p-4 space-y-3">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-[#8ff5ff]">
+              Pre-Match Strategy
+            </div>
+
+            {/* Gameplan */}
+            <div>
+              <div className="text-[9px] font-mono uppercase text-[#464752] mb-1.5">Game Plan</div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['aggressive', 'defensive', 'counter-attack', 'balanced'] as const).map(gp => (
+                  <button
+                    key={gp}
+                    onClick={() => setStrategy(s => ({ ...s, gameplan: gp }))}
+                    className={`px-2 py-1.5 text-[9px] font-mono uppercase border transition-all ${
+                      strategy.gameplan === gp
+                        ? 'border-[#8ff5ff] bg-[#8ff5ff]/15 text-[#8ff5ff]'
+                        : 'border-[#464752]/30 text-[#464752] hover:text-[#aaabb6]'
+                    }`}
+                  >
+                    {gp === 'counter-attack' ? 'Counter' : gp}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Shot Emphasis */}
+            <div>
+              <div className="text-[9px] font-mono uppercase text-[#464752] mb-1.5">Shot Emphasis</div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {Object.keys(SHOT_PRESETS).map(preset => (
+                  <button
+                    key={preset}
+                    onClick={() => setShotPreset(preset)}
+                    className={`px-2 py-1.5 text-[9px] font-mono uppercase border transition-all ${
+                      shotPreset === preset
+                        ? 'border-[#ff6c92] bg-[#ff6c92]/15 text-[#ff6c92]'
+                        : 'border-[#464752]/30 text-[#464752] hover:text-[#aaabb6]'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Target Zones — 3x3 grid */}
+            <div>
+              <div className="text-[9px] font-mono uppercase text-[#464752] mb-1.5">
+                Target Zones {zones.length > 0 && <span className="text-[#8ff5ff]">({zones.length} selected)</span>}
+              </div>
+              <div className="grid grid-cols-3 gap-1 w-fit">
+                {[1,2,3,4,5,6,7,8,9].map(z => {
+                  const labels = ['','Deep L','Deep C','Deep R','Mid L','Center','Mid R','Net L','Net C','Net R'];
+                  const active = zones.includes(z);
+                  return (
+                    <button
+                      key={z}
+                      onClick={() => setZones(zs => active ? zs.filter(x => x !== z) : [...zs, z])}
+                      className={`w-14 h-8 text-[8px] font-mono uppercase border transition-all ${
+                        active
+                          ? 'border-[#ffe6aa] bg-[#ffe6aa]/15 text-[#ffe6aa]'
+                          : 'border-[#464752]/20 text-[#464752]/60 hover:text-[#464752]'
+                      }`}
+                    >
+                      {labels[z]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Special Timing */}
+            <div>
+              <div className="text-[9px] font-mono uppercase text-[#464752] mb-1.5">Special Moves</div>
+              <div className="flex gap-1.5">
+                {(['early', 'late', 'never'] as const).map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setStrategy(s => ({ ...s, specialTiming: t }))}
+                    className={`flex-1 px-2 py-1.5 text-[9px] font-mono uppercase border transition-all ${
+                      strategy.specialTiming === t
+                        ? 'border-[#ffe6aa] bg-[#ffe6aa]/15 text-[#ffe6aa]'
+                        : 'border-[#464752]/30 text-[#464752] hover:text-[#aaabb6]'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Instructions */}
+            <div>
+              <div className="text-[9px] font-mono uppercase text-[#464752] mb-1.5">Tactical Notes <span className="text-[#464752]/50">(optional)</span></div>
+              <textarea
+                maxLength={200}
+                rows={2}
+                placeholder="e.g. Exploit opponent's weak backhand, target deep corners..."
+                value={strategy.customInstructions ?? ''}
+                onChange={e => setStrategy(s => ({ ...s, customInstructions: e.target.value || undefined }))}
+                className="w-full bg-[#0c0e16] border border-[#464752]/20 px-2 py-1.5 text-[10px] font-mono text-[#eeecfa] placeholder:text-[#464752]/50 resize-none focus:border-[#8ff5ff]/30 focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Sport — badminton only */}
         <div className="bg-[#11131d] border border-[#ffe6aa]/30 p-4 flex items-center gap-3">
