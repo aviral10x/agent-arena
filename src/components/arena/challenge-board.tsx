@@ -15,13 +15,12 @@ const SPORT = 'badminton';
 export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
   const router        = useRouter();
   const params        = useSearchParams();
-  const { ready, connected, address: walletAddress, connect, signX402Payment } = useWallet();
+  const { ready, connected, address: walletAddress, connect } = useWallet();
 
   const [opponentId,   setOpponentId]   = useState<string | null>(null);
   const [myAgentId,    setMyAgentId]    = useState<string>(params.get('myAgentId') ?? '');
   const [myAgents,     setMyAgents]     = useState<AgentRow[]>([]);
   const [loading,      setLoading]      = useState(false);
-  const [paymentStep,  setPaymentStep]  = useState<string | null>(null); // signing | verifying | null
   const [error,        setError]        = useState<string | null>(null);
 
   // Fetch agents owned by the connected wallet
@@ -41,32 +40,17 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
   const opponent   = agents.find(a => a.id === opponentId);
   const myAgent    = myAgents.find(a => a.id === myAgentId) ?? agents.find(a => a.id === myAgentId);
 
-  const ENTRY_FEE_USDC = 0.10;
-  const USDC_ADDRESS   = '0x74b7f16337b8972027f6196a17a631ac6de26d22' as const;
-  const ARENA_RECEIVER = (process.env.NEXT_PUBLIC_ARENA_WALLET ?? '0x991442af55370b91930c5617b472b0e468e97bb2') as `0x${string}`;
+  // Challenge creation is FREE — x402 payments happen during the match via agent wallets
 
   const handleChallenge = async () => {
     if (!opponentId)  { setError('Select an opponent first.');          return; }
     if (!myAgentId)   { setError('Select or create your fighter first.'); return; }
     if (opponentId === myAgentId) { setError('Cannot challenge yourself — pick a different fighter or opponent.'); return; }
-    setLoading(true); setError(null); setPaymentStep(null);
+    setLoading(true); setError(null);
 
-    let payload: any = null;
-
-    // ── Step 1: Try x402 payment ($0.10 USDC entry fee) via wallet ──
-    if (walletAddress) {
-      try {
-        setPaymentStep('signing');
-        payload = await signX402Payment(ENTRY_FEE_USDC);
-      } catch (signErr: any) {
-        console.warn('[challenge] x402 sign failed, using demo mode:', signErr.message?.slice(0, 60));
-        payload = null;
-      }
-    }
-
-    // ── Step 2: Create competition ──
+    // ── Create competition (no payment — challenges are free) ──
+    // x402 payments happen during the match via agent wallets, not at challenge time
     try {
-      setPaymentStep(payload ? 'verifying' : null);
       const compRes = await fetch('/api/challenges', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,7 +59,6 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
           challengerAgentId: myAgentId,
           type:              'sport',
           sport:             SPORT,
-          ...(payload ? { payload } : {}),
         }),
       });
       if (!compRes.ok) {
@@ -87,7 +70,6 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
     } catch (err: any) {
       setError(err.message ?? 'Something went wrong');
       setLoading(false);
-      setPaymentStep(null);
     }
   };
 
@@ -250,7 +232,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
 
         {/* Match details */}
         <div className="grid grid-cols-2 gap-2">
-          {[['Format','1v1'],['Duration','5 min'],['Entry','$0.10 x402'],['Prize','$1 USDC']].map(([l,v]) => (
+          {[['Format','1v1'],['Duration','5 min'],['Entry','FREE'],['Prize','$1 USDC']].map(([l,v]) => (
             <div key={l} className="bg-[#11131d] border border-[#464752]/20 px-3 py-2">
               <div className="text-[9px] font-mono uppercase tracking-widest text-[#464752]">{l}</div>
               <div className="mt-0.5 text-xs font-['Space_Grotesk'] font-bold uppercase text-[#eeecfa]">{v}</div>
@@ -269,10 +251,7 @@ export function ChallengeBoard({ agents }: { agents: AgentRow[] }) {
           disabled={!opponentId || !myAgentId || loading}
           className="w-full bg-[#ff6c92] text-[#48001b] px-6 py-4 font-['Space_Grotesk'] font-black uppercase text-sm hover:skew-x-[-6deg] transition-all disabled:opacity-40 disabled:hover:skew-x-0 disabled:cursor-not-allowed"
         >
-          {paymentStep === 'signing' ? 'Sign $0.10 USDC Payment…'
-            : paymentStep === 'verifying' ? 'Verifying Payment…'
-            : loading ? 'Launching_Match…'
-            : '⚔ Issue_Challenge · $0.10 →'}
+          {loading ? 'Launching_Match…' : '⚔ Issue_Challenge →'}
         </button>
       </div>
 
