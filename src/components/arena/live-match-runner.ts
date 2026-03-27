@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-const CRON_SECRET = process.env.NEXT_PUBLIC_CRON_SECRET ?? '';
+// No auth needed — tick endpoint is open for client-driven gameplay
 // Each tick computes an ENTIRE rally (5-15 shots) using instant physics engine.
 // Server compute: <100ms. Client animation: ~2-4s.
 // 3s cycle = continuous gameplay with no dead time between rallies.
@@ -27,10 +27,7 @@ export function LiveMatchRunner({
       if (!mounted.current || tickingRef.current) return;
       tickingRef.current = true;
       try {
-        await fetch(`/api/competitions/${competitionId}/tick`, {
-          method:  'POST',
-          headers: CRON_SECRET ? { 'x-cron-secret': CRON_SECRET } : {},
-        });
+        await fetch(`/api/competitions/${competitionId}/tick`, { method: 'POST' });
       } catch (err) {
         console.error('Tick failed', err);
       } finally {
