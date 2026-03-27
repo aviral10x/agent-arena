@@ -317,8 +317,8 @@ export function SportCourtCanvas(props: Props) {
       // Read current props from ref (zero-cost, no dependency)
       const p = propsRef.current;
 
-      // Smooth lerp rendered positions toward target (frame-rate compensated)
-      const LERP = 1 - Math.pow(0.92, dtScale); // ~0.08 at 60fps, auto-adjusts
+      // Snappy lerp — positions reach target in ~5 frames (~80ms) instead of ~30
+      const LERP = 1 - Math.pow(0.55, dtScale); // ~0.45 at 60fps — instant response
       s.renderA.x += (p.agentPosA.x - s.renderA.x) * LERP;
       s.renderA.y += (p.agentPosA.y - s.renderA.y) * LERP;
       s.renderB.x += (p.agentPosB.x - s.renderB.x) * LERP;
