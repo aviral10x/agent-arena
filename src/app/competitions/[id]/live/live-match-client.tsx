@@ -293,8 +293,9 @@ export function LiveMatchClient({
       setFlashText(label);
       setTimeout(() => setFlashText(null), 1200);
       if (!muted) SFX_MAP[label]?.() ?? SFX_MAP["POINT!"]?.();
-    } else if (!muted && frame.action === "SMASH") {
-      SFX_MAP["SMASH!"]?.();
+    } else if (!muted) {
+      // Play per-shot SFX for every action (responsive like cinematic)
+      SFX_MAP[frame.action]?.();
     }
   });
 
@@ -376,8 +377,9 @@ export function LiveMatchClient({
       setFlashText(flashLabel);
       setTimeout(() => setFlashText(null), 1800);
       if (!muted) SFX_MAP[flashLabel]?.() ?? SFX_MAP["POINT!"]?.();
-    } else {
-      if (!muted && action === "SMASH") SFX_MAP["SMASH!"]?.();
+    } else if (!muted) {
+      // Per-shot SFX for every action
+      SFX_MAP[action]?.();
     }
   }, [socket.lastRally, muted, sequencer.state.isPlaying]);
 
