@@ -1,9 +1,38 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 import { placeBet } from '@/lib/betting';
 import { verifyX402Payment, type X402Payload } from '@/lib/x402-verify';
 import { rateLimit, getRequestIp, addRateLimitHeaders } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
+
+// GET /api/competitions/[id]/bet?wallet=... — fetch bets for this competition
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const wallet = req.nextUrl.searchParams.get('wallet')?.toLowerCase();
+
+  const where: any = { competitionId: id };
+  if (wallet) where.betterWallet = wallet;
+
+  const bets = await prisma.spectatorBet.findMany({
+    where,
+    orderBy: { paidAt: 'desc' },
+    take: 50,
+    select: {
+      id: true,
+      betterWallet: true,
+      predictedWinnerId: true,
+      amountUsdc: true,
+      txSignature: true,
+      paidAt: true,
+      isCorrect: true,
+      payoutUsdc: true,
+      settledAt: true,
+    },
+  });
+
+  return NextResponse.json(bets);
+}
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
