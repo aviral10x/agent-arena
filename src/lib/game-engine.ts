@@ -83,19 +83,50 @@ export type RallyResult = {
 // ── Badminton scoring ──────────────────────────────────────────────────────────
 const SCORING = { pointsPerSet: 21, setsToWin: 2, totalSets: 3, deuceAt: 20, maxPoints: 30 };
 
-// ── Zone landing positions (0=unused, 1–9 grid) ──────────────────────────────
-const ZONE_POS: { x: number; y: number }[] = [
-  { x: 50, y: 50 }, // 0: sentinel
-  { x: 15, y: 10 }, // 1: deep back-left
-  { x: 50, y: 10 }, // 2: deep back-center
-  { x: 85, y: 10 }, // 3: deep back-right
-  { x: 15, y: 50 }, // 4: mid-left
-  { x: 50, y: 50 }, // 5: center
-  { x: 85, y: 50 }, // 6: mid-right
-  { x: 20, y: 85 }, // 7: front-left (near net)
-  { x: 50, y: 85 }, // 8: front-center (near net)
-  { x: 80, y: 85 }, // 9: front-right (near net)
+// ── Zone landing positions — RELATIVE to defender's court ─────────────────────
+// These are y-offsets within the defender's half (0 = net, 45 = baseline).
+// getZonePos() flips them based on who is defending.
+// Court: y=0 top, y=50 net, y=100 bottom.
+//   Agent A (a1) owns y=50–100 (bottom half)
+//   Agent B (a2) owns y=0–50  (top half)
+const ZONE_GRID: { x: number; dy: number }[] = [
+  { x: 50, dy: 0  }, // 0: sentinel (net)
+  { x: 15, dy: 40 }, // 1: deep back-left (defender's baseline)
+  { x: 50, dy: 40 }, // 2: deep back-center
+  { x: 85, dy: 40 }, // 3: deep back-right
+  { x: 15, dy: 20 }, // 4: mid-left
+  { x: 50, dy: 20 }, // 5: center
+  { x: 85, dy: 20 }, // 6: mid-right
+  { x: 20, dy: 5  }, // 7: front-left (near net, tight drop)
+  { x: 50, dy: 5  }, // 8: front-center (near net)
+  { x: 80, dy: 5  }, // 9: front-right (near net)
 ];
+
+/**
+ * Convert zone grid to absolute court position based on who's DEFENDING.
+ * Shuttle always lands in the DEFENDER's half of the court.
+ */
+function getZonePos(zone: number, defenderIsA1: boolean): { x: number; y: number } {
+  const z = ZONE_GRID[zone] ?? ZONE_GRID[0];
+  if (defenderIsA1) {
+    // Defender is A1 (bottom half, y=50–100): near net = y~55, baseline = y~95
+    return { x: z.x, y: 52 + z.dy };
+  } else {
+    // Defender is A2 (top half, y=0–50): near net = y~45, baseline = y~5
+    return { x: z.x, y: 48 - z.dy };
+  }
+}
+
+// ── Half-court clamp helpers ──────────────────────────────────────────────────
+/** Clamp position to a player's own half of the court */
+function clampToHalf(pos: { x: number; y: number }, isA1: boolean): { x: number; y: number } {
+  return {
+    x: Math.max(5, Math.min(95, pos.x)),
+    y: isA1
+      ? Math.max(52, Math.min(97, pos.y))   // A1: bottom half (52–97)
+      : Math.max(3,  Math.min(48, pos.y)),   // A2: top half (3–48)
+  };
+}
 
 // ── Shuttle height produced by each shot (what opponent receives) ─────────────
 const RESULT_HEIGHT: Record<SportAction, number> = {
@@ -274,8 +305,10 @@ function defenseReturnProb(
       baseDifficulty = 0.60;
   }
 
-  // Distance the defender must cover
-  const landingPos = ZONE_POS[Math.max(1, Math.min(9, targetZone))] ?? ZONE_POS[5];
+  // Distance the defender must cover (use grid offsets — direction doesn't matter for distance)
+  const zg = ZONE_GRID[Math.max(1, Math.min(9, targetZone))] ?? ZONE_GRID[5];
+  // Approximate landing in defender's half: x from grid, y as offset from defender's baseline
+  const landingPos = { x: zg.x, y: defenderPos.y > 50 ? 52 + zg.dy : 48 - zg.dy };
   const distToLanding = dist(defenderPos, landingPos);
 
   // Reach penalty: fast players can cover the court; slow players get exposed
@@ -481,33 +514,44 @@ export function resolveRally(
 
   // ── Shuttle position with accuracy-based scatter ──────────────────────────
   const zone = Math.max(1, Math.min(9, attackDecision.targetZone));
-  const zoneLanding = ZONE_POS[zone];
+  const defenderIsA1 = defenderId === a1;
+  const zoneLanding = getZonePos(zone, defenderIsA1);
   // accuracy 10 → scatter 3 (tight placement), accuracy 1 → scatter 18 (wild)
   const scatter = Math.max(3, 20 - attackStats.accuracy * 2);
-  const newShuttlePos = {
-    x: Math.max(5, Math.min(95, zoneLanding.x + (Math.random() - 0.5) * scatter)),
-    y: rallyEnds ? 50 : Math.max(5, Math.min(95, zoneLanding.y + (Math.random() - 0.5) * scatter)),
+  const rawShuttlePos = {
+    x: zoneLanding.x + (Math.random() - 0.5) * scatter,
+    y: rallyEnds ? 50 : zoneLanding.y + (Math.random() - 0.5) * scatter,
   };
+  // Shuttle always lands in DEFENDER's half (never crosses back to attacker's side)
+  const newShuttlePos = rallyEnds
+    ? { x: 50, y: 50 }
+    : clampToHalf(rawShuttlePos, defenderIsA1);
 
-  // ── Agent movement ────────────────────────────────────────────────────────
+  // ── Agent movement (HALF-COURT ENFORCED) ──────────────────────────────────
   const newPositions = { ...gameState.agentPositions };
-  // After their shot, attacker recovers toward T-position (center-court baseline)
-  const tPos = { x: 50, y: attackerId === a1 ? 72 : 28 };
-  newPositions[attackerId] = {
+  const attackerIsA1 = attackerId === a1;
+
+  // After their shot, attacker recovers toward T-position (center of own half)
+  const tPos = { x: 50, y: attackerIsA1 ? 72 : 28 };
+  const rawAttackerPos = {
     x: attackerPos.x + (tPos.x - attackerPos.x) * 0.45 + (Math.random() - 0.5) * 8,
     y: attackerPos.y + (tPos.y - attackerPos.y) * 0.45,
   };
+  newPositions[attackerId] = clampToHalf(rawAttackerPos, attackerIsA1);
+
   if (!rallyEnds) {
-    // Defender sprints toward shuttle landing zone; speed determines coverage
+    // Defender sprints toward shuttle in own half; speed determines coverage
     const coverage = Math.min(0.98, defenderStats.speed / 8.0);
     const defenderTgt = {
       x: newShuttlePos.x + (defenderPos.x - newShuttlePos.x) * (1 - coverage),
       y: newShuttlePos.y + (defenderPos.y - newShuttlePos.y) * (1 - coverage),
     };
-    newPositions[defenderId] = {
-      x: Math.max(5, Math.min(95, defenderTgt.x + (Math.random() - 0.5) * 7)),
-      y: Math.max(5, Math.min(95, defenderTgt.y + (Math.random() - 0.5) * 7)),
+    const rawDefenderPos = {
+      x: defenderTgt.x + (Math.random() - 0.5) * 7,
+      y: defenderTgt.y + (Math.random() - 0.5) * 7,
     };
+    // CRITICAL: defender stays in own half — never crosses the net
+    newPositions[defenderId] = clampToHalf(rawDefenderPos, defenderIsA1);
   } else {
     // Reset both to T-positions after the point
     newPositions[a1] = { x: 50, y: 72 };
