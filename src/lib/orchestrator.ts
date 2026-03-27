@@ -256,8 +256,10 @@ export async function runSportCompetitionTick(competitionId: string) {
       30, // max shots safety cap
     );
 
-    // Persist cleared pre-computed decisions
+    // Persist cleared pre-computed decisions + rally frames for HTTP polling clients
     (batchResult.finalGameState as any).preComputedDecisions = preComputed;
+    (batchResult.finalGameState as any).lastBatchFrames = batchResult.frames;
+    (batchResult.finalGameState as any).lastBatchTimestamp = Date.now();
     gameState = batchResult.finalGameState;
 
     // Persist final game state
