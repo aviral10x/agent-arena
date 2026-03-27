@@ -398,15 +398,41 @@ export function LiveMatchClient({
     }
   }, [socket.statusMessage]);
 
-  // Redirect on match end
+  // Detect settlement + countdown from polling
+  const [polledStatus, setPolledStatus] = useState(competitionStatus);
+  const [countdown, setCountdown] = useState<number | null>(null);
   useEffect(() => {
-    if (socket.status === "settled" && socket.winner) {
+    let startedAt: number | null = null;
+    let durationSec: number = 30;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/competitions/${competitionId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status) setPolledStatus(data.status);
+        if (data.startedAt && !startedAt) {
+          startedAt = new Date(data.startedAt).getTime();
+          durationSec = data.durationSeconds ?? 30;
+        }
+        if (startedAt) {
+          const remaining = Math.max(0, Math.round(durationSec - (Date.now() - startedAt) / 1000));
+          setCountdown(remaining);
+        }
+      } catch {}
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [competitionId]);
+
+  // Redirect on match end (WebSocket OR polling)
+  const isSettled = socket.status === "settled" || polledStatus === "settled";
+  useEffect(() => {
+    if (isSettled) {
       const timer = setTimeout(() => {
         router.push(`/competitions/${competitionId}/result`);
-      }, 4000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [socket.status, socket.winner, competitionId, router]);
+  }, [isSettled, competitionId, router]);
 
   // ── Trainer command submit: WebSocket primary, HTTP fallback ────────────────
   const [cmdFlash, setCmdFlash] = useState<string | null>(null);
@@ -545,11 +571,15 @@ export function LiveMatchClient({
         <span className="text-[#eeecfa]">Sets: {scores.setsWon.a1}–{scores.setsWon.a2}</span>
         <span className="text-[#464752]">|</span>
         <span style={{ color: colorB }}>{agentB?.name.slice(0, 10) ?? "B"}</span>
-        {gs && (
-          <>
-            <span className="text-[#464752]">|</span>
-            <span className="text-[#464752]">Height: {(gs.shuttleHeight ?? 0).toFixed(1)}</span>
-          </>
+        <span className="text-[#464752]">|</span>
+        {countdown !== null && countdown > 0 ? (
+          <span className={`font-bold ${countdown <= 10 ? "text-[#ff6c92] animate-pulse" : "text-[#ffe6aa]"}`}>
+            {countdown}s
+          </span>
+        ) : countdown === 0 ? (
+          <span className="text-[#ff6c92] font-bold animate-pulse">FINAL</span>
+        ) : (
+          <span className="text-[#464752]">LIVE</span>
         )}
       </div>
 

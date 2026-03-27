@@ -29,9 +29,14 @@ export async function settleCompetition(competitionId: string) {
   });
   if (!competition || competition.status === 'settled') return;
 
-  // Winner = highest portfolio value
+  // Winner = highest score (sport) or portfolio (trading)
+  const isSport = (competition as any).type === 'sport';
   const winner = competition.agents.reduce(
-    (best, ca) => (ca.portfolio > (best?.portfolio ?? 0) ? ca : best),
+    (best, ca) => {
+      const metric = isSport ? (ca.score ?? 0) : ca.portfolio;
+      const bestMetric = isSport ? (best?.score ?? 0) : (best?.portfolio ?? 0);
+      return metric > bestMetric ? ca : best;
+    },
     competition.agents[0]
   );
 
