@@ -1,7 +1,7 @@
 import { prisma } from './db';
 import { onCompetitionSettle } from './stats';
 import { settleBets } from './betting';
-import { initGameState, resolveRally, type GameState } from './game-engine';
+import { initGameState, resolveRally, resolveFullRally, type GameState, type ShotDecision, type BatchRallyResult } from './game-engine';
 import { executeSportAgentTurn, type SportAgent } from './sport-agent-runner';
 
 // FIX 1.3: relative timestamp from actual DB timestamp
@@ -108,53 +108,24 @@ export async function runSportCompetitionTick(competitionId: string) {
       return [{ settled: true }];
     }
 
-    // Get AI shot decisions for both agents
-    const decisions: Record<string, any> = {};
-    const preComputed = (gameState as any).preComputedDecisions ?? {};
+    // Build agent lookup maps
+    const agentMap = Object.fromEntries(
+      competition.agents.map(ca => {
+        const a = ca.agent as any;
+        return [a.id, {
+          agent: a,
+          sportAgent: {
+            ...a,
+            speed:        a.speed        ?? 7,
+            power:        a.power        ?? 7,
+            stamina:      a.stamina      ?? 7,
+            accuracy:     a.accuracy     ?? 7,
+            specialMoves: a.specialMoves ?? '[]',
+          } as SportAgent,
+        }];
+      })
+    );
 
-    for (const ca of competition.agents) {
-      const agent = ca.agent as any;
-
-      // Trainer pre-computed decision takes priority — uses it once then clears
-      if (preComputed[agent.id]) {
-        decisions[agent.id] = preComputed[agent.id];
-        delete preComputed[agent.id];
-        console.log(`[sport-tick] Using trainer decision for ${agent.name}: ${decisions[agent.id].action}`);
-        continue;
-      }
-
-      const sportAgent: SportAgent = {
-        ...agent,
-        speed:        agent.speed        ?? 7,
-        power:        agent.power        ?? 7,
-        stamina:      agent.stamina      ?? 7,
-        accuracy:     agent.accuracy     ?? 7,
-        specialMoves: agent.specialMoves ?? '[]',
-      };
-      const opponentCa = competition.agents.find(a => a.agentId !== agent.id);
-      try {
-        decisions[agent.id] = await executeSportAgentTurn(
-          sportAgent,
-          gameState,
-          opponentCa?.agentId ?? '',
-          opponentCa?.agent.name ?? 'Opponent'
-        );
-      } catch (err: any) {
-        console.warn(`[sport-tick] LLM failed for ${agent.name}: ${err.message?.slice(0, 80)}`);
-        const actions = ['SMASH', 'DROP', 'CLEAR', 'DRIVE', 'LOB'];
-        decisions[agent.id] = {
-          action: actions[Math.floor(Math.random() * actions.length)],
-          targetZone: Math.floor(Math.random() * 9) + 1,
-          specialMove: null,
-          rationale: 'Tactical fallback.',
-        };
-      }
-    }
-
-    // Persist cleared pre-computed decisions back to game state
-    (gameState as any).preComputedDecisions = preComputed;
-
-    // Build agentStats for rally resolver
     const agentStats = Object.fromEntries(
       competition.agents.map(ca => {
         const a = ca.agent as any;
@@ -167,45 +138,85 @@ export async function runSportCompetitionTick(competitionId: string) {
       })
     );
 
-    // Resolve rally
-    const result = resolveRally(gameState, decisions, agentStats);
-    gameState = result.newGameState;
+    // Decision function: tries AI (LLM), falls back to stats-based random
+    const preComputed = (gameState as any).preComputedDecisions ?? {};
+    const decisionFn = async (state: GameState, attackerId: string): Promise<ShotDecision> => {
+      // Trainer pre-computed decision takes priority
+      if (preComputed[attackerId]) {
+        const d = preComputed[attackerId];
+        delete preComputed[attackerId];
+        console.log(`[sport-tick] Using trainer decision for ${agentMap[attackerId]?.agent?.name}: ${d.action}`);
+        return d;
+      }
 
-    // Persist game state + increment rally counter
+      const entry = agentMap[attackerId];
+      if (!entry) {
+        return { action: 'DRIVE', targetZone: 5, rationale: 'fallback' };
+      }
+
+      const opponentId = agentIds.find(id => id !== attackerId) ?? '';
+      const opponentName = agentMap[opponentId]?.agent?.name ?? 'Opponent';
+
+      try {
+        return await executeSportAgentTurn(entry.sportAgent, state, opponentId, opponentName);
+      } catch (err: any) {
+        console.warn(`[sport-tick] LLM failed for ${entry.agent.name}: ${err.message?.slice(0, 80)}`);
+        const actions: Array<'SMASH' | 'DROP' | 'CLEAR' | 'DRIVE' | 'LOB'> = ['SMASH', 'DROP', 'CLEAR', 'DRIVE', 'LOB'];
+        return {
+          action: actions[Math.floor(Math.random() * actions.length)],
+          targetZone: Math.floor(Math.random() * 9) + 1,
+          specialMove: null,
+          rationale: 'Tactical fallback.',
+        };
+      }
+    };
+
+    // ═══ BATCH RALLY: compute entire rally (serve to point) in one call ═══
+    const batchResult: BatchRallyResult = await resolveFullRally(
+      gameState,
+      agentStats,
+      decisionFn,
+      30, // max shots safety cap
+    );
+
+    // Persist cleared pre-computed decisions
+    (batchResult.finalGameState as any).preComputedDecisions = preComputed;
+    gameState = batchResult.finalGameState;
+
+    // Persist final game state
     await prisma.competition.update({
       where: { id: competitionId },
       data: {
         gameState:    JSON.stringify(gameState),
-        totalRallies: { increment: result.rallyLength > 0 ? 1 : 0 },
+        totalRallies: { increment: 1 },
         isTicking:    false,
       },
     });
 
     // If a point was scored, update CompetitionAgent scores + momentum
-    if (result.pointWinnerId) {
+    if (batchResult.pointWinnerId) {
       await prisma.competitionAgent.updateMany({
-        where: { competitionId, agentId: result.pointWinnerId },
+        where: { competitionId, agentId: batchResult.pointWinnerId },
         data: {
           score:    { increment: 1 },
-          momentum: result.newGameState.momentum[result.pointWinnerId] ?? 50,
+          momentum: gameState.momentum[batchResult.pointWinnerId] ?? 50,
         },
       });
 
-      // Record as a Trade / GameEvent
-      const winnerCa = competition.agents.find(ca => ca.agentId === result.pointWinnerId);
-      if (winnerCa) {
-        const winnerDecision = decisions[result.pointWinnerId];
+      // Record the winning shot as a Trade / GameEvent
+      const lastFrame = batchResult.frames[batchResult.frames.length - 1];
+      if (lastFrame) {
         await prisma.trade.create({
           data: {
             competitionId,
-            agentId:      result.pointWinnerId,
-            type:         result.action,
-            pair:         result.description.slice(0, 200),
+            agentId:      batchResult.pointWinnerId,
+            type:         lastFrame.action,
+            pair:         lastFrame.description.slice(0, 200),
             amount:       '1',
             amountUsd:    0,
-            priceImpact:  result.successRate.toString(),
-            rationale:    winnerDecision?.rationale ?? '',
-            successRate:  result.successRate,
+            priceImpact:  '0',
+            rationale:    `${batchResult.totalShots}-shot rally`,
+            successRate:  0,
             pointValue:   1,
           },
         });
@@ -213,12 +224,15 @@ export async function runSportCompetitionTick(competitionId: string) {
     }
 
     // Settle if match is over
-    if (result.matchOver) {
+    if (batchResult.matchOver) {
       await settleCompetition(competitionId);
     }
 
-    console.log(`[sport-tick] ${competitionId} | rally ${gameState.rallyCount} | ${result.description.slice(0, 80)}`);
-    return [{ sport: true, result }];
+    const lastDesc = batchResult.frames[batchResult.frames.length - 1]?.description ?? '';
+    console.log(`[sport-tick] ${competitionId} | rally ${gameState.rallyCount} | ${batchResult.totalShots} shots | ${lastDesc.slice(0, 60)}`);
+
+    // Return batch result — client can animate the full sequence
+    return [{ sport: true, batchRally: batchResult, result: batchResult.frames[batchResult.frames.length - 1] }];
   } catch (err) {
     console.error(`[sport-tick] Error in ${competitionId}:`, err);
     return [];

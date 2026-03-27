@@ -652,3 +652,153 @@ export function getScoreDisplay(
     setsWon: { a1: countSetsWon(agentIds[0]), a2: countSetsWon(agentIds[1]) },
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BATCH RALLY — compute entire rally in one call for smooth client-side playback
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Timing in ms for each shot type — how long the animation should take */
+export const SHOT_TIMING: Record<string, number> = {
+  SERVE:   900,
+  SMASH:   350,
+  DROP:    550,
+  CLEAR:   700,
+  LOB:     750,
+  DRIVE:   400,
+  BLOCK:   450,
+  SPECIAL: 500,
+};
+
+/** One frame in a rally animation sequence */
+export type RallyFrame = {
+  /** Sequential index (0 = first shot) */
+  index: number;
+  /** Who hit the shuttle */
+  attackerId: string;
+  /** Shot type */
+  action: SportAction;
+  /** Human-readable description */
+  description: string;
+  /** How long this shot's animation should take (ms) */
+  durationMs: number;
+  /** Agent positions AFTER this shot */
+  agentPositions: Record<string, { x: number; y: number }>;
+  /** Shuttle position AFTER this shot */
+  shuttlePosition: { x: number; y: number };
+  /** Momentum per agent */
+  momentum: Record<string, number>;
+  /** Fatigue per agent */
+  fatigue: Record<string, number>;
+  /** Did this shot score a point? */
+  pointWon: boolean;
+  /** Who won the point (if pointWon) */
+  pointWinnerId: string | null;
+  /** Special move name (if SPECIAL) */
+  specialMove?: string | null;
+};
+
+/** Result of a full batch rally computation */
+export type BatchRallyResult = {
+  /** Ordered sequence of shots to animate */
+  frames: RallyFrame[];
+  /** Final game state after the entire rally */
+  finalGameState: GameState;
+  /** Did the match end? */
+  matchOver: boolean;
+  /** Did a set end? */
+  setOver: boolean;
+  /** Who won the point */
+  pointWinnerId: string;
+  /** Total shots in this rally */
+  totalShots: number;
+};
+
+/**
+ * Compute an entire rally from serve to point-scored.
+ * Returns a sequence of RallyFrames that the client can animate at game speed.
+ *
+ * @param gameState - Current game state (should be at start of a rally, rallyLength=0)
+ * @param agentStats - Stats for both agents
+ * @param decisionFn - Function that returns shot decisions for each agent given current state.
+ *                     Called once per shot exchange. For AI agents, this should call the LLM.
+ *                     For pre-computed decisions, return from a queue.
+ * @param maxShots - Safety cap to prevent infinite rallies (default 30)
+ */
+export async function resolveFullRally(
+  gameState: GameState,
+  agentStats: Record<string, BadmintonStats>,
+  decisionFn: (state: GameState, attackerId: string) => Promise<ShotDecision>,
+  maxShots = 30,
+): Promise<BatchRallyResult> {
+  const frames: RallyFrame[] = [];
+  let state = { ...gameState };
+  const agentIds = Object.keys(state.agentPositions);
+  let shotIndex = 0;
+  let pointScored = false;
+  let matchOver = false;
+  let setOver = false;
+  let pointWinnerId = '';
+
+  while (!pointScored && shotIndex < maxShots) {
+    // Determine who's attacking this exchange
+    // In a rally: alternates. First shot = server. After that, the defender becomes attacker.
+    const attackerId = shotIndex === 0
+      ? state.servingAgentId
+      : (state.lastAgentId === agentIds[0] ? agentIds[1] : agentIds[0]);
+    const defenderId = agentIds.find(id => id !== attackerId)!;
+
+    // Get decision for the attacking agent
+    const decision = await decisionFn(state, attackerId);
+
+    // Build decisions map (defender's decision doesn't matter for resolveRally)
+    const decisions: Record<string, ShotDecision> = {
+      [attackerId]: decision,
+      [defenderId]: { action: 'BLOCK', targetZone: 5, rationale: 'defending' },
+    };
+
+    // Resolve this single exchange
+    const result = resolveRally(state, decisions, agentStats);
+
+    // Build animation frame
+    const frame: RallyFrame = {
+      index: shotIndex,
+      attackerId,
+      action: decision.action,
+      description: result.description,
+      durationMs: SHOT_TIMING[decision.action] ?? 500,
+      agentPositions: result.newGameState.agentPositions,
+      shuttlePosition: result.newGameState.shuttlePosition,
+      momentum: result.newGameState.momentum,
+      fatigue: { ...result.newGameState.fatigue },
+      pointWon: result.isWinner,
+      pointWinnerId: result.pointWinnerId || null,
+      specialMove: decision.specialMove,
+    };
+    frames.push(frame);
+
+    // Update state for next exchange
+    state = result.newGameState;
+    shotIndex++;
+
+    if (result.isWinner) {
+      pointScored = true;
+      pointWinnerId = result.pointWinnerId;
+      matchOver = result.matchOver;
+      setOver = result.setOver;
+    }
+  }
+
+  // Safety: if we hit maxShots without a point, force a point for the serving player
+  if (!pointScored && frames.length > 0) {
+    pointWinnerId = state.servingAgentId;
+  }
+
+  return {
+    frames,
+    finalGameState: state,
+    matchOver,
+    setOver,
+    pointWinnerId,
+    totalShots: frames.length,
+  };
+}

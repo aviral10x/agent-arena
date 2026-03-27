@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import PartySocket from "partysocket";
-import type { GameState } from "@/lib/game-engine";
+import type { GameState, RallyFrame } from "@/lib/game-engine";
 
 export type MatchSide = "a" | "b" | "spectator";
 
@@ -45,6 +45,8 @@ export interface MatchState {
   commandWindowMs: number;   // ms remaining in current command window
   commandWindowOpen: boolean;
   lastRally: RallyEvent | null;
+  /** Batch rally frames for client-side sequencer playback */
+  batchFrames: RallyFrame[] | null;
   players: Partial<Record<"a" | "b", { agentId: string; agentName: string; agentColor: string }>>;
   winner: { agentId: string; agentName: string } | null;
   statusMessage: string;
@@ -66,6 +68,7 @@ export function useMatchSocket(
     commandWindowMs: 0,
     commandWindowOpen: false,
     lastRally: null,
+    batchFrames: null,
     players: {},
     winner: null,
     statusMessage: "Connecting...",
@@ -137,6 +140,8 @@ export function useMatchSocket(
             gameState: msg.gameState,
             status: "live",
             commandWindowOpen: false,
+            // If server sent batch frames, store them for the sequencer
+            batchFrames: msg.batchFrames ?? null,
             lastRally: {
               description: msg.description,
               action: msg.action,

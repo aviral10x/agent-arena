@@ -9,7 +9,8 @@ import { getAgentAvatar } from "@/lib/agent-avatars";
 import { SFX_MAP } from "@/lib/sfx";
 import { SportCourtCanvas } from "@/components/arena/sport-court-canvas";
 import { useMatchSocket } from "@/hooks/use-match-socket";
-import { getScoreDisplay, type GameState } from "@/lib/game-engine";
+import { getScoreDisplay, type GameState, type RallyFrame } from "@/lib/game-engine";
+import { useRallySequencer } from "@/hooks/use-rally-sequencer";
 
 type Agent = {
   id: string;
@@ -270,50 +271,90 @@ export function LiveMatchClient({
   // ── Real game state: prefer WebSocket, fallback to polling ──────────────────
   const gs = socket.gameState ?? polledGs;
 
-  // ── Smooth position interpolation (lerp toward target each frame) ──────────
-  const targetPosA = useMemo(() => {
+  // ── Rally Sequencer: plays batch frames at game speed ──────────────────────
+  const sequencer = useRallySequencer((frame: RallyFrame) => {
+    // Fire SFX + log for each frame as it plays
+    setLog(l => [...l.slice(-20), `> ${frame.description}`]);
+    if (frame.pointWon) {
+      const label = frame.action === "SMASH" ? "SMASH!" :
+                    frame.action === "SPECIAL" ? "SPECIAL!" :
+                    frame.action === "DROP" ? "DROP ACE!" : "POINT!";
+      setFlashText(label);
+      setTimeout(() => setFlashText(null), 1200);
+      if (!muted) SFX_MAP[label]?.() ?? SFX_MAP["POINT!"]?.();
+    } else if (!muted && frame.action === "SMASH") {
+      SFX_MAP["SMASH!"]?.();
+    }
+  });
+
+  // When batch frames arrive, start the sequencer
+  const lastBatchRef = useRef<RallyFrame[] | null>(null);
+  useEffect(() => {
+    const frames = socket.batchFrames;
+    if (frames && frames.length > 0 && frames !== lastBatchRef.current) {
+      lastBatchRef.current = frames;
+      sequencer.play(frames);
+    }
+  }, [socket.batchFrames]);
+
+  // ── Position source: sequencer frame (during playback) or gameState (idle) ─
+  const activeFrame = sequencer.state.currentFrame;
+  const isSequencing = sequencer.state.isPlaying && activeFrame;
+
+  const agentPosA = useMemo(() => {
+    if (isSequencing && agentA) {
+      return activeFrame.agentPositions[agentA.id] ?? { x: 30, y: 72 };
+    }
     if (!gs || !agentA) return { x: 30, y: 72 };
-    const p = gs.agentPositions[agentA.id];
-    return p ?? { x: 30, y: 72 };
-  }, [gs, agentA]);
+    return gs.agentPositions[agentA.id] ?? { x: 30, y: 72 };
+  }, [isSequencing, activeFrame, gs, agentA]);
 
-  const targetPosB = useMemo(() => {
+  const agentPosB = useMemo(() => {
+    if (isSequencing && agentB) {
+      return activeFrame.agentPositions[agentB.id] ?? { x: 70, y: 28 };
+    }
     if (!gs || !agentB) return { x: 70, y: 28 };
-    const p = gs.agentPositions[agentB.id];
-    return p ?? { x: 70, y: 28 };
-  }, [gs, agentB]);
+    return gs.agentPositions[agentB.id] ?? { x: 70, y: 28 };
+  }, [isSequencing, activeFrame, gs, agentB]);
 
-  // Pass target positions directly to canvas — it does its own lerp via refs
-  const agentPosA = targetPosA;
-  const agentPosB = targetPosB;
+  const lastAction = isSequencing ? (activeFrame.action ?? "SERVE") : (gs?.lastAction ?? "SERVE");
+  const attackerIsA = isSequencing
+    ? activeFrame.attackerId === agentA?.id
+    : (gs ? gs.lastAgentId === agentA?.id : true);
 
-  const lastAction = gs?.lastAction ?? "SERVE";
-  const attackerIsA = gs ? gs.lastAgentId === agentA?.id : true;
+  // Momentum + fatigue: sequencer frame or game state
+  const momentumA = isSequencing && agentA
+    ? (activeFrame.momentum[agentA.id] ?? 50)
+    : (gs && agentA ? (gs.momentum[agentA.id] ?? 50) : 50);
+  const momentumB = isSequencing && agentB
+    ? (activeFrame.momentum[agentB.id] ?? 50)
+    : (gs && agentB ? (gs.momentum[agentB.id] ?? 50) : 50);
+  const fatigueA = isSequencing && agentA
+    ? (activeFrame.fatigue[agentA.id] ?? 0)
+    : (gs && agentA ? ((gs.fatigue as Record<string,number>)?.[agentA.id] ?? 0) : 0);
+  const fatigueB = isSequencing && agentB
+    ? (activeFrame.fatigue[agentB.id] ?? 0)
+    : (gs && agentB ? ((gs.fatigue as Record<string,number>)?.[agentB.id] ?? 0) : 0);
 
-  // Real momentum + fatigue
-  const momentumA = gs && agentA ? (gs.momentum[agentA.id] ?? 50) : 50;
-  const momentumB = gs && agentB ? (gs.momentum[agentB.id] ?? 50) : 50;
-  const fatigueA  = gs && agentA ? ((gs.fatigue as Record<string,number>)?.[agentA.id] ?? 0) : 0;
-  const fatigueB  = gs && agentB ? ((gs.fatigue as Record<string,number>)?.[agentB.id] ?? 0) : 0;
-
-  // Real scores
+  // Real scores (always from game state — sequencer doesn't track set scores)
   const scores = useMemo(() => {
     if (!gs || !agentA || !agentB) return { current: { a1: 0, a2: 0 }, setsWon: { a1: 0, a2: 0 }, sets: [] };
     return getScoreDisplay(gs, [agentA.id, agentB.id]);
   }, [gs, agentA, agentB]);
 
-  // Rally tick counter (for canvas animation)
-  const tick = gs?.rallyCount ?? 0;
+  // Rally tick counter: use sequencer frame index during playback for animation
+  const tick = isSequencing ? sequencer.state.frameIndex : (gs?.rallyCount ?? 0);
 
   // ── Log + flash + SFX on rally events ──────────────────────────────────────
+  // Skip when sequencer is playing — it handles SFX/logs per-frame
   useEffect(() => {
+    if (sequencer.state.isPlaying) return; // sequencer handles this
     if (!socket.lastRally || socket.lastRally.description === prevRallyRef.current) return;
     prevRallyRef.current = socket.lastRally.description;
 
-    const { description, action, pointWon, attackerSide } = socket.lastRally;
+    const { description, action, pointWon } = socket.lastRally;
     setLog(l => [...l.slice(-20), `> ${description}`]);
 
-    // Flash text on point-winning shots
     if (pointWon) {
       const flashLabel =
         action === "SMASH"   ? "SMASH!" :
@@ -323,12 +364,11 @@ export function LiveMatchClient({
         "POINT!";
       setFlashText(flashLabel);
       setTimeout(() => setFlashText(null), 1800);
-
       if (!muted) SFX_MAP[flashLabel]?.() ?? SFX_MAP["POINT!"]?.();
     } else {
       if (!muted && action === "SMASH") SFX_MAP["SMASH!"]?.();
     }
-  }, [socket.lastRally, muted]);
+  }, [socket.lastRally, muted, sequencer.state.isPlaying]);
 
   // Status messages
   useEffect(() => {
