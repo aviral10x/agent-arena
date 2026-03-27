@@ -1,11 +1,13 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect } from 'react';
 import type { GameState } from '@/lib/game-engine';
 
 /**
  * Premium 2D court canvas — works everywhere (no WebGL required)
  * Smooth interpolated animations, glow effects, particle bursts
+ *
+ * PERF: Props stored in refs so RAF loop never restarts on state changes.
  */
 
 interface CourtCanvasProps {
@@ -40,18 +42,23 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
   const animRef   = useRef<AnimState | null>(null);
   const frameRef  = useRef<number>(0);
 
+  // Store props in refs so draw loop reads them without dependency churn
+  const propsRef = useRef({ gameState, agentNames, agentColors });
+  propsRef.current = { gameState, agentNames, agentColors };
+
   // Initialize animation state
-  const getOrCreateAnim = useCallback((): AnimState => {
+  function getOrCreateAnim(): AnimState {
     if (!animRef.current) {
+      const gs = propsRef.current.gameState;
       const agents: AnimState['agents'] = {};
-      for (const [id, pos] of Object.entries(gameState.agentPositions)) {
+      for (const [id, pos] of Object.entries(gs.agentPositions)) {
         agents[id] = { x: pos.x, y: pos.y, targetX: pos.x, targetY: pos.y };
       }
       animRef.current = {
         agents,
         shuttle: {
-          x: gameState.shuttlePosition.x, y: gameState.shuttlePosition.y,
-          targetX: gameState.shuttlePosition.x, targetY: gameState.shuttlePosition.y,
+          x: gs.shuttlePosition.x, y: gs.shuttlePosition.y,
+          targetX: gs.shuttlePosition.x, targetY: gs.shuttlePosition.y,
         },
         particles: [],
         lastAction: '',
@@ -59,9 +66,9 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
       };
     }
     return animRef.current;
-  }, []);
+  }
 
-  // Update targets when game state changes
+  // Update targets when game state changes — no RAF dependency
   useEffect(() => {
     const anim = getOrCreateAnim();
     for (const [id, pos] of Object.entries(gameState.agentPositions)) {
@@ -89,9 +96,9 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
       }
       anim.lastAction = gameState.lastAction;
     }
-  }, [gameState, getOrCreateAnim]);
+  }, [gameState]);
 
-  // Animation loop
+  // ── Single RAF loop — runs mount to unmount, never restarts ──
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -105,6 +112,7 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
       const W = canvas.width;
       const H = canvas.height;
       const anim = getOrCreateAnim();
+      const { agentNames: names, agentColors: colors, gameState: gs } = propsRef.current;
 
       // Lerp positions
       const lerp = 0.12;
@@ -119,11 +127,10 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
       const cx = (pct: number) => W * 0.08 + (pct / 100) * W * 0.84;
       const cy = (pct: number) => H * 0.04 + (pct / 100) * H * 0.92;
 
-      // ── Background ──────────────────────────────────────────────────────
+      // ── Background ──
       ctx.fillStyle = '#060d1a';
       ctx.fillRect(0, 0, W, H);
 
-      // Court surface gradient
       const courtGrad = ctx.createLinearGradient(0, H * 0.04, 0, H * 0.96);
       courtGrad.addColorStop(0, '#0d1a2e');
       courtGrad.addColorStop(0.5, '#0a1628');
@@ -131,12 +138,10 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
       ctx.fillStyle = courtGrad;
       ctx.fillRect(W * 0.08, H * 0.04, W * 0.84, H * 0.92);
 
-      // Court lines
       ctx.strokeStyle = '#1a3050';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(W * 0.08, H * 0.04, W * 0.84, H * 0.92);
 
-      // Service lines
       ctx.strokeStyle = '#142540';
       ctx.lineWidth = 1;
       [[0.33, false], [0.67, false], [0.5, true]].forEach(([frac, isCenterLine]) => {
@@ -151,9 +156,8 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
         ctx.stroke();
       });
 
-      // ── Net (glowing) ────────────────────────────────────────────────────
+      // ── Net (glowing) ──
       const netY = H * 0.04 + H * 0.92 * 0.5;
-      // Net glow
       ctx.shadowColor = '#4a9eff';
       ctx.shadowBlur = 12;
       ctx.strokeStyle = '#4a9eff';
@@ -163,12 +167,11 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
       ctx.lineTo(W * 0.94, netY);
       ctx.stroke();
       ctx.shadowBlur = 0;
-      // Net posts
       ctx.fillStyle = '#4a9eff';
       ctx.fillRect(W * 0.06 - 3, netY - 8, 6, 16);
       ctx.fillRect(W * 0.94 - 3, netY - 8, 6, 16);
 
-      // ── Particles ────────────────────────────────────────────────────────
+      // ── Particles ──
       anim.particles = anim.particles.filter(p => {
         p.x += p.vx;
         p.y += p.vy;
@@ -183,37 +186,34 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
       });
       ctx.globalAlpha = 1;
 
-      // ── Shuttle trail + shuttle ───────────────────────────────────────────
+      // ── Shuttle trail + shuttle ──
       const sx = cx(anim.shuttle.x);
       const sy = cy(anim.shuttle.y);
-      // Trail
       ctx.shadowColor = '#ffffff';
       ctx.shadowBlur = 15;
       ctx.fillStyle = 'rgba(255,255,255,0.15)';
       ctx.beginPath();
       ctx.arc(sx, sy, 12, 0, Math.PI * 2);
       ctx.fill();
-      // Shuttle
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(sx, sy, 5, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // ── Agents ────────────────────────────────────────────────────────────
-      const agentIds = Object.keys(gameState.agentPositions);
+      // ── Agents ──
+      const agentIds = Object.keys(gs.agentPositions);
       for (const id of agentIds) {
         const a = anim.agents[id];
         if (!a) continue;
         const px = cx(a.x);
         const py = cy(a.y);
-        const color = agentColors[id] ?? '#4a9eff';
-        const name  = agentNames[id] ?? id;
-        const mom   = gameState.momentum[id] ?? 50;
+        const color = colors[id] ?? '#4a9eff';
+        const name  = names[id] ?? id;
+        const mom   = gs.momentum[id] ?? 50;
         const isHot = mom > 60;
-        const isServing = gameState.servingAgentId === id;
+        const isServing = gs.servingAgentId === id;
 
-        // Momentum glow ring
         if (isHot) {
           ctx.shadowColor = color;
           ctx.shadowBlur = 18;
@@ -225,19 +225,16 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        // Agent body
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.arc(px, py, 12, 0, Math.PI * 2);
         ctx.fill();
 
-        // Inner highlight
         ctx.fillStyle = 'rgba(255,255,255,0.3)';
         ctx.beginPath();
         ctx.arc(px - 3, py - 3, 5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Serving indicator
         if (isServing) {
           ctx.strokeStyle = '#fbbf24';
           ctx.lineWidth = 2;
@@ -246,13 +243,11 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
           ctx.stroke();
         }
 
-        // Name
         ctx.fillStyle = color;
         ctx.font = 'bold 10px system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(name.slice(0, 10), px, py - 24);
 
-        // Momentum mini-bar
         const barW = 30;
         ctx.fillStyle = '#0d1a2e';
         ctx.fillRect(px - barW / 2, py - 34, barW, 3);
@@ -260,10 +255,10 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
         ctx.fillRect(px - barW / 2, py - 34, barW * (mom / 100), 3);
       }
 
-      // ── Action flash overlay ──────────────────────────────────────────────
+      // ── Action flash overlay ──
       if (anim.flashAlpha > 0) {
         anim.flashAlpha *= 0.92;
-        const fColor = ACTION_COLORS[gameState.lastAction] ?? '#fff';
+        const fColor = ACTION_COLORS[gs.lastAction] ?? '#fff';
         ctx.globalAlpha = anim.flashAlpha * 0.3;
         ctx.fillStyle = fColor;
         ctx.beginPath();
@@ -272,14 +267,14 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
         ctx.globalAlpha = 1;
       }
 
-      // ── Action badge (top) ────────────────────────────────────────────────
-      if (gameState.lastAction) {
-        const emoji = ACTION_EMOJI[gameState.lastAction] ?? '•';
-        const label = `${emoji} ${gameState.lastAction}`;
+      // ── Action badge (top) ──
+      if (gs.lastAction) {
+        const emoji = ACTION_EMOJI[gs.lastAction] ?? '•';
+        const label = `${emoji} ${gs.lastAction}`;
         ctx.font = 'bold 11px system-ui, sans-serif';
         const tw = ctx.measureText(label).width + 16;
         const bx = W / 2 - tw / 2;
-        const fColor = ACTION_COLORS[gameState.lastAction] ?? '#fff';
+        const fColor = ACTION_COLORS[gs.lastAction] ?? '#fff';
 
         ctx.fillStyle = fColor + '18';
         ctx.strokeStyle = fColor + '44';
@@ -303,7 +298,7 @@ export function CourtCanvas({ gameState, agentNames, agentColors, className }: C
       running = false;
       cancelAnimationFrame(frameRef.current);
     };
-  }, [gameState, agentNames, agentColors, getOrCreateAnim]);
+  }, []); // ← EMPTY deps: loop runs once, reads propsRef each frame
 
   return (
     <canvas

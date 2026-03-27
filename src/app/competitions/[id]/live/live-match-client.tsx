@@ -283,27 +283,9 @@ export function LiveMatchClient({
     return p ?? { x: 70, y: 28 };
   }, [gs, agentB]);
 
-  const [agentPosA, setAgentPosA] = useState(targetPosA);
-  const [agentPosB, setAgentPosB] = useState(targetPosB);
-
-  // Lerp positions toward target at 60fps for buttery smooth movement
-  useEffect(() => {
-    let raf: number;
-    const LERP = 0.08; // lower = smoother but slower to reach target
-    const animate = () => {
-      setAgentPosA(prev => ({
-        x: prev.x + (targetPosA.x - prev.x) * LERP,
-        y: prev.y + (targetPosA.y - prev.y) * LERP,
-      }));
-      setAgentPosB(prev => ({
-        x: prev.x + (targetPosB.x - prev.x) * LERP,
-        y: prev.y + (targetPosB.y - prev.y) * LERP,
-      }));
-      raf = requestAnimationFrame(animate);
-    };
-    raf = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(raf);
-  }, [targetPosA, targetPosB]);
+  // Pass target positions directly to canvas — it does its own lerp via refs
+  const agentPosA = targetPosA;
+  const agentPosB = targetPosB;
 
   const lastAction = gs?.lastAction ?? "SERVE";
   const attackerIsA = gs ? gs.lastAgentId === agentA?.id : true;
