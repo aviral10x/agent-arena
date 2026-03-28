@@ -164,19 +164,21 @@ export function SportAgentBuilder() {
           sport: "badminton",
         }),
       });
-      if (!res.ok) throw new Error("Generation failed");
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? `Generation failed (${res.status})`);
+      }
       if (data.imageBase64) {
         setAvatarBase64(data.imageBase64);
       } else {
         throw new Error(data.error ?? "No image returned");
       }
-    } catch (err: any) {
-      setImageGenError(err.message ?? "Image generation failed");
+    } catch (err: unknown) {
+      setImageGenError(err instanceof Error ? err.message : "Image generation failed");
     } finally {
       setGeneratingImage(false);
     }
-  }, [form.name, form.archetype]);
+  }, [form]);
 
   const generateMoveImage = useCallback(async (move: string) => {
     if (moveImages[move] || generatingMoves.has(move)) return;
@@ -184,6 +186,7 @@ export function SportAgentBuilder() {
     try {
       const res = await fetch(`/api/agents/move-image?name=${encodeURIComponent(move)}`);
       const data = await res.json();
+      if (!res.ok) return;
       if (data.imageBase64) {
         setMoveImages(prev => {
           const next = { ...prev, [move]: data.imageBase64 };
@@ -275,7 +278,7 @@ export function SportAgentBuilder() {
         setSubmitting(false);
       }
     },
-    [form, router, avatarBase64]
+    [avatarBase64, form, router, walletAddress]
   );
 
   if (submitted) {
@@ -481,7 +484,14 @@ export function SportAgentBuilder() {
                 key={move}
                 type="button"
                 disabled={disabled}
-                onClick={() => { form.specialMoves.includes(move) ? playToggleOff() : playToggleOn(); toggleMove(move); }}
+                onClick={() => {
+                  if (form.specialMoves.includes(move)) {
+                    playToggleOff();
+                  } else {
+                    playToggleOn();
+                  }
+                  toggleMove(move);
+                }}
                 className="p-2.5 flex items-center gap-2.5 transition-all border disabled:opacity-30"
                 style={{
                   background: selected ? `${color}0d` : 'transparent',
