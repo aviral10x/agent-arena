@@ -13,33 +13,50 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
     }
 
-    const archetypeLabel = archetype ?? 'athlete';
     const protocol = playingStyle ?? 'Moderate';
-    const spd = stats?.speed ?? 7;
-    const pwr = stats?.power ?? 7;
-    const sta = stats?.stamina ?? 7;
-    const acc = stats?.accuracy ?? 7;
     const moves: string[] = Array.isArray(specialMoves) ? specialMoves : [];
 
-    // Build personality from stats
-    const statTraits = [
-      spd >= 9 ? 'lightning-fast movement' : spd >= 7 ? 'agile footwork' : 'calculated positioning',
-      pwr >= 9 ? 'explosive power' : pwr >= 7 ? 'strong strikes' : 'technical precision',
-      sta >= 9 ? 'tireless endurance' : sta >= 7 ? 'steady stamina' : 'burst-focused energy',
-      acc >= 9 ? 'pinpoint accuracy' : acc >= 7 ? 'precise placement' : 'raw force over finesse',
-    ].join(', ');
+    // ═══ VISUAL DICTIONARY — maps game stats to cinematic visual keywords ═══
 
-    const protocolStyle = protocol === 'Aggressive'
-      ? 'fierce battle stance, intense eyes, attack-ready posture'
-      : protocol === 'Defensive'
-      ? 'calm defensive stance, shielded posture, watchful gaze'
-      : 'balanced athletic stance, focused expression';
+    const chassisDict: Record<string, string> = {
+      'Speed Demon':          'Sleek, lightweight aerodynamic cybernetic suit, streamlined armor plating, razor-thin visor.',
+      'Power Hitter':         'Massive, bulky heavy-duty mecha armor, thick reinforced titanium plating, imposing silhouette.',
+      'Net Dominator':        'Holographic visor, neural-link cables exposed on the neck, high-tech tactical gear, predator-like stance.',
+      'Endurance Baseliner':  'Rugged, battle-scarred medium armor, utility pouches, survivalist cybernetics, weathered veteran look.',
+      'Counter Specialist':   'Asymmetrical armor, reactive sensory nodes glowing on shoulders, stealth-coated dark metal, calculated gaze.',
+      'Adaptive All-Rounder': 'Modular, perfectly balanced cyber-suit, clean pristine metallic finish, versatile loadout visible.',
+    };
 
-    const abilitiesDesc = moves.length > 0
-      ? `Signature moves: ${moves.join(' and ')}. `
-      : '';
+    const protocolDict: Record<string, string> = {
+      'Aggressive': 'Emitting an intense red and orange glowing aura, sharp jagged armor details, menacing attack-ready posture, fiery eyes.',
+      'Moderate':   'Emitting a cool white and cyan glowing aura, balanced focused posture, calm intensity radiating from visor.',
+      'Defensive':  'Emitting a deep blue and green glowing aura, generating a faint hexagonal energy shield around forearms, guardian stance.',
+    };
 
-    const prompt = `Cyberpunk sport athlete portrait. Athlete designation: "${name}". Combat chassis: ${archetypeLabel}. Operational protocol: ${protocol} — ${protocolStyle}. Physical profile: ${statTraits}. ${abilitiesDesc}Dark arena environment, neon cyan (#8ff5ff) and electric magenta energy glows, futuristic athletic gear with glowing accents, dynamic pose, cinematic lighting, ultra-detailed digital art, dark #0c0e16 background. Square composition, centered full portrait.`;
+    const abilityDict: Record<string, string> = {
+      'Thunder Smash':   'Crackling with electric arcs and lightning visual effects around fists.',
+      'Lightning Drive': 'Crackling with electric arcs and lightning visual effects streaking from armor.',
+      'Ghost Drop':      'Parts of the armor cloaked in smoky, semi-transparent shadowy aura, ethereal.',
+      'Phantom Clear':   'Parts of the armor cloaked in smoky, semi-transparent ghostly mist.',
+      'Net Kill':        'Surrounded by glowing digital neon threads and web-like energy lines.',
+      'Silk Drop':       'Surrounded by flowing gossamer light threads, delicate but deadly.',
+      'Mirror Drive':    'Armor features highly reflective, mirror-like chrome surfaces refracting prismatic light.',
+      'Endurance Drive': 'Glowing green stamina veins pulsing through armor plates, relentless energy.',
+      'Adaptive Smash':  'Armor shifts color dynamically, chameleon-like adaptive plating, versatile energy.',
+      'Shadow Lob':      'Trailing dark purple shadow afterimages, stealth movement visualization.',
+    };
+
+    const chassisDesc = chassisDict[archetype ?? ''] ?? 'Futuristic cybernetic combat armor, balanced proportions.';
+    const protocolDesc = protocolDict[protocol] ?? protocolDict['Moderate'];
+    const abilityDescs = moves
+      .slice(0, 2)
+      .map(m => abilityDict[m] ?? '')
+      .filter(Boolean)
+      .join(' ');
+
+    const basePrompt = 'A cinematic portrait of a sci-fi cyberpunk combat agent, waist-up, dark moody lighting, highly detailed 8k render, glowing neon accents, isolated on a dark background.';
+
+    const prompt = `${basePrompt} ${chassisDesc} ${protocolDesc} ${abilityDescs} Agent designation "${name}" etched on shoulder plate. Square composition, centered portrait, dark #0c0e16 background.`;
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${GOOGLE_AI_API_KEY}`,
