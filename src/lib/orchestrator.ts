@@ -5,6 +5,37 @@ import { initGameState, resolveRally, resolveFullRally, type GameState, type Sho
 import { executeSportAgentTurn, generateMockDecision, type SportAgent } from './sport-agent-runner';
 import { signAgentPayment } from './agent-wallet';
 import { adjustStrategyAsync } from './strategy-advisor';
+import { createWalletClient, createPublicClient, http, parseAbi } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { xLayerTestnet } from 'wagmi/chains';
+
+// ── On-chain USDC prize payout via arena wallet ──────────────────────────────
+const XLAYER_USDC = '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d' as `0x${string}`;
+const ERC20_TRANSFER_ABI = parseAbi(['function transfer(address to, uint256 amount) returns (bool)']);
+
+async function sendUsdcPrize(toAddress: string, amountUsdc: number): Promise<string | null> {
+  const key = process.env.ARENA_WALLET_PRIVATE_KEY;
+  if (!key || !key.startsWith('0x') || key.length !== 66) {
+    console.warn('[payout] No arena wallet private key configured');
+    return null;
+  }
+  try {
+    const account = privateKeyToAccount(key as `0x${string}`);
+    const client = createWalletClient({ account, chain: xLayerTestnet, transport: http('https://testrpc.xlayer.tech') });
+    const amountMicro = BigInt(Math.round(amountUsdc * 1_000_000));
+    const txHash = await client.writeContract({
+      address: XLAYER_USDC,
+      abi: ERC20_TRANSFER_ABI,
+      functionName: 'transfer',
+      args: [toAddress as `0x${string}`, amountMicro],
+    });
+    console.log(`[payout] USDC transfer: $${amountUsdc} → ${toAddress.slice(0, 10)}... tx: ${txHash}`);
+    return txHash;
+  } catch (e: any) {
+    console.error('[payout] USDC transfer failed:', e.message?.slice(0, 100));
+    return null;
+  }
+}
 
 // FIX 1.3: relative timestamp from actual DB timestamp
 export function timeAgo(date: Date): string {
@@ -56,18 +87,22 @@ export async function settleCompetition(competitionId: string) {
   const winnerWallet = (winner?.agent as any)?.wallet;
   console.log(`[settle] Competition ${competitionId} settled. Winner: ${winnerName}`);
 
-  // ═══ AGENT WALLET: Log prize credit for the winning agent ═══
-  // Prize = entry fees from both agents ($0.20 total, 90% to winner = $0.18)
-  const MATCH_ENTRY_FEE = 0.10;
-  const PRIZE_POOL = MATCH_ENTRY_FEE * competition.agents.length;
-  const PLATFORM_RAKE = 0.10; // 10%
-  const WINNER_PAYOUT = PRIZE_POOL * (1 - PLATFORM_RAKE);
+  // ═══ ON-CHAIN PRIZE PAYOUT: Send USDC from arena wallet to winner ═══
+  const totalBetPool = await prisma.spectatorBet.aggregate({
+    where: { competitionId },
+    _sum: { amountUsdc: true },
+  });
+  const poolUsdc = totalBetPool._sum.amountUsdc ?? 0;
+  const PLATFORM_RAKE_PCT = 0.10;
+  const winnerPayout = poolUsdc > 0 ? poolUsdc * (1 - PLATFORM_RAKE_PCT) : 0;
 
-  if (winner?.agentId && winnerWallet && winnerWallet !== '0x0000000000000000000000000000000000000000') {
-    console.log(`[agent-wallet] 🏆 ${winnerName} wins $${WINNER_PAYOUT.toFixed(2)} USDC prize → ${winnerWallet.slice(0, 10)}...`);
-    // Note: actual USDC transfer would use transferUsdc() from agent-wallet.ts
-    // For now, credited to DB only. Enable on-chain transfer when wallets are funded:
-    // await transferUsdc(winnerWallet, WINNER_PAYOUT, `prize ${competitionId.slice(0,8)}`);
+  if (winner?.agentId && winnerWallet && winnerPayout > 0) {
+    try {
+      const txHash = await sendUsdcPrize(winnerWallet, winnerPayout);
+      console.log(`[settle] 🏆 ${winnerName} wins $${winnerPayout.toFixed(2)} USDC → ${winnerWallet.slice(0, 10)}... tx: ${txHash ?? 'pending'}`);
+    } catch (e: any) {
+      console.error(`[settle] Prize payout failed: ${e.message?.slice(0, 80)}`);
+    }
   }
 
   // Update global stats + agent cards + leaderboard ranks

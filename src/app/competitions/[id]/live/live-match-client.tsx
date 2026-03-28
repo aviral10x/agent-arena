@@ -876,23 +876,36 @@ export function LiveMatchClient({
                 </div>
               </div>
 
-              {/* Commit with x402 */}
+              {/* Commit bet — real USDC on-chain transfer or demo fallback */}
               <button
                 onClick={async () => {
                   if (!betPick) {
                     setLog(l => [...l.slice(-20), "> BET ERROR: Select an agent first"]);
                     return;
                   }
-                  // Auto-resolve wallet: connected > URL param > guest
-                  const resolvedWallet = betWallet || viewerWallet || `guest_${Date.now()}`;
+                  const resolvedWallet = betWallet || viewerWallet;
+                  if (!resolvedWallet) {
+                    wallet.connect();
+                    setLog(l => [...l.slice(-20), "> Connect wallet to place bets"]);
+                    return;
+                  }
                   setBetSubmitting(true);
                   setBetPayStep(null);
 
                   try {
                     const selectedAgentId = betPick === "a" ? agentA?.id : agentB?.id;
 
-                    // Demo mode: send bet directly without x402 signing
-                    // (x402 signing requires browser wallet extension + correct chain — not always available)
+                    // Try real on-chain USDC transfer if wallet extension is available
+                    let txHash: string | null = null;
+                    if (wallet.connected && wallet.sendBetTransaction) {
+                      setBetPayStep('signing');
+                      txHash = await wallet.sendBetTransaction(betAmount);
+                      if (txHash) {
+                        setLog(l => [...l.slice(-20), `> ON-CHAIN TX: ${txHash!.slice(0, 18)}...`]);
+                      }
+                    }
+
+                    setBetPayStep(txHash ? 'confirming' : null);
                     const res = await fetch(`/api/competitions/${competitionId}/bet`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -900,7 +913,7 @@ export function LiveMatchClient({
                         predictedWinnerId: selectedAgentId,
                         amountUsdc: betAmount,
                         betterWallet: resolvedWallet,
-                        payload: { txSignature: `demo_${Date.now()}` },
+                        ...(txHash ? { txHash } : { payload: { txSignature: `demo_${Date.now()}` } }),
                       }),
                     });
                     if (res.ok) {
@@ -908,7 +921,6 @@ export function LiveMatchClient({
                       setBetTxInfo({ amount: betAmount, agent: agentName, wallet: resolvedWallet });
                       setBetDone(true);
                       if (!muted) SFX_MAP["POINT!"]?.();
-                      // Refresh bets list + reset after 2s
                       betRefreshRef.current++;
                       fetchMyBets();
                       setTimeout(() => { setBetDone(false); setBetPick(null); }, 2000);
@@ -916,8 +928,8 @@ export function LiveMatchClient({
                       const data = await res.json().catch(() => ({}));
                       setLog(l => [...l.slice(-20), `> BET ERROR: ${data.error ?? 'Failed'}`]);
                     }
-                  } catch {
-                    setLog(l => [...l.slice(-20), "> BET ERROR: Network error"]);
+                  } catch (e: any) {
+                    setLog(l => [...l.slice(-20), `> BET ERROR: ${e.message ?? 'Transaction rejected'}`]);
                   }
                   setBetSubmitting(false);
                   setBetPayStep(null);
