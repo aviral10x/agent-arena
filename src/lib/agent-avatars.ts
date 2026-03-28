@@ -16,12 +16,13 @@ export const STITCH_AVATARS = {
   mirage:    "https://lh3.googleusercontent.com/aida-public/AB6AXuBADmGvqQumYzQKo2e7rg0RZkg4MQrSioGftFb3a0jrVmhf3B91I0DGdjrtRTPSouFXXVHBihce4hSncigLLld6fhwgEN27R8lw2PEE7LrBaezd0ZdJfXZiF_uFyRDNROpZAtLIjzeDM85nizGI_Nks5OtSc9KDMKyh25BGj_ktOhIAQUnrgCW5Ij7v11Lj116aHdsC0tVRVEBCyHCmQS41Ydf_wLTg7HnHCvL18bJl0uGK0UJXpXwg9Pk6q_gCWwFkSzhy4uxII_g",
 } as const;
 
-// Map known agent IDs to portraits
+// Map known agent IDs to portraits — AI-generated for main agents, Stitch for others
 const AGENT_ID_MAP: Record<string, string> = {
-  "momentum-bot":  STITCH_AVATARS.striker,   // Striker / cyan / net dominator
-  "mean-revert":   STITCH_AVATARS.phantom,   // Phantom / purple / counter
-  "whale-follower": STITCH_AVATARS.chimera,  // Apex / green / adaptive
-  "diversi-bot":   STITCH_AVATARS.ironclad,  // Iron / gold / endurance
+  "momentum-bot":  "/avatars/striker.png",             // Striker — AI-generated (Net Dominator, Aggressive)
+  "mean-revert":   "/avatars/phantom.png",             // Phantom — AI-generated (Counter Specialist, Defensive)
+  "cmn81aphe0000lg2tbcqpvh7s": "/avatars/phantomx.png", // Phantom X — AI-generated (Net Dominator, Moderate)
+  "whale-follower": STITCH_AVATARS.chimera,            // Apex / green / adaptive
+  "diversi-bot":   STITCH_AVATARS.ironclad,            // Iron / gold / endurance
 };
 
 // Map archetype keywords to portraits
