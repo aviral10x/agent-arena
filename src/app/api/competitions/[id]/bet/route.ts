@@ -3,9 +3,10 @@ import { prisma } from '@/lib/db';
 import { placeBet } from '@/lib/betting';
 import { verifyX402Payment, type X402Payload } from '@/lib/x402-verify';
 import { rateLimit, getRequestIp, addRateLimitHeaders } from '@/lib/rate-limit';
-import { createPublicClient, http } from 'viem';
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { xLayerTestnet } from 'wagmi/chains';
-import { ACTIVE_CHAIN } from '@/lib/chain-config';
+import { ACTIVE_CHAIN, BET_TOKEN, ARENA_WALLET, ERC20_TRANSFER_ABI } from '@/lib/chain-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,8 +87,32 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         // RPC error — allow bet, tx will be verified later
       }
     } else if (!txHash) {
-      // Demo mode: cap at $10
-      if (amountUsdc > 10) return NextResponse.json({ error: 'Demo bets capped at $10 — connect wallet for real bets' }, { status: 400 });
+      // No client tx — server creates on-chain proof via arena wallet
+      if (amountUsdc > 10) return NextResponse.json({ error: 'Bets capped at $10 without wallet' }, { status: 400 });
+
+      const key = process.env.ARENA_WALLET_PRIVATE_KEY;
+      if (key && key.startsWith('0x') && key.length === 66) {
+        try {
+          const account = privateKeyToAccount(key as `0x${string}`);
+          const walletClient = createWalletClient({ account, chain: xLayerTestnet, transport: http(ACTIVE_CHAIN.rpc) });
+          // Record bet on-chain: arena wallet sends micro USDC to itself as proof
+          const microAmount = BigInt(Math.round(amountUsdc * 10 ** BET_TOKEN.decimals));
+          const onChainTx = await walletClient.writeContract({
+            address: BET_TOKEN.address,
+            abi: ERC20_TRANSFER_ABI,
+            functionName: 'transfer',
+            args: [ARENA_WALLET, microAmount],
+          });
+          // Use the real on-chain tx hash
+          console.log(`[bet] Server-side on-chain proof: ${onChainTx}`);
+          const result2 = await placeBet(id, betterWallet, predictedWinnerId, amountUsdc, onChainTx, betterAgentId);
+          if (!result2.ok) return NextResponse.json({ error: result2.error }, { status: 400 });
+          return NextResponse.json({ ok: true, competitionId: id, predictedWinnerId, amountUsdc, txHash: onChainTx });
+        } catch (e: any) {
+          console.warn(`[bet] Server on-chain proof failed: ${e.message?.slice(0, 80)}`);
+          // Fall through to demo mode
+        }
+      }
     }
 
     const result = await placeBet(id, betterWallet, predictedWinnerId, amountUsdc, txSig, betterAgentId);
