@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useWallet } from "@/hooks/use-wallet";
 import { SportAgentBuilderLazy } from "./sport-agent-builder-wrapper";
 import { playClick, playSelect, playConfirm } from "@/lib/sfx";
+import { getAgentAvatar } from "@/lib/agent-avatars";
 
 type Agent = {
   id: string;
@@ -19,10 +20,6 @@ type Agent = {
   bio: string;
   owner: string;
 };
-
-function getAgentPortraitSrc(agent: Agent): string {
-  return `/api/agents/${encodeURIComponent(agent.id)}/avatar`;
-}
 
 function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
   const pct = Math.min(100, Math.round((value / 10) * 100));
@@ -46,7 +43,7 @@ function AgentDetailPanel({ agent, onEnter }: { agent: Agent; onEnter: () => voi
     : (() => { try { return JSON.parse(agent.specialMoves as string); } catch { return []; } })();
 
   const totalStats = agent.speed + agent.power + agent.stamina + agent.accuracy;
-  const portrait = getAgentPortraitSrc(agent);
+  const portrait = (agent as any).avatarUrl || getAgentAvatar(agent.id, agent.archetype);
 
   return (
     <div className="bg-[#171924] border border-[#464752]/30 h-full flex flex-col" style={{ boxShadow: "inset 0 1px 0 0 rgba(143,245,255,0.08)" }}>
@@ -189,7 +186,7 @@ function AgentRosterCard({
   onClick: () => void;
 }) {
   const color = agent.color || "#8ff5ff";
-  const portrait = getAgentPortraitSrc(agent);
+  const portrait = (agent as any).avatarUrl || getAgentAvatar(agent.id, agent.archetype);
 
   return (
     <button
