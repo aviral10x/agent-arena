@@ -29,18 +29,18 @@ const AGENT_ID_MAP: Record<string, string> = {
   "cmn7jaxpm0000lgbw0cpxupe0": "/avatars/yoo.png",       // yoo — Challenger, Moderate
 };
 
-// Map archetype keywords to portraits
+// Map archetype keywords to AI-generated portraits (matching the agents we have)
 const ARCHETYPE_MAP: Array<[string, string]> = [
-  ["net dominator",        STITCH_AVATARS.striker],
-  ["counter specialist",   STITCH_AVATARS.phantom],
-  ["adaptive all-rounder", STITCH_AVATARS.chimera],
-  ["endurance baseliner",  STITCH_AVATARS.ironclad],
-  ["power hitter",         STITCH_AVATARS.kaizen],
+  ["net dominator",        "/avatars/striker.png"],
+  ["counter specialist",   "/avatars/phantom.png"],
+  ["adaptive all-rounder", "/avatars/apex.png"],
+  ["endurance baseliner",  "/avatars/iron.png"],
+  ["power hitter",         "/avatars/ragnarok.png"],
   ["speed demon",          STITCH_AVATARS.viper],
   ["stealth",              STITCH_AVATARS.mirage],
   ["tactical",             STITCH_AVATARS.sentinel],
-  ["defender",             STITCH_AVATARS.ironclad],
-  ["challenger",           STITCH_AVATARS.striker],
+  ["defender",             "/avatars/iron.png"],
+  ["challenger",           "/avatars/yoo.png"],
 ];
 
 /**

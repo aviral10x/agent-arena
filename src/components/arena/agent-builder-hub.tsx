@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useWallet } from "@/hooks/use-wallet";
 import { SportAgentBuilderLazy } from "./sport-agent-builder-wrapper";
 import { playClick, playSelect, playConfirm } from "@/lib/sfx";
+import { getAgentAvatar } from "@/lib/agent-avatars";
 
 // Stitch design portraits — cycled by index for variety
 const STITCH_PORTRAITS = [
@@ -53,7 +54,7 @@ function AgentDetailPanel({ agent, onEnter, index }: { agent: Agent; onEnter: ()
     : (() => { try { return JSON.parse(agent.specialMoves as string); } catch { return []; } })();
 
   const totalStats = agent.speed + agent.power + agent.stamina + agent.accuracy;
-  const portrait = (agent as any).avatarUrl || STITCH_PORTRAITS[index % STITCH_PORTRAITS.length];
+  const portrait = (agent as any).avatarUrl || getAgentAvatar(agent.id, agent.archetype);
 
   return (
     <div className="bg-[#171924] border border-[#464752]/30 h-full flex flex-col" style={{ boxShadow: "inset 0 1px 0 0 rgba(143,245,255,0.08)" }}>
@@ -202,7 +203,7 @@ function AgentRosterCard({
     : (() => { try { return JSON.parse(agent.specialMoves as string); } catch { return []; } })();
 
   const color = agent.color || "#8ff5ff";
-  const portrait = (agent as any).avatarUrl || STITCH_PORTRAITS[index % STITCH_PORTRAITS.length];
+  const portrait = (agent as any).avatarUrl || getAgentAvatar(agent.id, agent.archetype);
 
   return (
     <button
