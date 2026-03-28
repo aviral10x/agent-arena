@@ -1,22 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/hooks/use-wallet";
 import { SportAgentBuilderLazy } from "./sport-agent-builder-wrapper";
 import { playClick, playSelect, playConfirm } from "@/lib/sfx";
 import { getAgentAvatar } from "@/lib/agent-avatars";
-
-// Stitch design portraits — cycled by index for variety
-const STITCH_PORTRAITS = [
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuC-RR5F9cIaudkf0mwhOYmmq6SLUqYlliKmaat1zFL_TStezHkmMN-hPZZKUDmJOPaxZlDugQOAbySZm4W-zA0mlt56dD-av_jvrM9gdQEzn8T-Y3eNtvJtNwA8E63dLUnrdodU1kY0pd3JxgIWN6dsm3CJ_Z0pkhYRPvqO9HXEw92hiQdDjZhPK8pudZY20pS1KS_8xmrqdgYCyRR4my8ZrJ6qf-HGwg2ZW6d1l0Deku4ZCBJEJc3mTUW36kcWj4",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuBADmGvqQumYzQKo2e7rg0RZkg4MQrSioGftFb3a0jrVmhf3B91I0DGdjrtRTPSouFXXVHBihce4hSncigLLld6fhwgEN27R8lw2PEE7LrBaezd0ZdJfXZiF_uFyRDNROpZAtLIjzeDM85nizGI_Nks5OtSc9KDMKyh25BGj_ktOhIAQUnrgCW5Ij7v11Lj116aHdsC0tVRVEBCyHCmQS41Ydf_wLTg7HnHCvL18bJl0uGK0UJXpXwg9Pk6q_gCWwFkSzhy4uxII_g",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAGtyltrmS3Np_64BAlVx63OpE9fdG1ATcmFA6Y1esQu1bTQ9_71N1BGhAstGOAg4u1mfTBF6sOBTg_p_9HQxFpHbEmc5cl7aAer6P3crTICjwXGflE6-L2NZlwmP5xM043mrNeaQawdA_Y39jKMD7WA3D_ch5q36V5qpilovUXmxMtUl-y-OK2A4tkjrv7QyfutJcARLSpkDIL5kar2Ok_7LKSoTBX6rZrKxzgYE4dw7aLG1GDVat8ktOFub81ZeZpDaNCV6Si-DQ",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuBS-_VbIZHfQTDQOI3j7VAP-I2AS8DAqPujDDm1PGkYmqhz9crZVQXRwfnwb6pF9eJCAvvBb6KTeb8okOMtzJIAkYsEYNUjgxukaumgVEVtJLmjt69EVRvW4YzBveMcy_8Jl9fetUeEpQAmSTsrKkSaRdMJKD-6nteEZ2UqeN6nf3JEtNVOaOgcN7J9XfevsXr7HYlY1EiqL1CsS0dnDyxoYw5__59c8zLfCuPGz7L3Z79ykKxo_AIrmBgWFk500_puRZTkiWPUa4M",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuCDGy-e35AjU2e3rTWoqlEBU1oLzW1Bt3YtIv5lSbpifs40saYKJ0V-oyMBvd0ZgTKu_J2vxj6KHyEZWtPDDaj878ks-wxxKaV3jGiG6haz4KoKc522r702TufOJWB4Is-APkkzr3MlmHUm0lNvjxMUweW7Ra6dUV-vDOHL6LSyhHWZ8fLKDaHpnZLTd8tYTEUO9U1KaRegeXPtHRGyGeqA1EIhUvuKgmYLtGCbWuzFO8GfaD3XsN6miZdBLBngH9eNi3nLxQg2s_c",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAjdBvI7chczvau0Sl_RbgarMxxzxGQvF0NzuJ6uivZBLwoE0vnEL5uJrLAFnU4-Q-8UNB15NjbEEegGIbVOzQsICse0a_i9ovvnw-3xe64QOMzLvh6Z96JiYC_X_1PtbU7atjm_Zpq6DCTI0Dp86oM0YN8a-P6bkAnZcZ1KjjBu1XBAeH5cJ1zPjqL0EtrJE-fsYSznVUL-FHN74gMYASJSgAtgqia05TmBtqFoWXCKROo5rAAYYKgwLSWZ5lw1F2ZsaqjfZDV5U",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuD3yjHWUrqgeeGbXlZhzJmr3hLKZRDvZj177pYCszIE-5_ByCZNBKbE9Gf9qnNiZjKSRNKA7BYpOVfhva37p8N_TkdcLQxGhtITTibfIiPVPWsXhWE9DRWFsdi102igv4ytfZa9nESnaAuaTjgnHwqDlsdkDyU3xEiD-o9QMRrl1zsw1JK0bIakYzkrbvJ2bWj_nrg2qHyuozvmklCSo7yx4dktnISMbQtTIbc31EEdoLm-_k1RUziqsd8Sw6yuefXclIsd9nvQ",
-];
 
 type Agent = {
   id: string;
@@ -48,7 +37,7 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
   );
 }
 
-function AgentDetailPanel({ agent, onEnter, index }: { agent: Agent; onEnter: () => void; index: number }) {
+function AgentDetailPanel({ agent, onEnter }: { agent: Agent; onEnter: () => void }) {
   const moves: string[] = Array.isArray(agent.specialMoves)
     ? agent.specialMoves
     : (() => { try { return JSON.parse(agent.specialMoves as string); } catch { return []; } })();
@@ -191,17 +180,11 @@ function AgentRosterCard({
   agent,
   selected,
   onClick,
-  index,
 }: {
   agent: Agent;
   selected: boolean;
   onClick: () => void;
-  index: number;
 }) {
-  const moves: string[] = Array.isArray(agent.specialMoves)
-    ? agent.specialMoves
-    : (() => { try { return JSON.parse(agent.specialMoves as string); } catch { return []; } })();
-
   const color = agent.color || "#8ff5ff";
   const portrait = (agent as any).avatarUrl || getAgentAvatar(agent.id, agent.archetype);
 
@@ -272,7 +255,7 @@ export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } =
 
   const [myAgents, setMyAgents] = useState<Agent[]>([]);
   const [allAgents, setAllAgents] = useState<Agent[]>(initialAgents ?? []);
-  const [loading, setLoading] = useState(!initialAgents);
+  const [loadedOwner, setLoadedOwner] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | "new">("new");
 
   useEffect(() => {
@@ -287,30 +270,40 @@ export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } =
 
   useEffect(() => {
     if (!walletAddress) {
-      setMyAgents([]);
-      setLoading(false);
       return;
     }
-    setLoading(true);
+
+    let cancelled = false;
     fetch(`/api/agents?owner=${encodeURIComponent(walletAddress)}`)
       .then(r => r.json())
-      .then((data: Agent[]) => { if (Array.isArray(data)) setMyAgents(data); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .then((data: Agent[]) => {
+        if (cancelled) return;
+        if (Array.isArray(data)) setMyAgents(data);
+        setLoadedOwner(walletAddress);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadedOwner(walletAddress);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [walletAddress]);
 
   // Merge: user's agents first, then default agents (deduped)
-  const myIds = new Set(myAgents.map(a => a.id));
-  const defaultAgents = allAgents.filter(a => !myIds.has(a.id));
-  const agents = [...myAgents, ...defaultAgents];
+  const ownedAgents = walletAddress && loadedOwner === walletAddress ? myAgents : [];
+  const myIds = new Set(ownedAgents.map((agent) => agent.id));
+  const defaultAgents = allAgents.filter((agent) => !myIds.has(agent.id));
+  const agents = [...ownedAgents, ...defaultAgents];
+  const isLoading = Boolean(walletAddress && loadedOwner !== walletAddress);
 
   const selectedAgent = agents.find(a => a.id === selectedId);
 
-  const handleEnter = useCallback(() => {
+  function handleEnter() {
     if (selectedAgent) {
       router.push(`/challenges?myAgentId=${selectedAgent.id}`);
     }
-  }, [selectedAgent, router]);
+  }
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -318,8 +311,8 @@ export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } =
       {/* ── Left: Agent Roster ── */}
       <section className="col-span-12 lg:col-span-4">
         <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-3 flex items-center justify-between">
-          <span>Your Agents <span className="text-[#8ff5ff]">// {myAgents.length}</span></span>
-          {loading && (
+          <span>Your Agents <span className="text-[#8ff5ff]">{"// "}{ownedAgents.length}</span></span>
+          {isLoading && (
             <span className="text-[#464752] animate-pulse">loading…</span>
           )}
         </div>
@@ -358,11 +351,10 @@ export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } =
           </button>
 
           {/* User's own agents */}
-          {myAgents.map((agent, i) => (
+          {ownedAgents.map((agent) => (
             <AgentRosterCard
               key={agent.id}
               agent={agent}
-              index={i}
               selected={selectedId === agent.id}
               onClick={() => setSelectedId(agent.id)}
             />
@@ -373,14 +365,13 @@ export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } =
         {defaultAgents.length > 0 && (
           <>
             <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mt-5 mb-3 flex items-center justify-between">
-              <span>Arena Roster <span className="text-[#ffe6aa]">// {defaultAgents.length}</span></span>
+              <span>Arena Roster <span className="text-[#ffe6aa]">{"// "}{defaultAgents.length}</span></span>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {defaultAgents.map((agent, i) => (
+              {defaultAgents.map((agent) => (
                 <AgentRosterCard
                   key={agent.id}
                   agent={agent}
-                  index={myAgents.length + i}
                   selected={selectedId === agent.id}
                   onClick={() => setSelectedId(agent.id)}
                 />
@@ -397,7 +388,6 @@ export function AgentBuilderHub({ initialAgents }: { initialAgents?: Agent[] } =
         ) : (
           <AgentDetailPanel
             agent={selectedAgent}
-            index={agents.findIndex(a => a.id === selectedId)}
             onEnter={handleEnter}
           />
         )}

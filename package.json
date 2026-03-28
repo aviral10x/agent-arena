@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "avatars:backfill": "tsx scripts/backfill-agent-avatars.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.47",
