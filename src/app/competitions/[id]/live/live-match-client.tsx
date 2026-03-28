@@ -446,13 +446,13 @@ export function LiveMatchClient({
     return () => clearInterval(interval);
   }, [fetchMyBets, betRefreshRef.current]);
 
-  // Redirect on match end (WebSocket OR polling)
+  // Redirect on match end (WebSocket OR polling) — 5s delay for settlement to complete
   const isSettled = socket.status === "settled" || polledStatus === "settled";
   useEffect(() => {
     if (isSettled) {
       const timer = setTimeout(() => {
         router.push(`/competitions/${competitionId}/result`);
-      }, 3000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [isSettled, competitionId, router]);

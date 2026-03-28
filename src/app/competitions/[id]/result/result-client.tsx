@@ -43,9 +43,35 @@ function StatRow({ label, aVal, bVal, aWin }: { label: string; aVal: string | nu
   );
 }
 
-export function ResultClient({ competitionId, competitionTitle, agentA, agentB, winnerId, totalRallies, sport, status }: Props) {
+type SettledBet = { id: string; betterWallet: string; predictedWinnerId: string; amountUsdc: number; txSignature: string; isCorrect: boolean | null; payoutUsdc: number; settledAt: string | null };
+
+export function ResultClient({ competitionId, competitionTitle, agentA, agentB, winnerId: initialWinnerId, totalRallies, sport, status }: Props) {
   const [visible, setVisible] = useState(false);
+  const [winnerId, setWinnerId] = useState(initialWinnerId);
+  const [bets, setBets] = useState<SettledBet[]>([]);
+
   useEffect(() => { const t = setTimeout(() => setVisible(true), 50); return () => clearTimeout(t); }, []);
+
+  // Poll for winnerId if null (settlement may still be in progress)
+  useEffect(() => {
+    if (winnerId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/competitions/${competitionId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.winnerId) { setWinnerId(data.winnerId); clearInterval(interval); }
+      } catch {}
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [competitionId, winnerId]);
+
+  // Fetch settled bets
+  useEffect(() => {
+    fetch(`/api/competitions/${competitionId}/bet`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setBets(data);
+    }).catch(() => {});
+  }, [competitionId]);
 
   const winner = agentA?.id === winnerId ? agentA : agentB?.id === winnerId ? agentB : null;
   const loser  = agentA?.id === winnerId ? agentB : agentB?.id === winnerId ? agentA : null;
@@ -220,6 +246,45 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
               <div className="text-[9px] font-mono text-[#464752] uppercase">
                 TX_ID: {competitionId.slice(-8).toUpperCase()}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Settled Bets ── */}
+        {bets.length > 0 && (
+          <div className="w-full bg-[#11131d] border border-[#464752]/20 p-4">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-[#464752] mb-3">
+              Settled Bets <span className="text-[#ffe6aa]">// {bets.length}</span>
+            </div>
+            <div className="space-y-1.5">
+              {bets.map(bet => {
+                const agentName = bet.predictedWinnerId === agentA?.id ? agentA?.name : agentB?.name;
+                const agentColor = bet.predictedWinnerId === agentA?.id ? (agentA?.color ?? '#8ff5ff') : (agentB?.color ?? '#ff6c92');
+                const wallet = bet.betterWallet.slice(0, 6) + '…' + bet.betterWallet.slice(-4);
+                const xlayerUrl = `https://www.okx.com/web3/explorer/xlayer-test/tx/${bet.txSignature}`;
+                return (
+                  <div key={bet.id} className="flex items-center gap-3 text-[10px] font-mono">
+                    <span className="text-[#464752]">{wallet}</span>
+                    <span style={{ color: agentColor }} className="font-bold uppercase">{agentName}</span>
+                    <span className="text-[#ffe6aa] font-bold">${bet.amountUsdc.toFixed(2)}</span>
+                    {bet.settledAt ? (
+                      bet.isCorrect ? (
+                        <span className="text-[#00ff87] font-bold">WON ${bet.payoutUsdc.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-[#ff6c92]">LOST</span>
+                      )
+                    ) : (
+                      <span className="text-[#464752] animate-pulse">SETTLING…</span>
+                    )}
+                    <a href={xlayerUrl} target="_blank" rel="noopener noreferrer" className="ml-auto text-[#8ff5ff] hover:underline text-[9px]">
+                      tx:{bet.txSignature.slice(0, 12)}…
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-2 text-[9px] font-mono text-[#464752] uppercase">
+              Pool: ${bets.reduce((s, b) => s + b.amountUsdc, 0).toFixed(2)} USDC · Rake: 10%
             </div>
           </div>
         )}
