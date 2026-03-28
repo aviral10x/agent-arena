@@ -138,9 +138,14 @@ export async function settleBets(competitionId: string, winnerId: string) {
   // ── Single atomic transaction — all bets settle or none do ──────────
   const updates = bets.map(bet => {
     const correct    = bet.predictedWinnerId === winnerId;
-    const payoutUsdc = correct && winnerTotal > 0
-      ? (bet.amountUsdc / winnerTotal) * payoutPool
-      : 0;
+    let payoutUsdc = 0;
+    if (correct && winnerTotal > 0) {
+      // Normal payout: proportional share of the pool
+      payoutUsdc = (bet.amountUsdc / winnerTotal) * payoutPool;
+    } else if (winnerTotal === 0) {
+      // Nobody bet on the winner — refund everyone (minus rake)
+      payoutUsdc = bet.amountUsdc * (1 - PLATFORM_RAKE);
+    }
 
     return prisma.spectatorBet.update({
       where: { id: bet.id },

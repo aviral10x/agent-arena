@@ -40,8 +40,9 @@ export async function settleCompetition(competitionId: string) {
     competition.agents[0]
   );
 
-  await prisma.competition.update({
-    where: { id: competitionId },
+  // ATOMIC: only one concurrent caller can settle — updateMany returns count=0 for losers
+  const settled = await prisma.competition.updateMany({
+    where: { id: competitionId, status: { not: 'settled' } },
     data: {
       status:    'settled',
       winnerId:  winner?.agentId ?? null,
@@ -49,6 +50,7 @@ export async function settleCompetition(competitionId: string) {
       bettingOpen: false,
     }
   });
+  if (settled.count === 0) return; // another tick already settled
 
   const winnerName = winner?.agent?.name ?? 'Unknown';
   const winnerWallet = (winner?.agent as any)?.wallet;
@@ -94,8 +96,14 @@ export async function runSportCompetitionTick(competitionId: string) {
   if (!competition) throw new Error('Competition not found');
   if (competition.status !== 'live') throw new Error('Competition is not live');
   if (competition.isTicking) {
-    console.log(`[sport-tick] ${competitionId} already ticking, skipping`);
-    return [];
+    // Stale lock detection: if isTicking has been true for >30s, the previous tick crashed
+    const tickAge = Date.now() - new Date(competition.updatedAt).getTime();
+    if (tickAge < 30000) {
+      console.log(`[sport-tick] ${competitionId} already ticking (${Math.round(tickAge/1000)}s), skipping`);
+      return [];
+    }
+    console.warn(`[sport-tick] ${competitionId} stale lock detected (${Math.round(tickAge/1000)}s) — force resetting`);
+    await prisma.competition.update({ where: { id: competitionId }, data: { isTicking: false } });
   }
 
   // Auto-settle if time expired
