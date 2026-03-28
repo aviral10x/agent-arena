@@ -261,7 +261,7 @@ export function ResultClient({ competitionId, competitionTitle, agentA, agentB, 
                 const agentName = bet.predictedWinnerId === agentA?.id ? agentA?.name : agentB?.name;
                 const agentColor = bet.predictedWinnerId === agentA?.id ? (agentA?.color ?? '#8ff5ff') : (agentB?.color ?? '#ff6c92');
                 const wallet = bet.betterWallet.slice(0, 6) + '…' + bet.betterWallet.slice(-4);
-                const xlayerUrl = `https://www.oklink.com/x-layer-testnet/tx/${bet.txSignature.startsWith('0x') ? bet.txSignature : ''}`;
+                const xlayerUrl = `https://web3.okx.com/explorer/x-layer-testnet/tx/${bet.txSignature.startsWith('0x') ? bet.txSignature : ''}`;
                 return (
                   <div key={bet.id} className="flex items-center gap-3 text-[10px] font-mono">
                     <span className="text-[#464752]">{wallet}</span>
