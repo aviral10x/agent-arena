@@ -105,7 +105,7 @@ export default async function Home() {
               <div className="flex gap-4">
                 <Link
                   href="/challenges"
-                  className="bg-[#8ff5ff] text-[#005d63] px-8 py-3 font-['Space_Grotesk'] font-black uppercase text-lg hover:skew-x-[-6deg] transition-all group-hover:shadow-[0_0_30px_rgba(143,245,255,0.4)]"
+                  className="bg-[#8ff5ff] text-black px-8 py-3 font-['Space_Grotesk'] font-black uppercase text-lg hover:skew-x-[-6deg] transition-all group-hover:shadow-[0_0_30px_rgba(143,245,255,0.4)]"
                 >
                   Watch Live
                 </Link>
