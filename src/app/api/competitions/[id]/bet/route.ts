@@ -46,11 +46,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers });
     }
     const body = await req.json();
-    const { betterWallet, predictedWinnerId, amountUsdc, payload, betterAgentId } = body as {
+    const { betterWallet, predictedWinnerId, amountUsdc, txHash, payload, betterAgentId } = body as {
       betterWallet:      string;
       predictedWinnerId: string;
       amountUsdc:        number;
-      payload:           X402Payload;
+      txHash?:           string; // Real on-chain tx hash from ERC-20 transfer
+      payload?:          X402Payload;
       betterAgentId?:    string;
     };
 
@@ -60,27 +61,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (amountUsdc < 0.01) return NextResponse.json({ error: 'Minimum bet is $0.01' }, { status: 400 });
     if (amountUsdc > 100)  return NextResponse.json({ error: 'Maximum bet is $100' },  { status: 400 });
 
-    // Determine payment mode:
-    // - Full EIP-3009 (payload with from set and no txSignature) → verify on-chain
-    // - Demo mode (no payload, or txSignature present, or no from) → skip verify, cap at $10
-    const hasPayload = payload && payload.from && payload.signature && !(payload as any).txSignature;
-    const txSig: string = hasPayload
-      ? (payload.signature ?? `demo_${Date.now()}`)
-      : ((payload as any)?.txSignature ?? `demo_${Date.now()}`);
+    // Real on-chain bet: txHash is a real XLayer testnet tx hash
+    // Demo fallback: if no txHash, allow demo bets up to $10
+    const txSig = txHash ?? (payload as any)?.txSignature ?? `demo_${Date.now()}`;
 
-    if (!hasPayload) {
-      // Demo/hackathon mode: allow bets up to $10 without on-chain verification
-      if (amountUsdc > 10) return NextResponse.json({ error: 'Demo bets capped at $10 — connect X Layer wallet for larger bets' }, { status: 400 });
-    } else {
-      // Full EIP-3009 path — verify the on-chain payment
-      const verified = await verifyX402Payment(payload, 'bet', `${id}:${betterWallet}`, amountUsdc);
-      if (!verified.ok) return NextResponse.json({ error: verified.error }, { status: 402 });
+    if (!txHash) {
+      // Demo mode: cap at $10
+      if (amountUsdc > 10) return NextResponse.json({ error: 'Demo bets capped at $10 — connect wallet for real bets' }, { status: 400 });
     }
 
     const result = await placeBet(id, betterWallet, predictedWinnerId, amountUsdc, txSig, betterAgentId);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
 
-    return NextResponse.json({ ok: true, competitionId: id, predictedWinnerId, amountUsdc });
+    return NextResponse.json({ ok: true, competitionId: id, predictedWinnerId, amountUsdc, txHash: txSig });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

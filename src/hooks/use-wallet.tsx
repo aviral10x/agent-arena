@@ -25,6 +25,11 @@ interface WalletState {
   loading: boolean;
 }
 
+// XLayer Testnet USDC contract
+const XLAYER_USDC = '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d';
+const XLAYER_CHAIN_ID = 1952; // XLayer testnet
+const ARENA_WALLET = '0x991442af55370b91930c5617b472b0e468e97bb2';
+
 interface WalletContextValue extends WalletState {
   /** Connect wallet — opens browser extension or agentic fallback */
   connect: () => Promise<string | null>;
@@ -34,6 +39,8 @@ interface WalletContextValue extends WalletState {
   signTypedData: (typedData: object) => Promise<string | null>;
   /** Sign x402 USDC payment */
   signX402Payment: (amountUsdc: number) => Promise<any | null>;
+  /** Send real ERC-20 USDC transfer on XLayer testnet. Returns tx hash. */
+  sendBetTransaction: (amountUsdc: number) => Promise<string | null>;
   /** Get the raw EIP-1193 provider */
   getProvider: () => any;
 }
@@ -250,8 +257,72 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     };
   }, [state.address, signTypedData]);
 
+  // ── Real ERC-20 USDC transfer on XLayer testnet ────────────────────────────
+  const sendBetTransaction = useCallback(async (amountUsdc: number): Promise<string | null> => {
+    if (!state.address) return null;
+
+    const injected = getInjectedProvider();
+    if (!injected) return null;
+
+    // Ensure wallet is on XLayer testnet (chain 1952)
+    try {
+      const chainHex = await injected.provider.request({ method: 'eth_chainId' });
+      if (parseInt(chainHex, 16) !== XLAYER_CHAIN_ID) {
+        // Switch to XLayer testnet
+        try {
+          await injected.provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: `0x${XLAYER_CHAIN_ID.toString(16)}` }],
+          });
+        } catch (switchErr: any) {
+          // Chain not added — add it
+          if (switchErr.code === 4902) {
+            await injected.provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: `0x${XLAYER_CHAIN_ID.toString(16)}`,
+                chainName: 'XLayer Testnet',
+                rpcUrls: ['https://testrpc.xlayer.tech'],
+                nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
+                blockExplorerUrls: ['https://www.okx.com/web3/explorer/xlayer-test'],
+              }],
+            });
+          } else {
+            console.warn('[wallet] Chain switch failed:', switchErr);
+            return null;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[wallet] Chain check failed:', e);
+    }
+
+    // ERC-20 transfer calldata: transfer(address to, uint256 amount)
+    const amountMicro = BigInt(Math.round(amountUsdc * 1_000_000));
+    const transferData = '0xa9059cbb' + // transfer(address,uint256)
+      ARENA_WALLET.slice(2).padStart(64, '0') +
+      amountMicro.toString(16).padStart(64, '0');
+
+    try {
+      const txHash = await injected.provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: state.address,
+          to: XLAYER_USDC,
+          data: transferData,
+          value: '0x0',
+        }],
+      });
+      console.log(`[wallet] USDC transfer sent: ${txHash}`);
+      return txHash;
+    } catch (e: any) {
+      console.warn('[wallet] USDC transfer failed:', e.message ?? e);
+      return null;
+    }
+  }, [state.address]);
+
   return (
-    <WalletContext.Provider value={{ ...state, connect, disconnect, signTypedData, signX402Payment, getProvider }}>
+    <WalletContext.Provider value={{ ...state, connect, disconnect, signTypedData, signX402Payment, sendBetTransaction, getProvider }}>
       {children}
     </WalletContext.Provider>
   );
