@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY ?? 'AIzaSyCLz1iEaxywW8PCI3VuLqwoK0JiUBbMKhU';
+const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY ?? '';
 
 export async function POST(request: Request) {
   try {
+    if (!GOOGLE_AI_API_KEY) {
+      return NextResponse.json({ error: 'GOOGLE_AI_API_KEY not configured — set it in Vercel env vars' }, { status: 503 });
+    }
+
     const body = await request.json();
     const { name, archetype, playingStyle, stats, specialMoves, sport } = body;
 
