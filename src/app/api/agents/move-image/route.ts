@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY ?? 'AIzaSyCLz1iEaxywW8PCI3VuLqwoK0JiUBbMKhU';
+const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY ?? '';
 
 // Server-side singleton cache — persists for the lifetime of the Node process
 const MOVE_IMAGE_CACHE = new Map<string, string>();
