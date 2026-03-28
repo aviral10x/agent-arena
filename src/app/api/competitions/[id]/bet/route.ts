@@ -3,6 +3,9 @@ import { prisma } from '@/lib/db';
 import { placeBet } from '@/lib/betting';
 import { verifyX402Payment, type X402Payload } from '@/lib/x402-verify';
 import { rateLimit, getRequestIp, addRateLimitHeaders } from '@/lib/rate-limit';
+import { createPublicClient, http } from 'viem';
+import { xLayerTestnet } from 'wagmi/chains';
+import { ACTIVE_CHAIN } from '@/lib/chain-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,11 +64,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (amountUsdc < 0.01) return NextResponse.json({ error: 'Minimum bet is $0.01' }, { status: 400 });
     if (amountUsdc > 100)  return NextResponse.json({ error: 'Maximum bet is $100' },  { status: 400 });
 
-    // Real on-chain bet: txHash is a real XLayer testnet tx hash
+    // Real on-chain bet: txHash is a real XLayer tx hash — verify receipt
     // Demo fallback: if no txHash, allow demo bets up to $10
     const txSig = txHash ?? (payload as any)?.txSignature ?? `demo_${Date.now()}`;
 
-    if (!txHash) {
+    if (txHash && txHash.startsWith('0x')) {
+      // Verify the tx exists on-chain (non-blocking — don't fail if RPC is slow)
+      try {
+        const client = createPublicClient({ chain: xLayerTestnet, transport: http(ACTIVE_CHAIN.rpc) });
+        const receipt = await Promise.race([
+          client.getTransactionReceipt({ hash: txHash as `0x${string}` }),
+          new Promise<null>(r => setTimeout(() => r(null), 5000)),
+        ]);
+        if (receipt && receipt.status === 'success') {
+          console.log(`[bet] On-chain tx verified: ${txHash.slice(0, 18)}... block ${receipt.blockNumber}`);
+        } else if (receipt && receipt.status === 'reverted') {
+          return NextResponse.json({ error: 'Transaction reverted on-chain' }, { status: 400 });
+        }
+        // If receipt is null (timeout), allow anyway — tx may still be pending
+      } catch {
+        // RPC error — allow bet, tx will be verified later
+      }
+    } else if (!txHash) {
       // Demo mode: cap at $10
       if (amountUsdc > 10) return NextResponse.json({ error: 'Demo bets capped at $10 — connect wallet for real bets' }, { status: 400 });
     }

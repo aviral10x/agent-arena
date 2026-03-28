@@ -25,10 +25,11 @@ interface WalletState {
   loading: boolean;
 }
 
-// XLayer Testnet USDC contract
-const XLAYER_USDC = '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d';
-const XLAYER_CHAIN_ID = 1952; // XLayer testnet
-const ARENA_WALLET = '0x991442af55370b91930c5617b472b0e468e97bb2';
+// Import from canonical chain config
+import { ACTIVE_CHAIN, BET_TOKEN, ARENA_WALLET as CFG_ARENA_WALLET } from '@/lib/chain-config';
+const XLAYER_USDC = BET_TOKEN.address;
+const XLAYER_CHAIN_ID = ACTIVE_CHAIN.chainId;
+const ARENA_WALLET = CFG_ARENA_WALLET;
 
 interface WalletContextValue extends WalletState {
   /** Connect wallet — opens browser extension or agentic fallback */
@@ -280,11 +281,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             await injected.provider.request({
               method: 'wallet_addEthereumChain',
               params: [{
-                chainId: `0x${XLAYER_CHAIN_ID.toString(16)}`,
-                chainName: 'XLayer Testnet',
-                rpcUrls: ['https://testrpc.xlayer.tech'],
-                nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
-                blockExplorerUrls: ['https://www.okx.com/web3/explorer/xlayer-test'],
+                chainId: ACTIVE_CHAIN.chainIdHex,
+                chainName: ACTIVE_CHAIN.name,
+                rpcUrls: [ACTIVE_CHAIN.rpc],
+                nativeCurrency: ACTIVE_CHAIN.nativeCurrency,
+                blockExplorerUrls: [ACTIVE_CHAIN.explorer],
               }],
             });
           } else {
