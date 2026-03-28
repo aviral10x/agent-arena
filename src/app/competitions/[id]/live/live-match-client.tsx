@@ -958,7 +958,7 @@ export function LiveMatchClient({
               const agentName = bet.predictedWinnerId === agentA?.id ? (agentA?.name ?? "A") : (agentB?.name ?? "B");
               const agentColor = bet.predictedWinnerId === agentA?.id ? colorA : colorB;
               const txHash = bet.txSignature.slice(0, 16);
-              const xlayerUrl = `https://www.oklink.com/x-layer-testnet/tx/${bet.txSignature.startsWith('0x') ? bet.txSignature : ''}`;
+              const xlayerUrl = `https://web3.okx.com/explorer/x-layer-testnet/tx/${bet.txSignature.startsWith('0x') ? bet.txSignature : ''}`;
               const time = new Date(bet.paidAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
               return (
                 <div key={bet.id} className="flex items-center gap-3 text-[10px] font-mono">
