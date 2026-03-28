@@ -5,14 +5,12 @@ import { initGameState, resolveRally, resolveFullRally, type GameState, type Sho
 import { executeSportAgentTurn, generateMockDecision, type SportAgent } from './sport-agent-runner';
 import { signAgentPayment } from './agent-wallet';
 import { adjustStrategyAsync } from './strategy-advisor';
-import { createWalletClient, createPublicClient, http, parseAbi } from 'viem';
+import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { xLayerTestnet } from 'wagmi/chains';
+import { ACTIVE_CHAIN, BET_TOKEN, ERC20_TRANSFER_ABI } from './chain-config';
 
 // ── On-chain USDC prize payout via arena wallet ──────────────────────────────
-const XLAYER_USDC = '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d' as `0x${string}`;
-const ERC20_TRANSFER_ABI = parseAbi(['function transfer(address to, uint256 amount) returns (bool)']);
-
 async function sendUsdcPrize(toAddress: string, amountUsdc: number): Promise<string | null> {
   const key = process.env.ARENA_WALLET_PRIVATE_KEY;
   if (!key || !key.startsWith('0x') || key.length !== 66) {
@@ -21,15 +19,19 @@ async function sendUsdcPrize(toAddress: string, amountUsdc: number): Promise<str
   }
   try {
     const account = privateKeyToAccount(key as `0x${string}`);
-    const client = createWalletClient({ account, chain: xLayerTestnet, transport: http('https://testrpc.xlayer.tech') });
-    const amountMicro = BigInt(Math.round(amountUsdc * 1_000_000));
+    const client = createWalletClient({
+      account,
+      chain: xLayerTestnet,
+      transport: http(ACTIVE_CHAIN.rpc),
+    });
+    const amountMicro = BigInt(Math.round(amountUsdc * 10 ** BET_TOKEN.decimals));
     const txHash = await client.writeContract({
-      address: XLAYER_USDC,
+      address: BET_TOKEN.address,
       abi: ERC20_TRANSFER_ABI,
       functionName: 'transfer',
       args: [toAddress as `0x${string}`, amountMicro],
     });
-    console.log(`[payout] USDC transfer: $${amountUsdc} → ${toAddress.slice(0, 10)}... tx: ${txHash}`);
+    console.log(`[payout] ${BET_TOKEN.symbol} transfer: $${amountUsdc} → ${toAddress.slice(0, 10)}... tx: ${txHash}`);
     return txHash;
   } catch (e: any) {
     console.error('[payout] USDC transfer failed:', e.message?.slice(0, 100));
