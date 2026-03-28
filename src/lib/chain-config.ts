@@ -9,8 +9,8 @@ export const XLAYER_TESTNET = {
   chainIdHex: '0x7a0',
   name: 'X Layer Testnet',
   rpc: 'https://testrpc.xlayer.tech',
-  explorer: 'https://www.okx.com/web3/explorer/xlayer-test',
-  explorerTx: (hash: string) => `https://www.okx.com/web3/explorer/xlayer-test/tx/${hash}`,
+  explorer: 'https://www.oklink.com/x-layer-testnet',
+  explorerTx: (hash: string) => `https://www.oklink.com/x-layer-testnet/tx/${hash}`,
   nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
 } as const;
 
@@ -20,8 +20,8 @@ export const XLAYER_MAINNET = {
   chainIdHex: '0xc4',
   name: 'X Layer',
   rpc: 'https://xlayerrpc.okx.com',
-  explorer: 'https://www.okx.com/web3/explorer/xlayer',
-  explorerTx: (hash: string) => `https://www.okx.com/web3/explorer/xlayer/tx/${hash}`,
+  explorer: 'https://www.oklink.com/xlayer',
+  explorerTx: (hash: string) => `https://www.oklink.com/xlayer/tx/${hash}`,
   nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
 } as const;
 
